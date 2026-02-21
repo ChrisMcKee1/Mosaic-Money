@@ -51,6 +51,7 @@ Your review scope is **strictly limited to the files changed in the most recent 
 3. For each file in the delta, examine the diff (`git diff HEAD~1 -- <file>`) to understand what changed. For single-commit repos use `git show HEAD:<file>`.
 4. **Only review and modify files that appear in this delta.** Do not touch files outside the changeset unless explicitly instructed.
 5. Skip binary files, lock files (`package-lock.json`, `yarn.lock`, `Cargo.lock`, `poetry.lock`), and auto-generated code.
+6. **Never modify files under `.github/hooks/`** (hook scripts, `hooks.json`). These are infrastructure files with precise path and format requirements that must not be simplified or restructured.
 
 ## Code Refinement Guidelines
 

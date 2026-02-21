@@ -1,22 +1,16 @@
 {
   "version": 1,
   "hooks": {
-    "agentStop": [
-      {
-        "type": "command",
-        "powershell": "scripts/run-code-simplifier.ps1",
-        "bash": "scripts/run-code-simplifier.sh",
-        "cwd": ".",
-        "timeoutSec": 600
-      }
-    ],
     "Stop": [
       {
         "type": "command",
-        "command": "scripts/run-code-simplifier.sh",
-        "windows": "powershell -File scripts/run-code-simplifier.ps1",
+        "command": "./.github/hooks/scripts/run-code-simplifier.sh",
+        "windows": "powershell -NoProfile -File .github\\hooks\\scripts\\run-code-simplifier.ps1",
+        "bash": "./.github/hooks/scripts/run-code-simplifier.sh",
+        "powershell": "./.github/hooks/scripts/run-code-simplifier.ps1",
         "cwd": ".",
-        "timeout": 600
+        "timeout": 600,
+        "timeoutSec": 600
       }
     ]
   }
