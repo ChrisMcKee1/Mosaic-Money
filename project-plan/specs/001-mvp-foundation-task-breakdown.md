@@ -59,8 +59,8 @@ All task tables use a `Status` column with the following values:
 |---|---|---|---|---|---|
 | MM-ASP-01 | DevOps | Bootstrap Aspire topology skeleton | None | AppHost, ServiceDefaults, API, Worker, Web resources exist and build under .NET 10 + JS app stack. | Done |
 | MM-ASP-02 | DevOps | Configure JS hosting API in AppHost | MM-ASP-01 | AppHost uses `AddJavaScriptApp` or `AddViteApp` or `AddNodeApp`; no `AddNpmApp`; external endpoint configured for browser app. | Done |
-| MM-ASP-03 | DevOps | Add explicit `WithReference(...)` graph | MM-ASP-01, MM-ASP-02 | API/Worker/Web dependencies are wired via references and service discovery; no hardcoded inter-service URLs. | In Progress |
-| MM-ASP-04 | DevOps | Enforce service defaults and health endpoints | MM-ASP-03 | `.NET` services call `AddServiceDefaults()` and API maps default health endpoints. | Not Started |
+| MM-ASP-03 | DevOps | Add explicit `WithReference(...)` graph | MM-ASP-01, MM-ASP-02 | API/Worker/Web dependencies are wired via references and service discovery; no hardcoded inter-service URLs. | Done |
+| MM-ASP-04 | DevOps | Enforce service defaults and health endpoints | MM-ASP-03 | `.NET` services call `AddServiceDefaults()` and API maps default health endpoints. | In Progress |
 | MM-BE-01 | Backend | Backend skeleton and Aspire DB wiring | MM-ASP-03, MM-ASP-04 | API uses `AddNpgsqlDbContext`; Worker uses `AddNpgsqlDataSource`; connection names are reference-driven. | Not Started |
 | MM-BE-02 | Backend | Ledger domain model baseline | MM-BE-01 | Core entities created with single-entry semantics and separate `UserNote`/`AgentNote`. | Not Started |
 | MM-BE-03 | Backend | PostgreSQL schema + extension migration | MM-BE-02 | Migration enables `pgvector` and `azure_ai`; indexes for idempotency, review, recurring, and vector lookup. | Not Started |
