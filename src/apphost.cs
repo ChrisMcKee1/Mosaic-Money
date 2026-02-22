@@ -8,6 +8,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddProject<Projects.MosaicMoney_Api>("api");
 builder.AddProject<Projects.MosaicMoney_Worker>("worker");
-builder.AddJavaScriptApp("web", "./MosaicMoney.Web");
+builder
+	.AddJavaScriptApp("web", "./MosaicMoney.Web")
+	.WithHttpEndpoint(env: "PORT")
+	.WithExternalHttpEndpoints();
 
 builder.Build().Run();

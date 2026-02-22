@@ -33,8 +33,8 @@ Stand up the baseline distributed architecture and core contracts so all downstr
 | ID | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|
 | MM-ASP-01 | Bootstrap Aspire topology skeleton | None | AppHost, ServiceDefaults, API, Worker, Web resources build and run. | Done |
-| MM-ASP-02 | Configure JS hosting API in AppHost | MM-ASP-01 | `AddJavaScriptApp` or equivalent modern API with external endpoint exposure. | In Progress |
-| MM-ASP-03 | Add explicit `WithReference(...)` graph | MM-ASP-01, MM-ASP-02 | API, Worker, and Web dependencies wired by reference-driven discovery. | Not Started |
+| MM-ASP-02 | Configure JS hosting API in AppHost | MM-ASP-01 | `AddJavaScriptApp` or equivalent modern API with external endpoint exposure. | Done |
+| MM-ASP-03 | Add explicit `WithReference(...)` graph | MM-ASP-01, MM-ASP-02 | API, Worker, and Web dependencies wired by reference-driven discovery. | In Progress |
 | MM-ASP-04 | Enforce service defaults and health endpoints | MM-ASP-03 | `.NET` services apply `AddServiceDefaults()` and API maps default endpoints. | Not Started |
 | MM-BE-01 | Backend skeleton and Aspire DB wiring | MM-ASP-03, MM-ASP-04 | API/Worker wired to PostgreSQL by connection name via Aspire integrations. | Not Started |
 | MM-BE-02 | Ledger domain model baseline | MM-BE-01 | Core single-entry entities with `UserNote` and `AgentNote` fields separated. | Not Started |
