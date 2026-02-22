@@ -42,8 +42,8 @@ Stand up the baseline distributed architecture and core contracts so all downstr
 | MM-BE-04 | Minimal API contract v1 | MM-BE-02 | Resource endpoints/DTOs and validation behavior for MVP surface. | Not Started |
 | MM-AI-01 | Classification outcome contract | MM-BE-04 | Stage, confidence, rationale, and review routing structure (no transcript storage). | Not Started |
 | MM-AI-02 | AI workflow integration checks | MM-BE-01, MM-BE-03 | AI paths conform to same DB integration and orchestration constraints. | Not Started |
-| MM-FE-01 | Next.js App Router foundation | MM-ASP-02 | Web shell foundation with responsive and accessible primitives. | In Progress |
-| MM-FE-02 | Server-side API fetch layer | MM-FE-01, MM-ASP-03 | Server boundary fetch utility uses injected service references only. | Not Started |
+| MM-FE-01 | Next.js App Router foundation | MM-ASP-02 | Web shell foundation with responsive and accessible primitives. | Done |
+| MM-FE-02 | Server-side API fetch layer | MM-FE-01, MM-ASP-03 | Server boundary fetch utility uses injected service references only. | In Progress |
 | MM-FE-03 | Responsive app shell and navigation | MM-FE-01 | Initial route shell for Dashboard, Transactions, NeedsReview. | Not Started |
 | MM-MOB-01 | Shared domain contracts and API client | MM-BE-04 | Mobile consumes shared schema contracts aligned to backend payloads. | Not Started |
 
