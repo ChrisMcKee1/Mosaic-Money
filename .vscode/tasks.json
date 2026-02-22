@@ -1,0 +1,118 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Aspire: Build AppHost",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "src/apphost.cs"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Run Detached Isolated",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "run",
+        "--project",
+        "src/apphost.cs",
+        "--detach",
+        "--isolated"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Wait For API Healthy",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "wait",
+        "api",
+        "--project",
+        "src/apphost.cs",
+        "--status",
+        "healthy",
+        "--timeout",
+        "180"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Show Resources",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "resources",
+        "--project",
+        "src/apphost.cs"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Logs Tail 100 (All)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "logs",
+        "--project",
+        "src/apphost.cs",
+        "--tail",
+        "100"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Logs Tail 100 (API)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "logs",
+        "api",
+        "--project",
+        "src/apphost.cs",
+        "--tail",
+        "100"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Logs Tail 100 (Worker)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "logs",
+        "worker",
+        "--project",
+        "src/apphost.cs",
+        "--tail",
+        "100"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Logs Tail 100 (Web)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "logs",
+        "web",
+        "--project",
+        "src/apphost.cs",
+        "--tail",
+        "100"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Recover Stack",
+      "type": "shell",
+      "command": "aspire stop --project src/apphost.cs; dotnet build src/apphost.cs; aspire run --project src/apphost.cs --detach --isolated; aspire wait api --project src/apphost.cs --status healthy --timeout 180; aspire resources --project src/apphost.cs",
+      "problemMatcher": []
+    }
+  ]
+}

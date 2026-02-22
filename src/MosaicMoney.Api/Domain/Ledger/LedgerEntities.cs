@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 
 namespace MosaicMoney.Api.Domain.Ledger;
 
@@ -17,6 +18,33 @@ public enum RecurringFrequency
     Monthly = 3,
     Quarterly = 4,
     Annually = 5,
+}
+
+public enum ReimbursementProposalStatus
+{
+    PendingApproval = 1,
+    Approved = 2,
+    Rejected = 3,
+}
+
+public enum ClassificationStage
+{
+    Deterministic = 1,
+    Semantic = 2,
+    MafFallback = 3,
+}
+
+public enum ClassificationDecision
+{
+    Categorized = 1,
+    NeedsReview = 2,
+}
+
+public enum IngestionDisposition
+{
+    Inserted = 1,
+    Updated = 2,
+    Unchanged = 3,
 }
 
 public sealed class Household
@@ -104,6 +132,10 @@ public sealed class Subcategory
     public ICollection<EnrichedTransaction> Transactions { get; set; } = new List<EnrichedTransaction>();
 
     public ICollection<TransactionSplit> Splits { get; set; } = new List<TransactionSplit>();
+
+    public ICollection<TransactionClassificationOutcome> ClassificationOutcomeProposals { get; set; } = new List<TransactionClassificationOutcome>();
+
+    public ICollection<ClassificationStageOutput> ClassificationStageProposals { get; set; } = new List<ClassificationStageOutput>();
 }
 
 public sealed class RecurringItem
@@ -164,6 +196,9 @@ public sealed class EnrichedTransaction
     [MaxLength(300)]
     public string? ReviewReason { get; set; }
 
+    // Stores semantic embedding for vector similarity lookup.
+    public Vector? DescriptionEmbedding { get; set; }
+
     public bool ExcludeFromBudget { get; set; }
 
     public bool IsExtraPrincipal { get; set; }
@@ -185,6 +220,48 @@ public sealed class EnrichedTransaction
     public HouseholdUser? NeedsReviewByUser { get; set; }
 
     public ICollection<TransactionSplit> Splits { get; set; } = new List<TransactionSplit>();
+
+    public ICollection<TransactionClassificationOutcome> ClassificationOutcomes { get; set; } = new List<TransactionClassificationOutcome>();
+
+    public ICollection<RawTransactionIngestionRecord> RawIngestionRecords { get; set; } = new List<RawTransactionIngestionRecord>();
+}
+
+public sealed class RawTransactionIngestionRecord
+{
+    public Guid Id { get; set; }
+
+    [MaxLength(32)]
+    public string Source { get; set; } = "plaid";
+
+    [MaxLength(200)]
+    public string DeltaCursor { get; set; } = string.Empty;
+
+    public Guid AccountId { get; set; }
+
+    [MaxLength(128)]
+    public string SourceTransactionId { get; set; } = string.Empty;
+
+    [MaxLength(64)]
+    public string PayloadHash { get; set; } = string.Empty;
+
+    public string PayloadJson { get; set; } = string.Empty;
+
+    public DateTime FirstSeenAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastSeenAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastProcessedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public Guid? EnrichedTransactionId { get; set; }
+
+    public IngestionDisposition LastDisposition { get; set; } = IngestionDisposition.Inserted;
+
+    [MaxLength(300)]
+    public string? LastReviewReason { get; set; }
+
+    public Account Account { get; set; } = null!;
+
+    public EnrichedTransaction? EnrichedTransaction { get; set; }
 }
 
 public sealed class TransactionSplit
@@ -209,4 +286,95 @@ public sealed class TransactionSplit
     public EnrichedTransaction ParentTransaction { get; set; } = null!;
 
     public Subcategory? Subcategory { get; set; }
+}
+
+public sealed class ReimbursementProposal
+{
+    public Guid Id { get; set; }
+
+    public Guid IncomingTransactionId { get; set; }
+
+    public Guid? RelatedTransactionId { get; set; }
+
+    public Guid? RelatedTransactionSplitId { get; set; }
+
+    [Precision(18, 2)]
+    public decimal ProposedAmount { get; set; }
+
+    public ReimbursementProposalStatus Status { get; set; } = ReimbursementProposalStatus.PendingApproval;
+
+    public Guid? DecisionedByUserId { get; set; }
+
+    public DateTime? DecisionedAtUtc { get; set; }
+
+    public string? UserNote { get; set; }
+
+    public string? AgentNote { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+}
+
+public sealed class TransactionClassificationOutcome
+{
+    public Guid Id { get; set; }
+
+    public Guid TransactionId { get; set; }
+
+    public Guid? ProposedSubcategoryId { get; set; }
+
+    [Precision(5, 4)]
+    public decimal FinalConfidence { get; set; }
+
+    public ClassificationDecision Decision { get; set; }
+
+    public TransactionReviewStatus ReviewStatus { get; set; }
+
+    [MaxLength(120)]
+    public string DecisionReasonCode { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string DecisionRationale { get; set; } = string.Empty;
+
+    // Persist only concise summaries, never raw model transcripts.
+    [MaxLength(600)]
+    public string? AgentNoteSummary { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public EnrichedTransaction Transaction { get; set; } = null!;
+
+    public Subcategory? ProposedSubcategory { get; set; }
+
+    public ICollection<ClassificationStageOutput> StageOutputs { get; set; } = new List<ClassificationStageOutput>();
+}
+
+public sealed class ClassificationStageOutput
+{
+    public Guid Id { get; set; }
+
+    public Guid OutcomeId { get; set; }
+
+    public ClassificationStage Stage { get; set; }
+
+    [Range(1, 3)]
+    public int StageOrder { get; set; }
+
+    public Guid? ProposedSubcategoryId { get; set; }
+
+    [Precision(5, 4)]
+    public decimal Confidence { get; set; }
+
+    [MaxLength(120)]
+    public string RationaleCode { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string Rationale { get; set; } = string.Empty;
+
+    public bool EscalatedToNextStage { get; set; }
+
+    public DateTime ProducedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public TransactionClassificationOutcome Outcome { get; set; } = null!;
+
+    public Subcategory? ProposedSubcategory { get; set; }
 }

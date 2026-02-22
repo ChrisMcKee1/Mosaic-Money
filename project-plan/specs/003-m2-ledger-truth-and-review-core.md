@@ -30,11 +30,11 @@ Deliver the first complete human-reviewed ledger loop: ingest-to-review-to-appro
 ## Task Breakdown
 | ID | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|
-| MM-BE-05 | NeedsReview state machine and transitions | MM-BE-04, MM-AI-01 | Explicit transition rules with fail-closed behavior for ambiguity. | Not Started |
-| MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | Not Started |
-| MM-FE-04 | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Web list view with separated dual notes and no ledger mutation controls. | Not Started |
-| MM-FE-05 | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify user actions integrated with backend review endpoints. | Not Started |
-| MM-MOB-02 | Offline-safe state/caching foundation | MM-MOB-01 | Queue-friendly offline cache and sync baseline. | Not Started |
+| MM-BE-05 | NeedsReview state machine and transitions | MM-BE-04, MM-AI-01 | Explicit transition rules with fail-closed behavior for ambiguity. | Done |
+| MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | Done |
+| MM-FE-04 | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Web list view with separated dual notes and no ledger mutation controls. | Done |
+| MM-FE-05 | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify user actions integrated with backend review endpoints. | In Review |
+| MM-MOB-02 | Offline-safe state/caching foundation | MM-MOB-01 | Queue-friendly offline cache and sync baseline. | In Review |
 | MM-MOB-03 | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile review inbox with clear pending statuses. | Not Started |
 | MM-MOB-04 | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Clear distinction of `UserNote` and `AgentNote` in mobile detail view. | Not Started |
 | MM-MOB-05 | Human-in-the-loop approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Mobile approve/reject actions with explicit user confirmation and sync behavior. | Not Started |

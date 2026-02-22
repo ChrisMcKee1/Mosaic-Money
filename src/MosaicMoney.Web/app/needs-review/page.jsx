@@ -1,4 +1,21 @@
-export default function NeedsReviewPage() {
+import { fetchApi } from "../../lib/api";
+import NeedsReviewList from "./NeedsReviewList";
+
+export const dynamic = "force-dynamic";
+
+export default async function NeedsReviewPage() {
+  let transactions = [];
+  let error = null;
+
+  try {
+    transactions = await fetchApi("/api/v1/transactions?needsReviewOnly=true", {
+      next: { tags: ["transactions", "needs-review"] },
+    });
+  } catch (e) {
+    console.error("Failed to fetch needs-review transactions:", e);
+    error = "Failed to load transactions. Please try again later.";
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -7,9 +24,14 @@ export default function NeedsReviewPage() {
           Transactions requiring human approval or classification.
         </p>
       </div>
-      <div className="bg-white shadow rounded-lg border border-gray-200 p-6">
-        <p className="text-gray-500 text-center py-8">No items need review.</p>
-      </div>
+      
+      {error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      ) : (
+        <NeedsReviewList transactions={transactions} />
+      )}
     </div>
   );
 }

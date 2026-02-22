@@ -47,7 +47,7 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 ## Task Breakdown
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
-| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. | Not Started |
+| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. | Done |
 | MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | Not Started |
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Not Started |
 | MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | Not Started |

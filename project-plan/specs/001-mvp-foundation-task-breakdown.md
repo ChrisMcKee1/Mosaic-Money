@@ -63,23 +63,23 @@ All task tables use a `Status` column with the following values:
 | MM-ASP-04 | DevOps | Enforce service defaults and health endpoints | MM-ASP-03 | `.NET` services call `AddServiceDefaults()` and API maps default health endpoints. | Done |
 | MM-BE-01 | Backend | Backend skeleton and Aspire DB wiring | MM-ASP-03, MM-ASP-04 | API uses `AddNpgsqlDbContext`; Worker uses `AddNpgsqlDataSource`; connection names are reference-driven. | Done |
 | MM-BE-02 | Backend | Ledger domain model baseline | MM-BE-01 | Core entities created with single-entry semantics and separate `UserNote`/`AgentNote`. | Done |
-| MM-BE-03 | Backend | PostgreSQL schema + extension migration | MM-BE-02 | Migration enables `pgvector` and `azure_ai`; indexes for idempotency, review, recurring, and vector lookup. | In Progress |
-| MM-BE-04 | Backend | Minimal API contract v1 | MM-BE-02 | DTOs/endpoints defined for transactions, recurring, review actions, reimbursements; explicit validation/error contract. | Not Started |
-| MM-AI-01 | AI | Classification outcome contract | MM-BE-04 | Stage outputs, confidence, and rationale structure persisted without raw transcript fields. | Not Started |
-| MM-AI-02 | AI | AI workflow Aspire/DB integration checks | MM-BE-01, MM-BE-03 | AI paths use same reference-driven DB connectivity and do not bypass orchestration patterns. | Not Started |
+| MM-BE-03 | Backend | PostgreSQL schema + extension migration | MM-BE-02 | Migration enables `pgvector` and `azure_ai`; indexes for idempotency, review, recurring, and vector lookup. | Done |
+| MM-BE-04 | Backend | Minimal API contract v1 | MM-BE-02 | DTOs/endpoints defined for transactions, recurring, review actions, reimbursements; explicit validation/error contract. | Done |
+| MM-AI-01 | AI | Classification outcome contract | MM-BE-04 | Stage outputs, confidence, and rationale structure persisted without raw transcript fields. | Done |
+| MM-AI-02 | AI | AI workflow Aspire/DB integration checks | MM-BE-01, MM-BE-03 | AI paths use same reference-driven DB connectivity and do not bypass orchestration patterns. | Done |
 | MM-FE-01 | Web | Next.js App Router foundation | MM-ASP-02 | Next.js 16 + React 19 + Tailwind foundation with accessible shell primitives. | Done |
 | MM-FE-02 | Web | Server-side API fetch layer | MM-FE-01, MM-ASP-03 | Server-boundary fetch utility uses injected service URLs; no hardcoded localhost paths. | Done |
 | MM-FE-03 | Web | Responsive app shell and navigation | MM-FE-01 | Dashboard, Transactions, NeedsReview routes with desktop/mobile navigation behavior. | Done |
-| MM-MOB-01 | Mobile | Shared domain contracts and API client | MM-BE-04 | Shared schemas align with backend payloads; mobile does not duplicate financial domain logic. | Not Started |
+| MM-MOB-01 | Mobile | Shared domain contracts and API client | MM-BE-04 | Shared schemas align with backend payloads; mobile does not duplicate financial domain logic. | Done |
 
 ### M2 Ledger Truth and Review Workflow Core
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-BE-05 | Backend | NeedsReview state machine + transitions | MM-BE-04, MM-AI-01 | Explicit allowed transitions; ambiguous outcomes fail closed into `NeedsReview`. | Not Started |
-| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | Not Started |
-| MM-FE-04 | Web | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Ledger truth rendered with distinct `UserNote` and `AgentNote`; no client mutation of source amounts/dates. | Not Started |
-| MM-FE-05 | Web | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify actions call backend review endpoints with explicit user intent. | Not Started |
-| MM-MOB-02 | Mobile | Offline-safe state/caching foundation | MM-MOB-01 | Mobile handles offline read and queued sync states safely. | Not Started |
+| MM-BE-05 | Backend | NeedsReview state machine + transitions | MM-BE-04, MM-AI-01 | Explicit allowed transitions; ambiguous outcomes fail closed into `NeedsReview`. | Done |
+| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | Done |
+| MM-FE-04 | Web | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Ledger truth rendered with distinct `UserNote` and `AgentNote`; no client mutation of source amounts/dates. | Done |
+| MM-FE-05 | Web | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify actions call backend review endpoints with explicit user intent. | In Review |
+| MM-MOB-02 | Mobile | Offline-safe state/caching foundation | MM-MOB-01 | Mobile handles offline read and queued sync states safely. | In Review |
 | MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. | Not Started |
 | MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. | Not Started |
 | MM-MOB-05 | Mobile | HITL approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Approve/reject actions route through backend and never bypass human approval requirements. | Not Started |
@@ -110,7 +110,7 @@ All task tables use a `Status` column with the following values:
 ### M5 Verification and Release Gates
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup with dependency waits and documented recovery paths. | Not Started |
+| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup with dependency waits and documented recovery paths. | Done |
 | MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05 | Team can inspect health/logs/traces for API, Worker, and Web in one standard workflow. | Not Started |
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Checks reject `AddNpmApp`, hardcoded endpoints, and missing service-defaults patterns. | Not Started |
 | MM-BE-11 | Backend | Financial correctness/regression tests | MM-BE-01, MM-BE-02, MM-BE-03, MM-BE-04, MM-BE-05, MM-BE-06, MM-BE-07, MM-BE-08, MM-BE-09, MM-BE-10 | Money/date/matching/review/reimbursement edge-case tests pass. | Not Started |

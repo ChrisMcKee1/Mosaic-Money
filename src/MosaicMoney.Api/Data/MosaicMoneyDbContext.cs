@@ -1,5 +1,7 @@
+using System;
 using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Domain.Ledger;
+using Pgvector.EntityFrameworkCore;
 
 namespace MosaicMoney.Api.Data;
 
@@ -24,11 +26,26 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<EnrichedTransaction> EnrichedTransactions => Set<EnrichedTransaction>();
 
+    public DbSet<RawTransactionIngestionRecord> RawTransactionIngestionRecords => Set<RawTransactionIngestionRecord>();
+
     public DbSet<TransactionSplit> TransactionSplits => Set<TransactionSplit>();
+
+    public DbSet<ReimbursementProposal> ReimbursementProposals => Set<ReimbursementProposal>();
+
+    public DbSet<TransactionClassificationOutcome> TransactionClassificationOutcomes => Set<TransactionClassificationOutcome>();
+
+    public DbSet<ClassificationStageOutput> ClassificationStageOutputs => Set<ClassificationStageOutput>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        var isNpgsqlProvider = Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
+        if (isNpgsqlProvider)
+        {
+            modelBuilder.HasPostgresExtension("vector");
+            modelBuilder.HasPostgresExtension("azure_ai");
+        }
 
         modelBuilder.Entity<Category>()
             .HasIndex(x => x.Name)
@@ -50,8 +67,141 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasIndex(x => x.PlaidTransactionId)
             .IsUnique();
 
+        if (isNpgsqlProvider)
+        {
+            modelBuilder.Entity<EnrichedTransaction>()
+                .Property(x => x.DescriptionEmbedding)
+                .HasColumnType("vector(1536)");
+
+            modelBuilder.Entity<EnrichedTransaction>()
+                .HasIndex(x => x.DescriptionEmbedding)
+                .HasMethod("hnsw")
+                .HasOperators("vector_cosine_ops")
+                .HasFilter("\"DescriptionEmbedding\" IS NOT NULL");
+        }
+        else
+        {
+            modelBuilder.Entity<EnrichedTransaction>()
+                .Ignore(x => x.DescriptionEmbedding);
+        }
+
         modelBuilder.Entity<EnrichedTransaction>()
-            .HasIndex(x => new { x.ReviewStatus, x.TransactionDate });
+            .HasIndex(x => new { x.ReviewStatus, x.NeedsReviewByUserId, x.TransactionDate });
+
+        modelBuilder.Entity<EnrichedTransaction>()
+            .HasIndex(x => new { x.RecurringItemId, x.TransactionDate });
+
+        modelBuilder.Entity<RawTransactionIngestionRecord>()
+            .HasIndex(x => new { x.Source, x.DeltaCursor, x.SourceTransactionId, x.PayloadHash })
+            .IsUnique();
+
+        modelBuilder.Entity<RawTransactionIngestionRecord>()
+            .HasIndex(x => new { x.Source, x.SourceTransactionId, x.LastProcessedAtUtc });
+
+        modelBuilder.Entity<RawTransactionIngestionRecord>()
+            .HasOne(x => x.Account)
+            .WithMany()
+            .HasForeignKey(x => x.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RawTransactionIngestionRecord>()
+            .HasOne(x => x.EnrichedTransaction)
+            .WithMany(x => x.RawIngestionRecords)
+            .HasForeignKey(x => x.EnrichedTransactionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_ReimbursementProposal_OneRelatedTarget",
+                "(\"RelatedTransactionId\" IS NOT NULL AND \"RelatedTransactionSplitId\" IS NULL) OR (\"RelatedTransactionId\" IS NULL AND \"RelatedTransactionSplitId\" IS NOT NULL)"));
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasIndex(x => new { x.IncomingTransactionId, x.Status });
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasIndex(x => new { x.Status, x.CreatedAtUtc });
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasOne<EnrichedTransaction>()
+            .WithMany()
+            .HasForeignKey(x => x.IncomingTransactionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasOne<EnrichedTransaction>()
+            .WithMany()
+            .HasForeignKey(x => x.RelatedTransactionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasOne<TransactionSplit>()
+            .WithMany()
+            .HasForeignKey(x => x.RelatedTransactionSplitId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasOne<HouseholdUser>()
+            .WithMany()
+            .HasForeignKey(x => x.DecisionedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<TransactionClassificationOutcome>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_TransactionClassificationOutcome_FinalConfidenceRange",
+                    "\"FinalConfidence\" >= 0 AND \"FinalConfidence\" <= 1");
+
+                t.HasCheckConstraint(
+                    "CK_TransactionClassificationOutcome_DecisionReviewRouting",
+                    "(\"Decision\" = 2 AND \"ReviewStatus\" = 1) OR (\"Decision\" = 1 AND \"ReviewStatus\" <> 1)");
+            });
+
+        modelBuilder.Entity<TransactionClassificationOutcome>()
+            .HasIndex(x => new { x.TransactionId, x.CreatedAtUtc });
+
+        modelBuilder.Entity<TransactionClassificationOutcome>()
+            .HasIndex(x => new { x.Decision, x.ReviewStatus, x.CreatedAtUtc });
+
+        modelBuilder.Entity<TransactionClassificationOutcome>()
+            .HasOne(x => x.Transaction)
+            .WithMany(x => x.ClassificationOutcomes)
+            .HasForeignKey(x => x.TransactionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TransactionClassificationOutcome>()
+            .HasOne(x => x.ProposedSubcategory)
+            .WithMany(x => x.ClassificationOutcomeProposals)
+            .HasForeignKey(x => x.ProposedSubcategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ClassificationStageOutput>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_ClassificationStageOutput_ConfidenceRange",
+                    "\"Confidence\" >= 0 AND \"Confidence\" <= 1");
+
+                t.HasCheckConstraint(
+                    "CK_ClassificationStageOutput_StageOrderRange",
+                    "\"StageOrder\" >= 1 AND \"StageOrder\" <= 3");
+            });
+
+        modelBuilder.Entity<ClassificationStageOutput>()
+            .HasIndex(x => new { x.OutcomeId, x.Stage })
+            .IsUnique();
+
+        modelBuilder.Entity<ClassificationStageOutput>()
+            .HasOne(x => x.Outcome)
+            .WithMany(x => x.StageOutputs)
+            .HasForeignKey(x => x.OutcomeId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClassificationStageOutput>()
+            .HasOne(x => x.ProposedSubcategory)
+            .WithMany(x => x.ClassificationStageProposals)
+            .HasForeignKey(x => x.ProposedSubcategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Household>()
             .HasMany(x => x.Users)
