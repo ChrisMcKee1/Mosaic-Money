@@ -25,6 +25,13 @@ Skill-first workflow:
 2. Apply package, governance, and evaluation guidance to the implementation plan.
 3. Start coding only after the skill checks pass.
 
+Aspire daily preflight (required for every backend task):
+1. Run and confirm current command surface: `aspire --version`, `aspire --help`, `aspire agent --help`, `aspire docs --help`.
+2. Use current MCP commands (`aspire agent init`, `aspire agent mcp`) and avoid deprecated aliases (`aspire mcp init`, `aspire mcp start`).
+3. For integration work, check docs first with `aspire docs search "<topic>"` and `aspire docs get <slug>` before package changes.
+4. Prefer adding integrations with `aspire add <integration>` before manual csproj edits where Aspire supports it.
+5. If direct provider packages are needed, document why Aspire integration is insufficient in your implementation summary.
+
 Technical scope:
 - C# 14, .NET 10 Minimal APIs.
 - EF Core 10 models, mappings, migrations, and query performance.
@@ -47,6 +54,8 @@ Hard constraints:
 - Keep committed `ConnectionStrings` values empty or placeholders; resolve real values through Aspire injection at runtime.
 - Keep per-service `appsettings.json` placeholder keys updated when adding new connection strings or secret-backed options.
 - Never log resolved credentials, full connection strings, or secret-bearing environment variable values.
+- Do not use direct provider registration patterns (`AddDbContext`, `UseNpgsql`, literal connection strings) when Aspire integration registration exists.
+- Confirm connection-name parity between AppHost resources and service registrations before completing changes.
 
 Implementation standards:
 - Favor explicit contracts and idempotent ingestion paths.
@@ -54,3 +63,10 @@ Implementation standards:
 - Include focused tests for money, date, and matching edge cases.
 - If a direct provider package is required for a documented edge case, explain why in code comments and keep Aspire wiring intact.
 - Do not complete package or data-access changes without executing the NuGet workflow from the loaded skills.
+
+Required response format for backend deliveries:
+- `Preflight:` commands run and key findings
+- `Package compliance:` Aspire-native vs exceptions (with rationale)
+- `Registration compliance:` `AddNpgsqlDbContext` and/or `AddNpgsqlDataSource` usage and connection name parity
+- `Validation:` build/test commands and outcomes
+- `Risk:` low|medium|high and any required human review

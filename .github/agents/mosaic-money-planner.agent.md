@@ -8,7 +8,7 @@ agents: ['mosaic-money-backend', 'mosaic-money-frontend', 'mosaic-money-mobile',
 handoffs:
   - label: Build Backend Slice
     agent: mosaic-money-backend
-    prompt: Implement the backend tasks from the approved plan. Follow all Mosaic Money guardrails.
+    prompt: Implement the backend tasks from the approved plan. Before coding, run Aspire daily preflight (`aspire --version`, `aspire --help`, `aspire agent --help`, `aspire docs --help`) and load required skills. Use Aspire-native packages/registrations (`Aspire.Npgsql.EntityFrameworkCore.PostgreSQL` + `AddNpgsqlDbContext`, `Aspire.Npgsql` + `AddNpgsqlDataSource`), prefer `aspire add <integration>` when supported, and avoid deprecated MCP aliases (`aspire mcp init/start`). Include package/registration compliance evidence and validation results in your final report.
     send: false
   - label: Build Frontend Slice
     agent: mosaic-money-frontend
