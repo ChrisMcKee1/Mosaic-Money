@@ -3,7 +3,7 @@ name: mosaic-money-backend
 description: Ledger and API specialist for C# 14, .NET 10, EF Core 10, and PostgreSQL 18.
 argument-hint: Describe backend API, entity, migration, or worker ingestion work to implement.
 model: [Claude Opus 4.6 (fast mode) (Preview) (copilot), Claude Opus 4.6 (copilot), 'GPT-5.3-Codex (copilot)']
-tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo]
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', 'aspire/*', azure-mcp/acr, azure-mcp/advisor, azure-mcp/aks, azure-mcp/appconfig, azure-mcp/applens, azure-mcp/applicationinsights, azure-mcp/appservice, azure-mcp/azd, azure-mcp/bicepschema, azure-mcp/cloudarchitect, azure-mcp/communication, azure-mcp/compute, azure-mcp/deploy, azure-mcp/documentation, azure-mcp/eventgrid, azure-mcp/eventhubs, azure-mcp/extension_azqr, azure-mcp/extension_cli_generate, azure-mcp/extension_cli_install, azure-mcp/fileshares, azure-mcp/foundry, azure-mcp/functionapp, azure-mcp/get_azure_bestpractices, azure-mcp/grafana, azure-mcp/group_list, azure-mcp/keyvault, azure-mcp/marketplace, azure-mcp/monitor, azure-mcp/policy, azure-mcp/postgres, azure-mcp/pricing, azure-mcp/quota, azure-mcp/redis, azure-mcp/resourcehealth, azure-mcp/role, azure-mcp/search, azure-mcp/servicebus, azure-mcp/servicefabric, azure-mcp/signalr, azure-mcp/speech, azure-mcp/storage, azure-mcp/storagesync, azure-mcp/subscription_list, vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo, ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes, ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph, ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag]
 agents: ['Microsoft Agent Framework .NET']
 ---
 
@@ -42,6 +42,11 @@ Hard constraints:
 - Non-EF PostgreSQL paths default to `Aspire.Npgsql` with `AddNpgsqlDataSource(connectionName: ...)`.
 - Use `builder.AddServiceDefaults()` and service discovery-aware references instead of hardcoded service URLs.
 - Do not introduce literal connection strings when `WithReference(...)` resources can supply configuration.
+- Manage DB passwords, API keys, and other credentials through AppHost `AddParameter(..., secret: true)` and AppHost user-secrets.
+- For local bootstrap/runbooks, include both AppHost command paths: project-based uses `dotnet user-secrets init`, `dotnet user-secrets set "<Key>" "<Value>"`, `dotnet user-secrets list`; file-based adds `#:property UserSecretsId=<id>` and uses `dotnet user-secrets set "<Key>" "<Value>" --file apphost.cs` plus `dotnet user-secrets list --file apphost.cs`.
+- Keep committed `ConnectionStrings` values empty or placeholders; resolve real values through Aspire injection at runtime.
+- Keep per-service `appsettings.json` placeholder keys updated when adding new connection strings or secret-backed options.
+- Never log resolved credentials, full connection strings, or secret-bearing environment variable values.
 
 Implementation standards:
 - Favor explicit contracts and idempotent ingestion paths.

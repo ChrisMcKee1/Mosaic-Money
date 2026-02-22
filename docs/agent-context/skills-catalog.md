@@ -13,6 +13,9 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 - Improves safety, testability, and implementation consistency.
 
 ## Installed project-local skills
+- `.github/skills/aspire/SKILL.md`
+  - Project-level Aspire skill for the daily channel command surface.
+  - Validates 13.3 CLI/MCP behavior and documents agent-first MCP setup.
 - `.github/skills/aspire-mosaic-money/SKILL.md`
   - Derived from Aspire-oriented skill patterns.
   - Enforces Mosaic Money AppHost and integration package rules.
@@ -31,6 +34,15 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 - `.github/skills/prd/SKILL.md`
   - Derived from PRD skill patterns.
   - Standardizes planning and decomposition workflows.
+- `.github/skills/playwright-cli/SKILL.md`
+  - Playwright CLI command surface for browser interaction/testing.
+  - Supports exploratory and regression validation workflows.
+- `.github/skills/gh-cli/SKILL.md`
+  - GitHub CLI reference for repo, issue, PR, release, and Actions operations.
+  - Supports scripted and auditable GitHub workflows.
+- `.github/skills/git-commit/SKILL.md`
+  - Conventional commit workflow guidance.
+  - Improves commit consistency and staging hygiene.
 
 ## External skills to use by name when available
 - `aspire`
@@ -40,12 +52,12 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 - `azure-role-selector` (only when IAM role selection is requested)
 
 ## Agent-to-skill mapping
-- Planner: `prd`, `agent-governance`, `aspire-mosaic-money`, `agentic-eval`, `microsoft-docs`.
-- Backend: `aspire-mosaic-money`, `nuget-manager`, `agent-governance`, `agentic-eval`, `microsoft-code-reference`.
-- Frontend: `aspire-mosaic-money`, `webapp-testing`, `agent-governance`, `agentic-eval`.
+- Planner: `prd`, `agent-governance`, `aspire`, `aspire-mosaic-money`, `agentic-eval`, `microsoft-docs`.
+- Backend: `aspire`, `aspire-mosaic-money`, `nuget-manager`, `agent-governance`, `agentic-eval`, `microsoft-code-reference`.
+- Frontend: `aspire`, `aspire-mosaic-money`, `webapp-testing`, `playwright-cli`, `agent-governance`, `agentic-eval`.
 - Mobile: `agent-governance`, `agentic-eval`, `prd`.
-- AI: `agent-governance`, `agentic-eval`, `aspire-mosaic-money`, `microsoft-docs`.
-- DevOps: `aspire-mosaic-money`, `agent-governance`, `webapp-testing`, `nuget-manager`, `microsoft-docs`.
+- AI: `agent-governance`, `agentic-eval`, `aspire`, `aspire-mosaic-money`, `microsoft-docs`.
+- DevOps: `aspire`, `aspire-mosaic-money`, `agent-governance`, `webapp-testing`, `nuget-manager`, `gh-cli`, `microsoft-docs`.
 
 ## Installation correctness checklist
 - Skill directories are under `.github/skills/<skill-name>/SKILL.md`.

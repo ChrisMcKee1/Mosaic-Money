@@ -1,7 +1,7 @@
 ---
 description: "Create, update, refactor, explain or work with code using the .NET version of Microsoft Agent Framework."
 name: 'Microsoft Agent Framework .NET'
-tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, todo]
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', 'aspire/*', azure-mcp/acr, azure-mcp/advisor, azure-mcp/aks, azure-mcp/appconfig, azure-mcp/applens, azure-mcp/applicationinsights, azure-mcp/appservice, azure-mcp/azd, azure-mcp/bicepschema, azure-mcp/cloudarchitect, azure-mcp/communication, azure-mcp/compute, azure-mcp/deploy, azure-mcp/documentation, azure-mcp/eventgrid, azure-mcp/eventhubs, azure-mcp/extension_azqr, azure-mcp/extension_cli_generate, azure-mcp/extension_cli_install, azure-mcp/fileshares, azure-mcp/foundry, azure-mcp/functionapp, azure-mcp/get_azure_bestpractices, azure-mcp/grafana, azure-mcp/group_list, azure-mcp/keyvault, azure-mcp/marketplace, azure-mcp/monitor, azure-mcp/policy, azure-mcp/postgres, azure-mcp/pricing, azure-mcp/quota, azure-mcp/redis, azure-mcp/resourcehealth, azure-mcp/role, azure-mcp/search, azure-mcp/servicebus, azure-mcp/servicefabric, azure-mcp/signalr, azure-mcp/speech, azure-mcp/storage, azure-mcp/storagesync, azure-mcp/subscription_list, vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo, ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes, ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph, ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag]
 model: 'Claude Opus 4.6 (copilot)'
 ---
 
@@ -37,6 +37,17 @@ dotnet add package Microsoft.Agents.AI
 - Implement proper error handling and logging
 - Follow .NET best practices with strong typing and type safety
 - Use DefaultAzureCredential for authentication with Azure services where applicable
+
+**Secrets and Configuration:**
+
+- For Aspire orchestration, define sensitive values in AppHost with `builder.AddParameter("<name>", secret: true)`
+- Keep local secret values in AppHost user-secrets (`dotnet user-secrets`), never in committed source files
+- When generating setup instructions, include both AppHost flows: project-based uses `dotnet user-secrets init`, `dotnet user-secrets set "<Key>" "<Value>"`, `dotnet user-secrets list`; file-based adds `#:property UserSecretsId=<id>` and uses `dotnet user-secrets set "<Key>" "<Value>" --file apphost.cs` plus `dotnet user-secrets list --file apphost.cs`
+- Pass secrets and service endpoints via `WithReference(...)` or `WithEnvironment(...)`, not hardcoded literals
+- Keep `appsettings*.json` non-sensitive and rely on runtime injection for passwords, keys, and full connection strings
+- When introducing new keys, update per-project placeholder contracts (`appsettings.json`, `.env.example`) and document key purpose/source
+- Treat `NEXT_PUBLIC_*` as public and never place private tokens or credentials in browser-visible variables
+- Redact secrets from logs, telemetry payloads, screenshots, and documentation samples
 
 **AI Agents:**
 

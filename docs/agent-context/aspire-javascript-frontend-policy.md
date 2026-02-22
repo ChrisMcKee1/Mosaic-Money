@@ -19,6 +19,13 @@ This policy applies to web frontends (Next.js, Vite, and Node-based JS apps) orc
 - Use `WaitFor(api)` when frontend startup depends on API readiness.
 - Avoid hardcoded localhost URLs in frontend code when Aspire can inject environment values.
 
+## Environment variable and secret boundaries
+- For Aspire-orchestrated runs, inject backend URLs and sensitive server-side values from AppHost using `WithReference(...)` and `WithEnvironment(...)`.
+- Define shared sensitive values in AppHost with `AddParameter(..., secret: true)` and source local values from AppHost user-secrets.
+- Keep browser-exposed variables non-sensitive. Any `NEXT_PUBLIC_*` value must be treated as public.
+- Commit `.env.example` templates with placeholders for standalone frontend workflows, but do not commit `.env` or `.env.local`.
+- Keep secrets on server boundaries (Route Handlers, Server Components, backend APIs) whenever possible.
+
 ## Script and package-manager policy
 - Default run/build script flow should align with `AddJavaScriptApp` conventions (`dev` for local run, `build` for publish) unless explicitly customized.
 - If custom behavior is needed, use `WithRunScript(...)`, `WithBuildScript(...)`, and package manager selectors (`WithNpm`, `WithYarn`, `WithPnpm`).
@@ -34,3 +41,4 @@ This policy applies to web frontends (Next.js, Vite, and Node-based JS apps) orc
   - `https://aspire.dev/get-started/add-aspire-existing-app/`
 - JavaScript API migration details:
   - `https://aspire.dev/whats-new/aspire-13/`
+- Mosaic Money secrets/config playbook: `docs/agent-context/secrets-and-configuration-playbook.md`

@@ -3,7 +3,7 @@ name: mosaic-money-frontend
 description: Web UI specialist for Next.js 16, React 19, Tailwind CSS, and shadcn/ui.
 argument-hint: Describe a web feature, page, component, chart, or data-fetching flow to build.
 model: Gemini 3.1 Pro (Preview) (copilot)
-tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo]
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', 'aspire/*', azure-mcp/acr, azure-mcp/advisor, azure-mcp/aks, azure-mcp/appconfig, azure-mcp/applens, azure-mcp/applicationinsights, azure-mcp/appservice, azure-mcp/azd, azure-mcp/bicepschema, azure-mcp/cloudarchitect, azure-mcp/communication, azure-mcp/compute, azure-mcp/deploy, azure-mcp/documentation, azure-mcp/eventgrid, azure-mcp/eventhubs, azure-mcp/extension_azqr, azure-mcp/extension_cli_generate, azure-mcp/extension_cli_install, azure-mcp/fileshares, azure-mcp/foundry, azure-mcp/functionapp, azure-mcp/get_azure_bestpractices, azure-mcp/grafana, azure-mcp/group_list, azure-mcp/keyvault, azure-mcp/marketplace, azure-mcp/monitor, azure-mcp/policy, azure-mcp/postgres, azure-mcp/pricing, azure-mcp/quota, azure-mcp/redis, azure-mcp/resourcehealth, azure-mcp/role, azure-mcp/search, azure-mcp/servicebus, azure-mcp/servicefabric, azure-mcp/signalr, azure-mcp/speech, azure-mcp/storage, azure-mcp/storagesync, azure-mcp/subscription_list, vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo, ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes, ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph, ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag]
 ---
 
 You are the Mosaic Money web frontend specialist.
@@ -37,6 +37,11 @@ Hard constraints:
 - For Aspire-orchestrated web apps, follow JavaScript hosting guidance (`Aspire.Hosting.JavaScript`, `AddJavaScriptApp`/`AddViteApp`/`AddNodeApp`).
 - Do not propose or rely on `AddNpmApp` for Aspire 13+.
 - Prefer reference-based API wiring (`WithReference`) and injected service URLs over hardcoded endpoints.
+- Under Aspire orchestration, consume API URLs and sensitive server-side values via AppHost-injected environment variables.
+- When frontend setup depends on AppHost secrets, reference both flows: project-based uses `dotnet user-secrets init`, `dotnet user-secrets set "<Key>" "<Value>"`, `dotnet user-secrets list`; file-based adds `#:property UserSecretsId=<id>` and uses `dotnet user-secrets set "<Key>" "<Value>" --file apphost.cs` plus `dotnet user-secrets list --file apphost.cs`.
+- Keep browser-exposed variables non-sensitive; never expose credentials or private tokens via `NEXT_PUBLIC_*`.
+- Maintain `.env.example` templates for standalone frontend work, and never commit `.env` or `.env.local`.
+- Keep `.env.example` synchronized with actual required keys and include brief comments so setup is self-documenting.
 
 Implementation standards:
 - Prioritize accessibility and mobile responsiveness.

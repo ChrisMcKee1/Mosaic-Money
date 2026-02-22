@@ -27,6 +27,15 @@ This policy applies to any C#/.NET service that runs under Mosaic Money Aspire o
 - For non-EF data access, use `builder.AddNpgsqlDataSource(connectionName: "...")`.
 - Connection names must match the AppHost resource names.
 
+## Secret and connection configuration strategy
+- Define orchestration-level sensitive values in AppHost with `builder.AddParameter("<name>", secret: true)`.
+- Store local secret values in AppHost user-secrets (`dotnet user-secrets`) rather than committed files.
+- Standard local CLI flow: project-based AppHost uses `dotnet user-secrets init`, `dotnet user-secrets set "<Key>" "<Value>"`, `dotnet user-secrets list`; file-based AppHost adds `#:property UserSecretsId=<id>` and uses `dotnet user-secrets set "<Key>" "<Value>" --file apphost.cs` plus `dotnet user-secrets list --file apphost.cs`.
+- Inject sensitive values into services with `WithReference(...)` and `WithEnvironment(...)`.
+- Keep `appsettings*.json` for non-sensitive defaults only. Do not commit real passwords, API keys, or full connection strings.
+- If a committed `ConnectionStrings` section exists, keep values empty or placeholders and rely on runtime injection.
+- Redact secrets from logs, diagnostics output, and documentation examples.
+
 ## Avoid unless explicitly justified
 - Manual `UseNpgsql(connectionString)` setup from literal connection strings.
 - Direct provider-only NuGet setup that bypasses Aspire integration packages.
@@ -40,3 +49,4 @@ This policy applies to any C#/.NET service that runs under Mosaic Money Aspire o
 - Aspire service defaults: `https://aspire.dev/fundamentals/service-defaults/`
 - Aspire PostgreSQL get started: `https://aspire.dev/integrations/databases/postgres/postgres-get-started/`
 - Aspire PostgreSQL EF Core get started: `https://aspire.dev/integrations/databases/efcore/postgres/postgresql-get-started/`
+- Mosaic Money secrets/config playbook: `docs/agent-context/secrets-and-configuration-playbook.md`

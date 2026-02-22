@@ -23,6 +23,16 @@ These instructions are always on for this repository.
 - For JavaScript resources, use `AddJavaScriptApp`, `AddViteApp`, or `AddNodeApp`.
 - Do not introduce deprecated `AddNpmApp`.
 
+## Secret And Configuration Conventions
+- Define orchestration-level sensitive values in AppHost with `builder.AddParameter("<name>", secret: true)`.
+- Store local secret values in AppHost user-secrets (`dotnet user-secrets`) instead of source-controlled files.
+- When documenting or scripting local setup, include both flows: project-based AppHost uses `dotnet user-secrets init`, `dotnet user-secrets set "<Key>" "<Value>"`, `dotnet user-secrets list`; file-based AppHost adds `#:property UserSecretsId=<id>` and uses `dotnet user-secrets set "<Key>" "<Value>" --file apphost.cs` plus `dotnet user-secrets list --file apphost.cs`.
+- Inject secrets and service endpoints using `WithReference(...)` and `WithEnvironment(...)`, not hardcoded literals.
+- Commit template env files only (for example `.env.example` with placeholders); never commit `.env`, `.env.local`, or real credentials.
+- Keep `appsettings*.json` for non-sensitive defaults; do not commit passwords, API keys, or full connection strings.
+- Treat `NEXT_PUBLIC_*` variables as public and never place sensitive values in them.
+- Redact secret values from logs, docs, screenshots, and sample command output.
+
 ## Build And Test
 - This repository is currently docs-first (planning/agent governance) with no canonical app build pipeline checked in yet.
 - Do not invent project commands. Prefer commands defined by repo files (`README`, manifests, CI, scripts) once present.
@@ -34,6 +44,7 @@ These instructions are always on for this repository.
 - `docs/agent-context/prd-agentic-context.md`
 - `docs/agent-context/aspire-dotnet-integration-policy.md`
 - `docs/agent-context/aspire-javascript-frontend-policy.md`
+- `docs/agent-context/secrets-and-configuration-playbook.md`
 - `docs/agent-context/skills-catalog.md`
 - `.github/instructions/*.instructions.md`
 

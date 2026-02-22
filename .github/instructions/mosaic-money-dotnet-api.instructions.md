@@ -21,6 +21,9 @@ applyTo: '**/*.{cs,csproj}'
 - Prefer Aspire integration packages over provider-only packages.
 - Use `AddNpgsqlDbContext` or `AddNpgsqlDataSource` with reference-driven configuration.
 - Avoid literal connection strings where `WithReference(...)` can provide configuration.
+- Define orchestration-level secrets in AppHost with `AddParameter(..., secret: true)` and source local values from AppHost user-secrets.
+- Keep committed `ConnectionStrings` entries non-sensitive (empty or placeholders) and rely on runtime injection.
+- When adding config keys, update project-level `appsettings.json` placeholders so required keys remain visible and reviewable.
 
 ## Security and correctness
 - Validate and sanitize external input.

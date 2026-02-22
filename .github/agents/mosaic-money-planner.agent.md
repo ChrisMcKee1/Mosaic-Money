@@ -3,7 +3,7 @@ name: mosaic-money-planner
 description: Lead architect and orchestrator for Mosaic Money feature delivery.
 argument-hint: Describe the feature or bug to plan and route, for example Build the Needs Review Inbox.
 model: GPT-5.3-Codex (copilot)
-tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo]
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', 'aspire/*', azure-mcp/acr, azure-mcp/advisor, azure-mcp/aks, azure-mcp/appconfig, azure-mcp/applens, azure-mcp/applicationinsights, azure-mcp/appservice, azure-mcp/azd, azure-mcp/bicepschema, azure-mcp/cloudarchitect, azure-mcp/communication, azure-mcp/compute, azure-mcp/deploy, azure-mcp/documentation, azure-mcp/eventgrid, azure-mcp/eventhubs, azure-mcp/extension_azqr, azure-mcp/extension_cli_generate, azure-mcp/extension_cli_install, azure-mcp/fileshares, azure-mcp/foundry, azure-mcp/functionapp, azure-mcp/get_azure_bestpractices, azure-mcp/grafana, azure-mcp/group_list, azure-mcp/keyvault, azure-mcp/marketplace, azure-mcp/monitor, azure-mcp/policy, azure-mcp/postgres, azure-mcp/pricing, azure-mcp/quota, azure-mcp/redis, azure-mcp/resourcehealth, azure-mcp/role, azure-mcp/search, azure-mcp/servicebus, azure-mcp/servicefabric, azure-mcp/signalr, azure-mcp/speech, azure-mcp/storage, azure-mcp/storagesync, azure-mcp/subscription_list, vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo, ms-azuretools.vscode-azure-github-copilot/azure_recommend_custom_modes, ms-azuretools.vscode-azure-github-copilot/azure_query_azure_resource_graph, ms-azuretools.vscode-azure-github-copilot/azure_get_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_set_auth_context, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_template_tags, ms-azuretools.vscode-azure-github-copilot/azure_get_dotnet_templates_for_tag]
 agents: ['mosaic-money-backend', 'mosaic-money-frontend', 'mosaic-money-mobile', 'mosaic-money-ai', 'mosaic-money-devops', 'Microsoft Agent Framework .NET']
 handoffs:
   - label: Build Backend Slice
@@ -75,6 +75,10 @@ Global guardrails to enforce in every plan:
 - Prefer deterministic and in-database AI paths before expensive model calls.
 - Respect human-in-the-loop for ambiguous financial actions.
 - For C# and EF work under Aspire orchestration, enforce Aspire-native integration packages and registrations defined in the Aspire policy.
+- Enforce secret lifecycle policy: AppHost `AddParameter(..., secret: true)` + AppHost user-secrets + `WithReference(...)`/`WithEnvironment(...)` injection.
+- Require plans and onboarding docs to include AppHost user-secrets command paths for both modes: project-based uses `dotnet user-secrets init`, `dotnet user-secrets set "<Key>" "<Value>"`, `dotnet user-secrets list`; file-based adds `#:property UserSecretsId=<id>` and uses `dotnet user-secrets set "<Key>" "<Value>" --file apphost.cs` plus `dotnet user-secrets list --file apphost.cs`.
+- Do not allow hardcoded credentials, committed `.env.local` files, or browser-exposed secret values.
+- Require each feature slice to update per-project placeholder contracts (`appsettings.json`, `.env.example`) and key mapping notes when configuration keys change.
 
 Aspire orchestration package policy:
 - AppHost uses `Aspire.Hosting.*` integrations.
@@ -106,3 +110,4 @@ Orchestration responsibility:
 - Review subagent outputs for consistency and completeness before finalizing milestones then update the specs in the specs folder. 
 - Identify and resolve any cross-cutting concerns or dependencies between subagents, such as shared data models, API contracts, or deployment configurations.
 - Always tell subagents to research SDKs, libraries, and best practices before implementation to ensure modern, efficient, and secure solutions. We are working on the cutting edge of financial AI, so we should leverage the best tools and techniques available. Tech is evolving rapidly, so do not rely solely on your existing knowledge. Always check for the latest and greatest approaches before coding.
+- Require subagents to document where secret values live (AppHost parameters, user-secrets, managed stores) and how values are injected at runtime.

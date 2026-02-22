@@ -10,6 +10,7 @@ Use this skill before changing AppHost composition, service startup wiring, or c
 ## Required sequence
 1. Read `docs/agent-context/aspire-dotnet-integration-policy.md`.
 2. Read `docs/agent-context/aspire-javascript-frontend-policy.md`.
+3. Use only the project level skill for [Aspire](../aspire/SKILL.md). Since we are using the channel daily build instead of the stable build. This skill will have the most up to date information.
 3. Confirm proposed changes use `WithReference(...)` and service discovery instead of hardcoded endpoints.
 4. Confirm package choices follow Aspire-hosting and Aspire-client integration defaults.
 
