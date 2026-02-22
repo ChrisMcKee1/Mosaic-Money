@@ -45,20 +45,20 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 - Aspire policies remain mandatory (`WithReference(...)`, service defaults, no `AddNpmApp`).
 
 ## Task Breakdown
-| ID | Domain | Task | Dependencies | Deliverable |
-|---|---|---|---|---|
-| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. |
-| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. |
-| MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. |
-| MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. |
-| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. |
-| MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. |
-| MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. |
-| MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. |
-| MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. |
-| MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. |
-| MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. |
-| MM-QA-03 | QA | Release rehearsal and rollback drill | MM-QA-01, MM-QA-02 | Rehearsed release with validated rollback path and go/no-go artifact. |
+| ID | Domain | Task | Dependencies | Deliverable | Status |
+|---|---|---|---|---|---|
+| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. | Not Started |
+| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | Not Started |
+| MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Not Started |
+| MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | Not Started |
+| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | Not Started |
+| MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Not Started |
+| MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Not Started |
+| MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Not Started |
+| MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | Not Started |
+| MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | Not Started |
+| MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Not Started |
+| MM-QA-03 | QA | Release rehearsal and rollback drill | MM-QA-01, MM-QA-02 | Rehearsed release with validated rollback path and go/no-go artifact. | Not Started |
 
 ## Verification Matrix
 | Area | Validation | Pass Criteria |

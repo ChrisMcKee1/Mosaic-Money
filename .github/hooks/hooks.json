@@ -1,6 +1,18 @@
 {
   "version": 1,
   "hooks": {
+    "SubagentStop": [
+      {
+        "type": "command",
+        "command": "./.github/hooks/scripts/run-code-simplifier.sh",
+        "windows": "powershell -NoProfile -File .github\\hooks\\scripts\\run-code-simplifier.ps1",
+        "bash": "./.github/hooks/scripts/run-code-simplifier.sh",
+        "powershell": "./.github/hooks/scripts/run-code-simplifier.ps1",
+        "cwd": ".",
+        "timeout": 600,
+        "timeoutSec": 600
+      }
+    ],
     "Stop": [
       {
         "type": "command",

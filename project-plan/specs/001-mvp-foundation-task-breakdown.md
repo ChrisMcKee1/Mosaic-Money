@@ -23,6 +23,21 @@ This spec creates the implementation sequence and dependency graph for the first
 - AI cannot autonomously execute external messaging. Draft-only behavior is allowed.
 - Aspire-native orchestration and package patterns are required (`Aspire.Hosting.*`, `Aspire.*`, `WithReference(...)`, service discovery).
 
+## Task Status Definitions
+All task tables use a `Status` column with the following values:
+
+| Status | Meaning |
+|---|---|
+| `Not Started` | Work has not begun. |
+| `In Progress` | Actively being implemented by a subagent. |
+| `Blocked` | Cannot proceed due to a dependency, issue, or external factor. Add a note in the spec or a linked comment explaining the blocker. |
+| `Parked` | Deliberately deferred to prioritize other work. Not blocked — just deprioritized. |
+| `In Review` | Implementation is complete; awaiting planner verification and approval. |
+| `Done` | Planner has verified the work meets the Done Criteria and accepted it. |
+| `Cut` | Removed from scope for this milestone. Reason should be documented. |
+
+**Only the `mosaic-money-planner` agent may set a task to `Done` or `Cut`.** Subagents may move tasks to `In Progress`, `Blocked`, `Parked`, or `In Review`, but final acceptance is the planner's responsibility.
+
 ## Architecture Signals Used For Ordering
 - Polyglot topology requires AppHost wiring before service feature work.
 - ERD requires ledger entities and relationship constraints before ingestion and matching.
@@ -40,68 +55,68 @@ This spec creates the implementation sequence and dependency graph for the first
 ## Cross-Domain Dependency DAG (Small Tasks)
 
 ### M1 Platform and Contract Foundation (implement first)
-| ID | Domain | Task | Dependencies | Done Criteria |
-|---|---|---|---|---|
-| MM-ASP-01 | DevOps | Bootstrap Aspire topology skeleton | None | AppHost, ServiceDefaults, API, Worker, Web resources exist and build under .NET 10 + JS app stack. |
-| MM-ASP-02 | DevOps | Configure JS hosting API in AppHost | MM-ASP-01 | AppHost uses `AddJavaScriptApp` or `AddViteApp` or `AddNodeApp`; no `AddNpmApp`; external endpoint configured for browser app. |
-| MM-ASP-03 | DevOps | Add explicit `WithReference(...)` graph | MM-ASP-01, MM-ASP-02 | API/Worker/Web dependencies are wired via references and service discovery; no hardcoded inter-service URLs. |
-| MM-ASP-04 | DevOps | Enforce service defaults and health endpoints | MM-ASP-03 | `.NET` services call `AddServiceDefaults()` and API maps default health endpoints. |
-| MM-BE-01 | Backend | Backend skeleton and Aspire DB wiring | MM-ASP-03, MM-ASP-04 | API uses `AddNpgsqlDbContext`; Worker uses `AddNpgsqlDataSource`; connection names are reference-driven. |
-| MM-BE-02 | Backend | Ledger domain model baseline | MM-BE-01 | Core entities created with single-entry semantics and separate `UserNote`/`AgentNote`. |
-| MM-BE-03 | Backend | PostgreSQL schema + extension migration | MM-BE-02 | Migration enables `pgvector` and `azure_ai`; indexes for idempotency, review, recurring, and vector lookup. |
-| MM-BE-04 | Backend | Minimal API contract v1 | MM-BE-02 | DTOs/endpoints defined for transactions, recurring, review actions, reimbursements; explicit validation/error contract. |
-| MM-AI-01 | AI | Classification outcome contract | MM-BE-04 | Stage outputs, confidence, and rationale structure persisted without raw transcript fields. |
-| MM-AI-02 | AI | AI workflow Aspire/DB integration checks | MM-BE-01, MM-BE-03 | AI paths use same reference-driven DB connectivity and do not bypass orchestration patterns. |
-| MM-FE-01 | Web | Next.js App Router foundation | MM-ASP-02 | Next.js 16 + React 19 + Tailwind foundation with accessible shell primitives. |
-| MM-FE-02 | Web | Server-side API fetch layer | MM-FE-01, MM-ASP-03 | Server-boundary fetch utility uses injected service URLs; no hardcoded localhost paths. |
-| MM-FE-03 | Web | Responsive app shell and navigation | MM-FE-01 | Dashboard, Transactions, NeedsReview routes with desktop/mobile navigation behavior. |
-| MM-MOB-01 | Mobile | Shared domain contracts and API client | MM-BE-04 | Shared schemas align with backend payloads; mobile does not duplicate financial domain logic. |
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-ASP-01 | DevOps | Bootstrap Aspire topology skeleton | None | AppHost, ServiceDefaults, API, Worker, Web resources exist and build under .NET 10 + JS app stack. | Not Started |
+| MM-ASP-02 | DevOps | Configure JS hosting API in AppHost | MM-ASP-01 | AppHost uses `AddJavaScriptApp` or `AddViteApp` or `AddNodeApp`; no `AddNpmApp`; external endpoint configured for browser app. | Not Started |
+| MM-ASP-03 | DevOps | Add explicit `WithReference(...)` graph | MM-ASP-01, MM-ASP-02 | API/Worker/Web dependencies are wired via references and service discovery; no hardcoded inter-service URLs. | Not Started |
+| MM-ASP-04 | DevOps | Enforce service defaults and health endpoints | MM-ASP-03 | `.NET` services call `AddServiceDefaults()` and API maps default health endpoints. | Not Started |
+| MM-BE-01 | Backend | Backend skeleton and Aspire DB wiring | MM-ASP-03, MM-ASP-04 | API uses `AddNpgsqlDbContext`; Worker uses `AddNpgsqlDataSource`; connection names are reference-driven. | Not Started |
+| MM-BE-02 | Backend | Ledger domain model baseline | MM-BE-01 | Core entities created with single-entry semantics and separate `UserNote`/`AgentNote`. | Not Started |
+| MM-BE-03 | Backend | PostgreSQL schema + extension migration | MM-BE-02 | Migration enables `pgvector` and `azure_ai`; indexes for idempotency, review, recurring, and vector lookup. | Not Started |
+| MM-BE-04 | Backend | Minimal API contract v1 | MM-BE-02 | DTOs/endpoints defined for transactions, recurring, review actions, reimbursements; explicit validation/error contract. | Not Started |
+| MM-AI-01 | AI | Classification outcome contract | MM-BE-04 | Stage outputs, confidence, and rationale structure persisted without raw transcript fields. | Not Started |
+| MM-AI-02 | AI | AI workflow Aspire/DB integration checks | MM-BE-01, MM-BE-03 | AI paths use same reference-driven DB connectivity and do not bypass orchestration patterns. | Not Started |
+| MM-FE-01 | Web | Next.js App Router foundation | MM-ASP-02 | Next.js 16 + React 19 + Tailwind foundation with accessible shell primitives. | Not Started |
+| MM-FE-02 | Web | Server-side API fetch layer | MM-FE-01, MM-ASP-03 | Server-boundary fetch utility uses injected service URLs; no hardcoded localhost paths. | Not Started |
+| MM-FE-03 | Web | Responsive app shell and navigation | MM-FE-01 | Dashboard, Transactions, NeedsReview routes with desktop/mobile navigation behavior. | Not Started |
+| MM-MOB-01 | Mobile | Shared domain contracts and API client | MM-BE-04 | Shared schemas align with backend payloads; mobile does not duplicate financial domain logic. | Not Started |
 
 ### M2 Ledger Truth and Review Workflow Core
-| ID | Domain | Task | Dependencies | Done Criteria |
-|---|---|---|---|---|
-| MM-BE-05 | Backend | NeedsReview state machine + transitions | MM-BE-04, MM-AI-01 | Explicit allowed transitions; ambiguous outcomes fail closed into `NeedsReview`. |
-| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. |
-| MM-FE-04 | Web | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Ledger truth rendered with distinct `UserNote` and `AgentNote`; no client mutation of source amounts/dates. |
-| MM-FE-05 | Web | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify actions call backend review endpoints with explicit user intent. |
-| MM-MOB-02 | Mobile | Offline-safe state/caching foundation | MM-MOB-01 | Mobile handles offline read and queued sync states safely. |
-| MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. |
-| MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. |
-| MM-MOB-05 | Mobile | HITL approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Approve/reject actions route through backend and never bypass human approval requirements. |
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-BE-05 | Backend | NeedsReview state machine + transitions | MM-BE-04, MM-AI-01 | Explicit allowed transitions; ambiguous outcomes fail closed into `NeedsReview`. | Not Started |
+| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | Not Started |
+| MM-FE-04 | Web | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Ledger truth rendered with distinct `UserNote` and `AgentNote`; no client mutation of source amounts/dates. | Not Started |
+| MM-FE-05 | Web | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify actions call backend review endpoints with explicit user intent. | Not Started |
+| MM-MOB-02 | Mobile | Offline-safe state/caching foundation | MM-MOB-01 | Mobile handles offline read and queued sync states safely. | Not Started |
+| MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. | Not Started |
+| MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. | Not Started |
+| MM-MOB-05 | Mobile | HITL approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Approve/reject actions route through backend and never bypass human approval requirements. | Not Started |
 
 ### M3 Ingestion, Recurring, Reimbursements, and Projection Metadata
-| ID | Domain | Task | Dependencies | Done Criteria |
-|---|---|---|---|---|
-| MM-BE-07 | Backend | Recurring matcher (variance + date drift) | MM-BE-06 | Matching supports configurable amount variance and due-window drift; uncertain matches route to `NeedsReview`. |
-| MM-BE-08 | Backend | Reimbursement proposal + approval linking | MM-BE-05, MM-BE-06 | 1:N proposal model with approval-only persistence; no autonomous resolution. |
-| MM-BE-09 | Backend | Projection-support read metadata | MM-BE-04, MM-BE-07 | API returns raw truth plus projection metadata (`AmortizationMonths`, flags, recurring status) without ledger mutation. |
-| MM-FE-06 | Web | Business vs household isolation visuals | MM-FE-02, MM-BE-09 | Dashboard separates household budget burn from total liquidity views using backend truth. |
-| MM-FE-07 | Web | Recurring bills and safe-to-spend projection UI | MM-FE-06, MM-BE-07, MM-BE-09 | Projection view reflects recurring expectations and amortization as visual-only calculations. |
-| MM-MOB-06 | Mobile | Read-only projection dashboard | MM-MOB-01, MM-BE-09 | Mobile displays backend projection data without client-side ledger math mutations. |
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-BE-07 | Backend | Recurring matcher (variance + date drift) | MM-BE-06 | Matching supports configurable amount variance and due-window drift; uncertain matches route to `NeedsReview`. | Not Started |
+| MM-BE-08 | Backend | Reimbursement proposal + approval linking | MM-BE-05, MM-BE-06 | 1:N proposal model with approval-only persistence; no autonomous resolution. | Not Started |
+| MM-BE-09 | Backend | Projection-support read metadata | MM-BE-04, MM-BE-07 | API returns raw truth plus projection metadata (`AmortizationMonths`, flags, recurring status) without ledger mutation. | Not Started |
+| MM-FE-06 | Web | Business vs household isolation visuals | MM-FE-02, MM-BE-09 | Dashboard separates household budget burn from total liquidity views using backend truth. | Not Started |
+| MM-FE-07 | Web | Recurring bills and safe-to-spend projection UI | MM-FE-06, MM-BE-07, MM-BE-09 | Projection view reflects recurring expectations and amortization as visual-only calculations. | Not Started |
+| MM-MOB-06 | Mobile | Read-only projection dashboard | MM-MOB-01, MM-BE-09 | Mobile displays backend projection data without client-side ledger math mutations. | Not Started |
 
 ### M4 AI Escalation Pipeline (Deterministic -> Semantic -> MAF)
-| ID | Domain | Task | Dependencies | Done Criteria |
-|---|---|---|---|---|
-| MM-AI-03 | AI | Deterministic classification rules engine | MM-AI-01, MM-AI-02, MM-BE-06 | Rules run first and emit confidence + rationale code. |
-| MM-AI-04 | AI | Ambiguity policy gate to NeedsReview | MM-AI-03, MM-BE-05 | Low-confidence/conflicting outcomes are routed to `NeedsReview` reliably. |
-| MM-BE-10 | Backend | Async embeddings queue pipeline | MM-BE-03, MM-BE-06 | Embeddings are generated asynchronously from saved content and never block write requests. |
-| MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database semantic retrieval returns candidate matches with scores/provenance. |
-| MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence is explicit; semantic fallback bounded by confidence thresholds. |
-| MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF invoked only after stage 1+2 insufficiency and returns structured proposals. |
-| MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Draft-only messaging enforced; send actions denied and auditable. |
-| MM-AI-09 | AI | AgentNote summarization enforcement | MM-AI-01, MM-AI-07 | Concise `AgentNote` summaries persisted; raw transcript storage suppressed. |
-| MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Workflow outputs final categorized or `NeedsReview` state with traceable rationale. |
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-AI-03 | AI | Deterministic classification rules engine | MM-AI-01, MM-AI-02, MM-BE-06 | Rules run first and emit confidence + rationale code. | Not Started |
+| MM-AI-04 | AI | Ambiguity policy gate to NeedsReview | MM-AI-03, MM-BE-05 | Low-confidence/conflicting outcomes are routed to `NeedsReview` reliably. | Not Started |
+| MM-BE-10 | Backend | Async embeddings queue pipeline | MM-BE-03, MM-BE-06 | Embeddings are generated asynchronously from saved content and never block write requests. | Not Started |
+| MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database semantic retrieval returns candidate matches with scores/provenance. | Not Started |
+| MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence is explicit; semantic fallback bounded by confidence thresholds. | Not Started |
+| MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF invoked only after stage 1+2 insufficiency and returns structured proposals. | Not Started |
+| MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Draft-only messaging enforced; send actions denied and auditable. | Not Started |
+| MM-AI-09 | AI | AgentNote summarization enforcement | MM-AI-01, MM-AI-07 | Concise `AgentNote` summaries persisted; raw transcript storage suppressed. | Not Started |
+| MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Workflow outputs final categorized or `NeedsReview` state with traceable rationale. | Not Started |
 
 ### M5 Verification and Release Gates
-| ID | Domain | Task | Dependencies | Done Criteria |
-|---|---|---|---|---|
-| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup with dependency waits and documented recovery paths. |
-| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05 | Team can inspect health/logs/traces for API, Worker, and Web in one standard workflow. |
-| MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Checks reject `AddNpmApp`, hardcoded endpoints, and missing service-defaults patterns. |
-| MM-BE-11 | Backend | Financial correctness/regression tests | MM-BE-01, MM-BE-02, MM-BE-03, MM-BE-04, MM-BE-05, MM-BE-06, MM-BE-07, MM-BE-08, MM-BE-09, MM-BE-10 | Money/date/matching/review/reimbursement edge-case tests pass. |
-| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Measured criteria enforced for routing correctness, ambiguity handling, and explainability. |
-| MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. |
-| MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. |
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup with dependency waits and documented recovery paths. | Not Started |
+| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05 | Team can inspect health/logs/traces for API, Worker, and Web in one standard workflow. | Not Started |
+| MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Checks reject `AddNpmApp`, hardcoded endpoints, and missing service-defaults patterns. | Not Started |
+| MM-BE-11 | Backend | Financial correctness/regression tests | MM-BE-01, MM-BE-02, MM-BE-03, MM-BE-04, MM-BE-05, MM-BE-06, MM-BE-07, MM-BE-08, MM-BE-09, MM-BE-10 | Money/date/matching/review/reimbursement edge-case tests pass. | Not Started |
+| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Measured criteria enforced for routing correctness, ambiguity handling, and explainability. | Not Started |
+| MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. | Not Started |
+| MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | Not Started |
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

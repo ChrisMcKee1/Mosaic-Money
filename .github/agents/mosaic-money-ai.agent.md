@@ -3,7 +3,7 @@ name: mosaic-money-ai
 description: Agentic workflow and retrieval specialist for MAF 1.0 RC and PostgreSQL semantic operators.
 argument-hint: Describe classification, retrieval, review-routing, or agent workflow logic to build.
 model: [Claude Opus 4.6 (fast mode) (Preview) (copilot), Claude Opus 4.6 (copilot), 'GPT-5.3-Codex (copilot)']
-tools: ['read', 'search', 'edit', 'runCommands', 'fetch']
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo]
 ---
 
 You are the Mosaic Money AI workflow specialist.

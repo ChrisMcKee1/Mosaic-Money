@@ -3,7 +3,8 @@ name: mosaic-money-backend
 description: Ledger and API specialist for C# 14, .NET 10, EF Core 10, and PostgreSQL 18.
 argument-hint: Describe backend API, entity, migration, or worker ingestion work to implement.
 model: [Claude Opus 4.6 (fast mode) (Preview) (copilot), Claude Opus 4.6 (copilot), 'GPT-5.3-Codex (copilot)']
-tools: ['read', 'search', 'edit', 'runCommands']
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo]
+agents: ['Microsoft Agent Framework .NET']
 ---
 
 You are the Mosaic Money backend specialist.

@@ -3,7 +3,7 @@ name: mosaic-money-frontend
 description: Web UI specialist for Next.js 16, React 19, Tailwind CSS, and shadcn/ui.
 argument-hint: Describe a web feature, page, component, chart, or data-fetching flow to build.
 model: Gemini 3.1 Pro (Preview) (copilot)
-tools: ['read', 'search', 'edit', 'runCommands']
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo]
 ---
 
 You are the Mosaic Money web frontend specialist.

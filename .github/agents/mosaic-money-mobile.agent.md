@@ -3,7 +3,7 @@ name: mosaic-money-mobile
 description: Mobile specialist for Expo SDK 55 and React Native on iOS and Android.
 argument-hint: Describe a mobile screen, workflow, or shared cross-platform module to build.
 model: [Gemini 3.1 Pro (Preview) (copilot),'Claude Opus 4.6 (copilot)', 'GPT-5.3-Codex (copilot)']
-tools: ['read', 'search', 'edit', 'runCommands']
+tools: [vscode, execute, read, agent, edit, search, web, 'github/*', 'microsoftdocs/mcp/*', 'io.github.upstash/context7/*', vscode.mermaid-chat-features/renderMermaidDiagram, ms-azuretools.vscode-containers/containerToolsConfig, todo]
 ---
 
 You are the Mosaic Money mobile specialist.

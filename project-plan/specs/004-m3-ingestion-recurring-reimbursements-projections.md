@@ -46,23 +46,23 @@ Implement deterministic recurring matching, human-approved reimbursement linking
 - External messaging remains draft-only; send actions are denied.
 
 ## Task Breakdown
-| ID | Domain | Task | Dependencies | Deliverable |
-|---|---|---|---|---|
-| MM-BE-07A | Backend | Recurring policy contract | MM-BE-03, MM-BE-04 | Configurable due window, variance rules, deterministic scoring/tie-break behavior. |
-| MM-BE-07B | Backend | Recurring matcher execution in ingestion | MM-BE-06, MM-BE-07A, MM-BE-05 | Confident matches link recurring items and advance next due date idempotently. |
-| MM-BE-07C | Backend | Recurring ambiguity routing | MM-BE-07B, MM-BE-05 | Ambiguous/competing recurring candidates create `NeedsReview` items with reason codes. |
-| MM-BE-08A | Backend | Reimbursement proposal model (1:N) | MM-BE-04, MM-BE-05, MM-BE-06 | Proposal lifecycle with explicit statuses and rationale/provenance fields. |
-| MM-BE-08B | Backend | HITL reimbursement approval/rejection APIs | MM-BE-08A, MM-BE-05 | Approval-only persistence with actor/time/audit metadata. |
-| MM-BE-08C | Backend | Reimbursement conflict routing | MM-BE-08A, MM-BE-05 | Over-allocation/duplicate/stale proposal conflicts route to `NeedsReview`. |
-| MM-BE-09A | Backend | Projection metadata read contract | MM-BE-04, MM-BE-07B, MM-BE-08B | API payload includes projection fields without changing ledger truth. |
-| MM-BE-09B | Backend | Projection-safe query path | MM-BE-03, MM-BE-09A | Read-optimized query/view exposing projection metadata only. |
-| MM-FE-06 | Web | Business vs household isolation visuals | MM-FE-02, MM-BE-09A | Dashboard clearly separates household budget burn from total liquidity. |
-| MM-FE-07 | Web | Recurring and safe-to-spend projection UI | MM-FE-06, MM-BE-07B, MM-BE-09A | Projection visuals and transparent safe-to-spend derivation. |
-| MM-MOB-06.1 | Mobile | Shared projection hooks | MM-MOB-01, MM-BE-09A | Shared hooks fetch/validate projection payloads for mobile read views. |
-| MM-MOB-06.2 | Mobile | Dashboard route scaffold | MM-MOB-06.1 | Mobile dashboard route for projection and balance presentation. |
-| MM-MOB-06.3 | Mobile | Read-only projection components | MM-MOB-06.2 | Touch-friendly projection UI with no ledger mutation actions. |
-| MM-MOB-06.4 | Mobile | Resilient loading/offline states | MM-MOB-06.3 | Skeleton/loading/retry/offline behaviors for projection views. |
-| MM-M3-GOV-01 | Cross-domain | AI boundary and autonomy-denial checks | MM-BE-08B, MM-BE-09A | Negative checks proving no M4 AI execution and no outbound send behavior in M3. |
+| ID | Domain | Task | Dependencies | Deliverable | Status |
+|---|---|---|---|---|---|
+| MM-BE-07A | Backend | Recurring policy contract | MM-BE-03, MM-BE-04 | Configurable due window, variance rules, deterministic scoring/tie-break behavior. | Not Started |
+| MM-BE-07B | Backend | Recurring matcher execution in ingestion | MM-BE-06, MM-BE-07A, MM-BE-05 | Confident matches link recurring items and advance next due date idempotently. | Not Started |
+| MM-BE-07C | Backend | Recurring ambiguity routing | MM-BE-07B, MM-BE-05 | Ambiguous/competing recurring candidates create `NeedsReview` items with reason codes. | Not Started |
+| MM-BE-08A | Backend | Reimbursement proposal model (1:N) | MM-BE-04, MM-BE-05, MM-BE-06 | Proposal lifecycle with explicit statuses and rationale/provenance fields. | Not Started |
+| MM-BE-08B | Backend | HITL reimbursement approval/rejection APIs | MM-BE-08A, MM-BE-05 | Approval-only persistence with actor/time/audit metadata. | Not Started |
+| MM-BE-08C | Backend | Reimbursement conflict routing | MM-BE-08A, MM-BE-05 | Over-allocation/duplicate/stale proposal conflicts route to `NeedsReview`. | Not Started |
+| MM-BE-09A | Backend | Projection metadata read contract | MM-BE-04, MM-BE-07B, MM-BE-08B | API payload includes projection fields without changing ledger truth. | Not Started |
+| MM-BE-09B | Backend | Projection-safe query path | MM-BE-03, MM-BE-09A | Read-optimized query/view exposing projection metadata only. | Not Started |
+| MM-FE-06 | Web | Business vs household isolation visuals | MM-FE-02, MM-BE-09A | Dashboard clearly separates household budget burn from total liquidity. | Not Started |
+| MM-FE-07 | Web | Recurring and safe-to-spend projection UI | MM-FE-06, MM-BE-07B, MM-BE-09A | Projection visuals and transparent safe-to-spend derivation. | Not Started |
+| MM-MOB-06.1 | Mobile | Shared projection hooks | MM-MOB-01, MM-BE-09A | Shared hooks fetch/validate projection payloads for mobile read views. | Not Started |
+| MM-MOB-06.2 | Mobile | Dashboard route scaffold | MM-MOB-06.1 | Mobile dashboard route for projection and balance presentation. | Not Started |
+| MM-MOB-06.3 | Mobile | Read-only projection components | MM-MOB-06.2 | Touch-friendly projection UI with no ledger mutation actions. | Not Started |
+| MM-MOB-06.4 | Mobile | Resilient loading/offline states | MM-MOB-06.3 | Skeleton/loading/retry/offline behaviors for projection views. | Not Started |
+| MM-M3-GOV-01 | Cross-domain | AI boundary and autonomy-denial checks | MM-BE-08B, MM-BE-09A | Negative checks proving no M4 AI execution and no outbound send behavior in M3. | Not Started |
 
 ## Acceptance Criteria
 - Recurring matching honors configured drift and variance thresholds and fails closed to `NeedsReview` for uncertainty.
