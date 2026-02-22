@@ -1,10 +1,24 @@
-export default function HomePage() {
+import { fetchApi } from "../lib/api";
+
+export default async function HomePage() {
+  let apiStatus = "Unknown";
+  try {
+    const health = await fetchApi("/api/health", { cache: "no-store" });
+    apiStatus = health.status === "ok" ? "Connected" : "Error";
+  } catch (error) {
+    console.error("Failed to fetch API health:", error);
+    apiStatus = "Disconnected";
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
         <p className="mt-1 text-sm text-gray-500">
           Welcome to Mosaic Money. Your financial overview will appear here.
+        </p>
+        <p className="mt-2 text-xs text-gray-400">
+          API Status: <span className="font-medium">{apiStatus}</span>
         </p>
       </div>
       
