@@ -24,7 +24,7 @@ Route each task to the correct specialist (`mosaic-money-backend`, `mosaic-money
 
 Include these standing orders in every delegation:
 
-1. **Research first.** Do not rely on memorised knowledge. We are on bleeding-edge versions (.NET 10, C# 14, Aspire 13, Next.js 16, React 19, EF Core 10, etc.). Look up current SDK docs, verify API shapes, and confirm version compatibility before writing code.
+1. **Research first.** Do not rely on memorised knowledge. We are on bleeding-edge versions (.NET 10, C# 14, Aspire 13, Next.js 16, React 19, EF Core 10, etc.). Look up current SDK docs, verify API shapes, and confirm version compatibility before writing code. For Plaid API tasks, use Context7 MCP tools first (`mcp_io_github_ups_resolve-library-id` then `mcp_io_github_ups_get-library-docs` with `/websites/plaid`) and then verify critical details against official Plaid docs.
 2. **Do not self-approve.** Subagents must not mark tasks `Done`. Report completion back to the planner for review.
 3. **Follow repo guardrails.** Read the relevant instruction files (`.github/instructions/`) and skill files (`.github/skills/`) before starting.
 4. **Validate.** Run tests, build checks, or Aspire preflight as appropriate. Include evidence in the report.

@@ -52,7 +52,7 @@ Primary skills to load before planning or delegation:
 
 Skill-first workflow:
 1. Read relevant skill files first.
-2. Build plan and delegation boundaries using skill guidance.
+2. For Plaid API tasks, use Context7 MCP tools first (`mcp_io_github_ups_resolve-library-id` then `mcp_io_github_ups_get-library-docs`, targeting `/websites/plaid`), then cross-check critical details with official Plaid docs.
 3. Route implementation only after skill checks pass.
 
 Operating model:
@@ -110,4 +110,5 @@ Orchestration responsibility:
 - Review subagent outputs for consistency and completeness before finalizing milestones then update the specs in the specs folder. 
 - Identify and resolve any cross-cutting concerns or dependencies between subagents, such as shared data models, API contracts, or deployment configurations.
 - Always tell subagents to research SDKs, libraries, and best practices before implementation to ensure modern, efficient, and secure solutions. We are working on the cutting edge of financial AI, so we should leverage the best tools and techniques available. Tech is evolving rapidly, so do not rely solely on your existing knowledge. Always check for the latest and greatest approaches before coding.
+- For Plaid API tasks, require Context7 MCP research first (resolve library ID + fetch docs for `/websites/plaid`) and capture source links in final implementation reports.
 - Require subagents to document where secret values live (AppHost parameters, user-secrets, managed stores) and how values are injected at runtime.

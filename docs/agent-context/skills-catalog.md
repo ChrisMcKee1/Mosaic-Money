@@ -51,6 +51,11 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 - `git`
 - `azure-role-selector` (only when IAM role selection is requested)
 
+## API research source policy
+- For Plaid API endpoint, webhook, and Link lifecycle research, use Context7 MCP tools first: resolve library ID with `mcp_io_github_ups_resolve-library-id` (`plaid` -> `/websites/plaid`), then fetch docs with `mcp_io_github_ups_get-library-docs`.
+- After Context7 lookup, verify critical request/response and webhook semantics against official Plaid docs before implementation.
+- Include researched source URLs in implementation summaries for Plaid-related tasks.
+
 ## Agent-to-skill mapping
 - Planner: `prd`, `agent-governance`, `aspire`, `aspire-mosaic-money`, `agentic-eval`, `microsoft-docs`.
 - Backend: `aspire`, `aspire-mosaic-money`, `nuget-manager`, `agent-governance`, `agentic-eval`, `microsoft-code-reference`.
