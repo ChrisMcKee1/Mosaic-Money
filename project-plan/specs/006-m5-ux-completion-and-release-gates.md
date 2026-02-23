@@ -53,8 +53,8 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | Not Started |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | Not Started |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Done |
-| MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Not Started |
-| MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Not Started |
+| MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Done |
+| MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | In Review |
 | MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | Not Started |
 | MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | Not Started |
 | MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Not Started |

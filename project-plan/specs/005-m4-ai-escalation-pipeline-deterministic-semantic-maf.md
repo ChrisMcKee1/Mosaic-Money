@@ -58,13 +58,17 @@ Deliver a bounded, auditable AI escalation pipeline that executes in strict orde
 |---|---|---|---|---|---|
 | MM-AI-03 | AI | Deterministic classification rules engine | MM-AI-01, MM-AI-02, MM-BE-06 | Stage-1 rules execute first and produce class, confidence, and reason code set. | Done |
 | MM-AI-04 | AI | Ambiguity policy gate to `NeedsReview` | MM-AI-03, MM-BE-05 | Explicit fail-closed gate routes low-confidence/conflict outcomes to review with rationale. | Done |
-| MM-BE-10 | Backend | Async embeddings queue pipeline | MM-BE-03, MM-BE-06 | Queue-backed embedding generation is non-blocking for writes; retries and dead-letter behavior are defined. | In Progress |
-| MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database retrieval returns bounded candidates with normalized scores and provenance fields. | In Progress |
-| MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence, semantic fallback thresholds, and conflict-to-review behavior are encoded. | Not Started |
-| MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF graph runs only after stage insufficiency and returns schema-validated proposals with bounded cost/latency. | Not Started |
+| MM-BE-10 | Backend | Async embeddings queue pipeline | MM-BE-03, MM-BE-06 | Queue-backed embedding generation is non-blocking for writes; retries and dead-letter behavior are defined. | Done |
+| MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database retrieval returns bounded candidates with normalized scores and provenance fields. | Done |
+| MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence, semantic fallback thresholds, and conflict-to-review behavior are encoded. | Done |
+| MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF graph runs only after stage insufficiency and returns schema-validated proposals with bounded cost/latency. | In Review |
 | MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | Not Started |
 | MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | Not Started |
 | MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Pipeline emits final classification or `NeedsReview` with traceable stage-by-stage rationale. | Not Started |
+
+Implementation note (2026-02-23): `MM-AI-05` now includes an advisory PostgreSQL semantic retrieval contract that reads existing transaction embeddings (`pgvector` cosine distance), returns bounded candidates with normalized `[0..1]` scores, and emits explicit provenance (`ProvenanceSource`, `ProvenanceReference`, `ProvenancePayloadJson`). Deterministic stage remains first and authoritative for decisioning; semantic stage evidence is appended only after deterministic `NeedsReview` routing and does not auto-categorize independently.
+
+Implementation note (2026-02-23): `MM-AI-07` now adds an explicit eligibility gate and bounded fallback execution contract for MAF stage calls. Stage-3 runs only after deterministic and semantic insufficiency, validates proposal schema before persistence, and fails closed to `NeedsReview` on timeout/execution/schema errors.
 
 ## Dependency Sequence (Implementation Order)
 1. `MM-BE-10`: establish non-blocking embedding generation before semantic stage rollout.

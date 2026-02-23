@@ -84,10 +84,10 @@ All task tables use a `Status` column with the following values:
 | MM-FE-05 | Web | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify actions call backend review endpoints with explicit user intent. | Done |
 | MM-FE-09 | Web | Plaid Link onboarding flow | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued `link_token` and posts `public_token` + metadata for backend exchange. | Done |
 | MM-MOB-02 | Mobile | Offline-safe state/caching foundation | MM-MOB-01 | Mobile handles offline read and queued sync states safely. | Done |
-| MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. | In Review |
-| MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. | In Review |
-| MM-MOB-05 | Mobile | HITL approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Approve/reject actions route through backend and never bypass human approval requirements. | Not Started |
-| MM-MOB-08 | Mobile | Plaid Link SDK onboarding flow | MM-MOB-01, MM-BE-12, MM-BE-13 | Mobile uses React Native Link SDK with backend-issued `link_token` and server-side token exchange. | Not Started |
+| MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. | Done |
+| MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. | Done |
+| MM-MOB-05 | Mobile | HITL approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Approve/reject actions route through backend and never bypass human approval requirements. | Done |
+| MM-MOB-08 | Mobile | Plaid Link SDK onboarding flow | MM-MOB-01, MM-BE-12, MM-BE-13 | Mobile uses React Native Link SDK with backend-issued `link_token` and server-side token exchange. | Done |
 
 Update note (2026-02-23): Mobile scaffold created at `src/MosaicMoney.Mobile` (Expo TypeScript). `MM-MOB-03` and `MM-MOB-04` are unblocked and now in `In Review` after delegated implementation and typecheck pass.
 
@@ -99,17 +99,17 @@ Update note (2026-02-23): Mobile scaffold created at `src/MosaicMoney.Mobile` (E
 | MM-BE-09 | Backend | Projection-support read metadata | MM-BE-04, MM-BE-07 | API returns raw truth plus projection metadata (`AmortizationMonths`, flags, recurring status) without ledger mutation. | Done |
 | MM-FE-06 | Web | Business vs household isolation visuals | MM-FE-02, MM-BE-09 | Dashboard separates household budget burn from total liquidity views using backend truth. | Done |
 | MM-FE-07 | Web | Recurring bills and safe-to-spend projection UI | MM-FE-06, MM-BE-07, MM-BE-09 | Projection view reflects recurring expectations and amortization as visual-only calculations. | Done |
-| MM-MOB-06 | Mobile | Read-only projection dashboard | MM-MOB-01, MM-BE-09 | Mobile displays backend projection data without client-side ledger math mutations. | Not Started |
+| MM-MOB-06 | Mobile | Read-only projection dashboard | MM-MOB-01, MM-BE-09 | Mobile displays backend projection data without client-side ledger math mutations. | Done |
 
 ### M4 AI Escalation Pipeline (Deterministic -> Semantic -> MAF)
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
 | MM-AI-03 | AI | Deterministic classification rules engine | MM-AI-01, MM-AI-02, MM-BE-06 | Rules run first and emit confidence + rationale code. | Done |
 | MM-AI-04 | AI | Ambiguity policy gate to NeedsReview | MM-AI-03, MM-BE-05 | Low-confidence/conflicting outcomes are routed to `NeedsReview` reliably. | Done |
-| MM-BE-10 | Backend | Async embeddings queue pipeline | MM-BE-03, MM-BE-06 | Embeddings are generated asynchronously from saved content and never block write requests. | In Progress |
-| MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database semantic retrieval returns candidate matches with scores/provenance. | In Progress |
-| MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence is explicit; semantic fallback bounded by confidence thresholds. | Not Started |
-| MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF invoked only after stage 1+2 insufficiency and returns structured proposals. | Not Started |
+| MM-BE-10 | Backend | Async embeddings queue pipeline | MM-BE-03, MM-BE-06 | Embeddings are generated asynchronously from saved content and never block write requests. | Done |
+| MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database semantic retrieval returns candidate matches with scores/provenance. | Done |
+| MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence is explicit; semantic fallback bounded by confidence thresholds. | Done |
+| MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF invoked only after stage 1+2 insufficiency and returns structured proposals. | In Review |
 | MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Draft-only messaging enforced; send actions denied and auditable. | Not Started |
 | MM-AI-09 | AI | AgentNote summarization enforcement | MM-AI-01, MM-AI-07 | Concise `AgentNote` summaries persisted; raw transcript storage suppressed. | Not Started |
 | MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Workflow outputs final categorized or `NeedsReview` state with traceable rationale. | Not Started |
@@ -123,7 +123,7 @@ Update note (2026-02-23): Mobile scaffold created at `src/MosaicMoney.Mobile` (E
 | MM-BE-11 | Backend | Financial correctness/regression tests | MM-BE-01, MM-BE-02, MM-BE-03, MM-BE-04, MM-BE-05, MM-BE-06, MM-BE-07, MM-BE-08, MM-BE-09, MM-BE-10 | Money/date/matching/review/reimbursement edge-case tests pass. | Not Started |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Measured criteria enforced for routing correctness, ambiguity handling, and explainability. | Not Started |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. | Done |
-| MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | Not Started |
+| MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | In Progress |
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:
