@@ -54,8 +54,8 @@ Implement deterministic recurring matching, human-approved reimbursement linking
 | MM-BE-08A | Backend | Reimbursement proposal model (1:N) | MM-BE-04, MM-BE-05, MM-BE-06 | Proposal lifecycle with explicit statuses and rationale/provenance fields. | Done |
 | MM-BE-08B | Backend | HITL reimbursement approval/rejection APIs | MM-BE-08A, MM-BE-05 | Approval-only persistence with actor/time/audit metadata. | Done |
 | MM-BE-08C | Backend | Reimbursement conflict routing | MM-BE-08A, MM-BE-05 | Over-allocation/duplicate/stale proposal conflicts route to `NeedsReview`. | Done |
-| MM-BE-09A | Backend | Projection metadata read contract | MM-BE-04, MM-BE-07B, MM-BE-08B | API payload includes projection fields without changing ledger truth. | Not Started |
-| MM-BE-09B | Backend | Projection-safe query path | MM-BE-03, MM-BE-09A | Read-optimized query/view exposing projection metadata only. | Not Started |
+| MM-BE-09A | Backend | Projection metadata read contract | MM-BE-04, MM-BE-07B, MM-BE-08B | API payload includes projection fields without changing ledger truth. | Done |
+| MM-BE-09B | Backend | Projection-safe query path | MM-BE-03, MM-BE-09A | Read-optimized query/view exposing projection metadata only. | Done |
 | MM-FE-06 | Web | Business vs household isolation visuals | MM-FE-02, MM-BE-09A | Dashboard clearly separates household budget burn from total liquidity. | Not Started |
 | MM-FE-07 | Web | Recurring and safe-to-spend projection UI | MM-FE-06, MM-BE-07B, MM-BE-09A | Projection visuals and transparent safe-to-spend derivation. | Not Started |
 | MM-MOB-06.1 | Mobile | Shared projection hooks | MM-MOB-01, MM-BE-09A | Shared hooks fetch/validate projection payloads for mobile read views. | Not Started |

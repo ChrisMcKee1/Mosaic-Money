@@ -80,6 +80,44 @@ public sealed record TransactionDto(
     DateTime CreatedAtUtc,
     DateTime LastModifiedAtUtc);
 
+public sealed record TransactionSplitProjectionMetadataDto(
+    Guid Id,
+    Guid? SubcategoryId,
+    decimal RawAmount,
+    int AmortizationMonths);
+
+public sealed record RecurringProjectionMetadataDto(
+    bool IsLinked,
+    Guid? RecurringItemId,
+    bool? IsActive,
+    string? Frequency,
+    DateOnly? NextDueDate);
+
+public sealed record ReimbursementProjectionMetadataDto(
+    bool HasProposals,
+    int ProposalCount,
+    bool HasPendingHumanReview,
+    string? LatestStatus,
+    string? LatestStatusReasonCode,
+    decimal PendingOrNeedsReviewAmount,
+    decimal ApprovedAmount);
+
+public sealed record TransactionProjectionMetadataDto(
+    Guid Id,
+    Guid AccountId,
+    string Description,
+    decimal RawAmount,
+    DateOnly RawTransactionDate,
+    string ReviewStatus,
+    string? ReviewReason,
+    bool ExcludeFromBudget,
+    bool IsExtraPrincipal,
+    RecurringProjectionMetadataDto Recurring,
+    ReimbursementProjectionMetadataDto Reimbursement,
+    IReadOnlyList<TransactionSplitProjectionMetadataDto> Splits,
+    DateTime CreatedAtUtc,
+    DateTime LastModifiedAtUtc);
+
 public sealed record PlaidDeltaIngestionItemResultDto(
     string PlaidTransactionId,
     Guid EnrichedTransactionId,

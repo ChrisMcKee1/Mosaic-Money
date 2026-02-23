@@ -12,6 +12,7 @@ builder.AddNpgsqlDbContext<MosaicMoneyDbContext>(
 	connectionName: "mosaicmoneydb",
 	configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
 builder.Services.AddScoped<PlaidDeltaIngestionService>();
+builder.Services.AddScoped<TransactionProjectionMetadataQueryService>();
 
 var app = builder.Build();
 app.MapDefaultEndpoints();
@@ -105,6 +106,65 @@ v1.MapGet("/transactions", async (
 		.ToListAsync();
 
 	return Results.Ok(transactions.Select(MapTransaction).ToList());
+});
+
+v1.MapGet("/transactions/projection-metadata", async (
+	HttpContext httpContext,
+	TransactionProjectionMetadataQueryService queryService,
+	Guid? accountId,
+	DateOnly? fromDate,
+	DateOnly? toDate,
+	string? reviewStatus,
+	bool? needsReviewOnly,
+	int page = 1,
+	int pageSize = 50,
+	CancellationToken cancellationToken = default) =>
+{
+	var errors = new List<ApiValidationError>();
+	if (page < 1)
+	{
+		errors.Add(new ApiValidationError(nameof(page), "Page must be greater than or equal to 1."));
+	}
+
+	if (pageSize is < 1 or > 200)
+	{
+		errors.Add(new ApiValidationError(nameof(pageSize), "PageSize must be between 1 and 200."));
+	}
+
+	if (fromDate.HasValue && toDate.HasValue && fromDate.Value > toDate.Value)
+	{
+		errors.Add(new ApiValidationError(nameof(fromDate), "fromDate must be less than or equal to toDate."));
+	}
+
+	TransactionReviewStatus? reviewStatusFilter = null;
+	if (!string.IsNullOrWhiteSpace(reviewStatus))
+	{
+		if (!TryParseEnum<TransactionReviewStatus>(reviewStatus, out var parsedReviewStatus))
+		{
+			errors.Add(new ApiValidationError(nameof(reviewStatus), "reviewStatus must be one of: None, NeedsReview, Reviewed."));
+		}
+		else
+		{
+			reviewStatusFilter = parsedReviewStatus;
+		}
+	}
+
+	if (errors.Count > 0)
+	{
+		return ApiValidation.ToValidationResult(httpContext, errors);
+	}
+
+	var projectionMetadata = await queryService.QueryAsync(
+		accountId,
+		fromDate,
+		toDate,
+		reviewStatusFilter,
+		needsReviewOnly == true,
+		page,
+		pageSize,
+		cancellationToken);
+
+	return Results.Ok(projectionMetadata);
 });
 
 v1.MapGet("/transactions/{id:guid}", async (
