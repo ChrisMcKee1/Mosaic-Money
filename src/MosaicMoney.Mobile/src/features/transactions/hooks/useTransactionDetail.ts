@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { TransactionDto } from "../contracts";
+import { MobileApiError } from "../../../shared/services/mobileApiClient";
 import {
-  MobileApiError,
   fetchTransactionDetail,
   toReadableError,
 } from "../services/mobileTransactionsApi";

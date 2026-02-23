@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -27,6 +28,10 @@ export function NeedsReviewQueueScreen() {
     },
     [router],
   );
+
+  const openPlaidOnboarding = useCallback(() => {
+    router.push("/onboarding/plaid");
+  }, [router]);
 
   const renderItem = useCallback(
     ({ item }: { item: TransactionDto }) => (
@@ -87,6 +92,13 @@ export function NeedsReviewQueueScreen() {
           <View style={styles.headerContainer}>
             <Text style={styles.heading}>NeedsReview Queue</Text>
             <Text style={styles.subheading}>Pending transactions waiting on explicit human decision.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={openPlaidOnboarding}
+              style={({ pressed }) => [styles.connectButton, pressed && styles.connectButtonPressed]}
+            >
+              <Text style={styles.connectButtonText}>Connect Bank (Plaid)</Text>
+            </Pressable>
             {error ? <Text style={styles.warning}>Refresh warning: {error}</Text> : null}
           </View>
         }
@@ -132,5 +144,23 @@ const styles = StyleSheet.create({
     color: "#b42318",
     fontSize: 13,
     marginTop: 8,
+  },
+  connectButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#ffffff",
+    borderColor: "#175cd3",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  connectButtonPressed: {
+    opacity: 0.82,
+  },
+  connectButtonText: {
+    color: "#175cd3",
+    fontSize: 13,
+    fontWeight: "700",
   },
 });

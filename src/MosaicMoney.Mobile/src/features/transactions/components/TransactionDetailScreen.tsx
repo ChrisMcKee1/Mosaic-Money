@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useTransactionDetail } from "../hooks/useTransactionDetail";
 import { formatCurrency, formatLedgerDate, formatUtcDateTime } from "../utils/formatters";
+import { ReviewActionPanel } from "./ReviewActionPanel";
 import { StatePanel } from "./StatePanel";
 
 interface TransactionDetailScreenProps {
@@ -116,6 +117,8 @@ export function TransactionDetailScreen({ transactionId }: TransactionDetailScre
           <NoteSection title="UserNote" content={transaction.userNote} accentColor="#175cd3" />
           <NoteSection title="AgentNote" content={transaction.agentNote} accentColor="#087443" />
         </View>
+
+        <ReviewActionPanel transaction={transaction} onActionSynced={refresh} />
       </ScrollView>
     </SafeAreaView>
   );

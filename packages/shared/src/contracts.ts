@@ -46,6 +46,75 @@ export interface TransactionDto {
   lastModifiedAtUtc: string;
 }
 
+export interface TransactionSplitProjectionMetadataDto {
+  id: string;
+  subcategoryId?: string;
+  rawAmount: number;
+  amortizationMonths: number;
+}
+
+export interface RecurringProjectionMetadataDto {
+  isLinked: boolean;
+  recurringItemId?: string;
+  isActive?: boolean;
+  frequency?: string;
+  nextDueDate?: string;
+}
+
+export interface ReimbursementProjectionMetadataDto {
+  hasProposals: boolean;
+  proposalCount: number;
+  hasPendingHumanReview: boolean;
+  latestStatus?: string;
+  latestStatusReasonCode?: string;
+  pendingOrNeedsReviewAmount: number;
+  approvedAmount: number;
+}
+
+export interface TransactionProjectionMetadataDto {
+  id: string;
+  accountId: string;
+  description: string;
+  rawAmount: number;
+  rawTransactionDate: string;
+  reviewStatus: string;
+  reviewReason?: string;
+  excludeFromBudget: boolean;
+  isExtraPrincipal: boolean;
+  recurring: RecurringProjectionMetadataDto;
+  reimbursement: ReimbursementProjectionMetadataDto;
+  splits: TransactionSplitProjectionMetadataDto[];
+  createdAtUtc: string;
+  lastModifiedAtUtc: string;
+}
+
+export interface PlaidLinkTokenIssuedDto {
+  linkSessionId: string;
+  linkToken: string;
+  expiresAtUtc: string;
+  environment: string;
+  products: string[];
+  // System.Text.Json camel-cases OAuthEnabled as oAuthEnabled.
+  oAuthEnabled: boolean;
+  redirectUri?: string;
+}
+
+export interface PlaidLinkSessionEventLoggedDto {
+  linkSessionId: string;
+  eventType: string;
+  loggedAtUtc: string;
+}
+
+export interface PlaidPublicTokenExchangeResultDto {
+  credentialId: string;
+  linkSessionId?: string;
+  itemId: string;
+  environment: string;
+  status: string;
+  institutionId?: string;
+  storedAtUtc: string;
+}
+
 export interface RecurringItemDto {
   id: string;
   householdId: string;

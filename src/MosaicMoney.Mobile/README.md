@@ -8,6 +8,16 @@ Current MVP target is iPhone, but this is still mobile application development (
 
 - `MM-MOB-03`: NeedsReview queue screen with explicit pending status and pull-to-refresh behavior.
 - `MM-MOB-04`: Transaction detail screen with read-only ledger truth fields and distinct `UserNote` / `AgentNote` lanes.
+- `MM-MOB-05`: Human-in-the-loop approve/reject actions with explicit confirmation, backend `review-actions` routing, and sync-safe retry states.
+- `MM-MOB-06.1`: Shared projection data hooks with runtime schema validation and resilient loading/error states.
+- `MM-MOB-06.2`: Dashboard route scaffold for projection and balance summary presentation using read-only backend metadata.
+- `MM-MOB-08`: Mobile Plaid Link onboarding flow using backend-issued `link_token` and backend `public_token` exchange.
+
+## Plaid SDK runtime note
+
+- The Plaid React Native SDK requires a native runtime (development build or release build).
+- Expo Go does not include arbitrary native modules, so Plaid onboarding may not run there.
+- Mobile still follows backend-first token exchange boundaries; no Plaid secret values are stored on device.
 
 ## Environment contract
 
