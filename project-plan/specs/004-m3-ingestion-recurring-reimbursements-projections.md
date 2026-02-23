@@ -62,7 +62,7 @@ Implement deterministic recurring matching, human-approved reimbursement linking
 | MM-MOB-06.2 | Mobile | Dashboard route scaffold | MM-MOB-06.1 | Mobile dashboard route for projection and balance presentation. | Not Started |
 | MM-MOB-06.3 | Mobile | Read-only projection components | MM-MOB-06.2 | Touch-friendly projection UI with no ledger mutation actions. | Not Started |
 | MM-MOB-06.4 | Mobile | Resilient loading/offline states | MM-MOB-06.3 | Skeleton/loading/retry/offline behaviors for projection views. | Not Started |
-| MM-M3-GOV-01 | Cross-domain | AI boundary and autonomy-denial checks | MM-BE-08B, MM-BE-09A | Negative checks proving no M4 AI execution and no outbound send behavior in M3. | Not Started |
+| MM-M3-GOV-01 | Cross-domain | AI boundary and autonomy-denial checks | MM-BE-08B, MM-BE-09A | Negative checks proving no M4 AI execution and no outbound send behavior in M3. | Done |
 
 ## Acceptance Criteria
 - Recurring matching honors configured drift and variance thresholds and fails closed to `NeedsReview` for uncertainty.
