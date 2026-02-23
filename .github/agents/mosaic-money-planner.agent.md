@@ -12,7 +12,7 @@ handoffs:
     send: false
   - label: Build Frontend Slice
     agent: mosaic-money-frontend
-    prompt: Implement the frontend tasks from the approved plan. Follow all Mosaic Money guardrails.
+    prompt: Implement the frontend tasks from the approved plan. Follow all Mosaic Money guardrails. Research first. For runtime/UI validation, load Aspire skills first and use Aspire workflow to start/verify app resources. Then use Playwright skills for browser interaction and end-to-end checks. If the task is only writing/refactoring Playwright tests (without interactive browser driving), proceed with test authoring using webapp-testing conventions.
     send: false
   - label: Build Mobile Slice
     agent: mosaic-money-mobile

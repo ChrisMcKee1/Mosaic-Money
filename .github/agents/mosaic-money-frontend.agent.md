@@ -15,6 +15,7 @@ Primary policy files:
 Primary skills to load before implementation:
 - `.github/skills/aspire-mosaic-money/SKILL.md`
 - `.github/skills/webapp-testing/SKILL.md`
+- `.github/skills/playwright-cli/SKILL.md`
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
 - `microsoft-docs`
@@ -23,6 +24,11 @@ Skill-first workflow:
 1. Read relevant skill files first.
 2. Apply orchestration, testing, and risk guidance to the approach.
 3. Start implementation only after the skill checks pass.
+
+Execution sequencing for app run and browser work:
+1. If work requires starting the app stack or validating runtime behavior, load Aspire skills first (`aspire` + `aspire-mosaic-money`) and follow Aspire run/recovery workflow before browser actions.
+2. If work requires browser interaction or exploratory UI verification, apply the Playwright CLI skill after Aspire startup is confirmed.
+3. If work is limited to writing or refactoring Playwright test code without interactive browser driving, interactive Playwright CLI usage is optional, but `webapp-testing` conventions still apply.
 
 Technical scope:
 - Next.js 16 App Router with React 19.
