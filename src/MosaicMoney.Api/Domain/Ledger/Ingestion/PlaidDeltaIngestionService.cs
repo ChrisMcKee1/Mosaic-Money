@@ -39,6 +39,8 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
 {
     private const string Source = "plaid";
     private const string DefaultCursor = "no-cursor";
+    private const string SupportedDeterministicScoreVersion = "mm-be-07a-v1";
+    private const string SupportedTieBreakPolicy = "due_date_distance_then_amount_delta_then_latest_observed";
 
     public async Task<PlaidDeltaIngestionResult> IngestAsync(
         PlaidDeltaIngestionRequest request,
@@ -46,6 +48,7 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
     {
         var normalizedCursor = NormalizeCursor(request.DeltaCursor);
         var now = DateTime.UtcNow;
+        var recurringMatchContext = await BuildRecurringMatchContextAsync(request.AccountId, cancellationToken);
 
         var seenRawKeys = new HashSet<string>(StringComparer.Ordinal);
         var persistedRawKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -146,6 +149,14 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
                 {
                     unchangedCount++;
                 }
+            }
+
+            var linkedRecurring = TryApplyRecurringMatch(transaction, normalizedItem, recurringMatchContext, now);
+            if (linkedRecurring && disposition == IngestionDisposition.Unchanged)
+            {
+                unchangedCount--;
+                updatedCount++;
+                disposition = IngestionDisposition.Updated;
             }
 
             rawRecord.LastSeenAtUtc = now;
@@ -327,5 +338,255 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
     private static string BuildRawKey(string deltaCursor, string plaidTransactionId, string payloadHash)
     {
         return string.Concat(deltaCursor, "|", plaidTransactionId, "|", payloadHash);
+    }
+
+    private async Task<RecurringMatchContext> BuildRecurringMatchContextAsync(
+        Guid accountId,
+        CancellationToken cancellationToken)
+    {
+        var householdId = await dbContext.Accounts
+            .AsNoTracking()
+            .Where(x => x.Id == accountId)
+            .Select(x => (Guid?)x.HouseholdId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!householdId.HasValue)
+        {
+            return RecurringMatchContext.Empty;
+        }
+
+        var recurringItems = await dbContext.RecurringItems
+            .Where(x => x.HouseholdId == householdId.Value && x.IsActive)
+            .ToListAsync(cancellationToken);
+
+        if (recurringItems.Count == 0)
+        {
+            return RecurringMatchContext.Empty;
+        }
+
+        var recurringIds = recurringItems.Select(x => x.Id).ToList();
+        var lastObservedByRecurringId = await dbContext.EnrichedTransactions
+            .AsNoTracking()
+            .Where(x => x.RecurringItemId.HasValue && recurringIds.Contains(x.RecurringItemId.Value))
+            .GroupBy(x => x.RecurringItemId!.Value)
+            .Select(group => new
+            {
+                RecurringItemId = group.Key,
+                LastObservedDate = group.Max(x => x.TransactionDate),
+            })
+            .ToListAsync(cancellationToken);
+
+        return new RecurringMatchContext(
+            recurringItems,
+            lastObservedByRecurringId.ToDictionary(x => x.RecurringItemId, x => x.LastObservedDate));
+    }
+
+    private static bool TryApplyRecurringMatch(
+        EnrichedTransaction transaction,
+        PlaidDeltaIngestionItemInput item,
+        RecurringMatchContext recurringMatchContext,
+        DateTime now)
+    {
+        if (transaction.RecurringItemId.HasValue
+            || recurringMatchContext.RecurringItems.Count == 0
+            || transaction.ReviewStatus == TransactionReviewStatus.NeedsReview
+            || ShouldRouteToNeedsReview(item))
+        {
+            return false;
+        }
+
+        var candidate = SelectRecurringCandidate(item, recurringMatchContext);
+        if (candidate is null)
+        {
+            return false;
+        }
+
+        transaction.RecurringItemId = candidate.RecurringItem.Id;
+        transaction.LastModifiedAtUtc = now;
+        candidate.RecurringItem.NextDueDate = AdvanceRecurringDueDate(candidate.RecurringItem.NextDueDate, candidate.RecurringItem.Frequency);
+        recurringMatchContext.LastObservedByRecurringId[candidate.RecurringItem.Id] = item.TransactionDate;
+
+        return true;
+    }
+
+    private static RecurringCandidate? SelectRecurringCandidate(
+        PlaidDeltaIngestionItemInput item,
+        RecurringMatchContext recurringMatchContext)
+    {
+        var candidates = new List<RecurringCandidate>();
+
+        foreach (var recurringItem in recurringMatchContext.RecurringItems)
+        {
+            if (!SupportsDeterministicRecurringPolicy(recurringItem))
+            {
+                continue;
+            }
+
+            if (!IsMerchantMatch(item.Description, recurringItem.MerchantName))
+            {
+                continue;
+            }
+
+            var minDate = recurringItem.NextDueDate.AddDays(-recurringItem.DueWindowDaysBefore);
+            var maxDate = recurringItem.NextDueDate.AddDays(recurringItem.DueWindowDaysAfter);
+            if (item.TransactionDate < minDate || item.TransactionDate > maxDate)
+            {
+                continue;
+            }
+
+            var expectedAmount = decimal.Abs(recurringItem.ExpectedAmount);
+            var transactionAmount = decimal.Abs(item.Amount);
+            var amountDelta = decimal.Abs(transactionAmount - expectedAmount);
+            var allowedAmountVariance = ResolveAllowedAmountVariance(recurringItem, expectedAmount);
+            if (amountDelta > allowedAmountVariance)
+            {
+                continue;
+            }
+
+            var dueDateDistanceDays = Math.Abs(item.TransactionDate.DayNumber - recurringItem.NextDueDate.DayNumber);
+            var dueDateScore = ResolveDueDateScore(recurringItem, dueDateDistanceDays);
+            var amountScore = ResolveAmountScore(amountDelta, allowedAmountVariance);
+
+            recurringMatchContext.LastObservedByRecurringId.TryGetValue(recurringItem.Id, out var lastObservedDate);
+            var recencyScore = ResolveRecencyScore(recurringItem, item.TransactionDate, lastObservedDate);
+
+            var weightedScore = decimal.Round(
+                (dueDateScore * recurringItem.DueDateScoreWeight)
+                + (amountScore * recurringItem.AmountScoreWeight)
+                + (recencyScore * recurringItem.RecencyScoreWeight),
+                4);
+
+            if (weightedScore < recurringItem.DeterministicMatchThreshold)
+            {
+                continue;
+            }
+
+            candidates.Add(new RecurringCandidate(
+                recurringItem,
+                weightedScore,
+                dueDateDistanceDays,
+                amountDelta,
+                lastObservedDate));
+        }
+
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        return candidates.Count == 1
+            ? candidates[0]
+            : null;
+    }
+
+    private static bool SupportsDeterministicRecurringPolicy(RecurringItem recurringItem)
+    {
+        var scoreVersion = recurringItem.DeterministicScoreVersion.Trim();
+        var tieBreakPolicy = recurringItem.TieBreakPolicy.Trim();
+
+        return scoreVersion.Equals(SupportedDeterministicScoreVersion, StringComparison.OrdinalIgnoreCase)
+            && tieBreakPolicy.Equals(SupportedTieBreakPolicy, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsMerchantMatch(string description, string merchantName)
+    {
+        var normalizedDescription = NormalizeMerchantToken(description);
+        var normalizedMerchant = NormalizeMerchantToken(merchantName);
+        if (normalizedDescription.Length == 0 || normalizedMerchant.Length < 3)
+        {
+            return false;
+        }
+
+        return normalizedDescription.Contains(normalizedMerchant, StringComparison.Ordinal)
+            || normalizedMerchant.Contains(normalizedDescription, StringComparison.Ordinal);
+    }
+
+    private static string NormalizeMerchantToken(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        foreach (var character in value)
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(char.ToLowerInvariant(character));
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    private static decimal ResolveAllowedAmountVariance(RecurringItem recurringItem, decimal expectedAmount)
+    {
+        var percentVariance = expectedAmount * (recurringItem.AmountVariancePercent / 100m);
+        return decimal.Max(percentVariance, recurringItem.AmountVarianceAbsolute);
+    }
+
+    private static decimal ResolveDueDateScore(RecurringItem recurringItem, int dueDateDistanceDays)
+    {
+        var maxWindow = Math.Max(1, Math.Max(recurringItem.DueWindowDaysBefore, recurringItem.DueWindowDaysAfter));
+        var normalizedDistance = decimal.Min(1m, dueDateDistanceDays / (decimal)maxWindow);
+        return 1m - normalizedDistance;
+    }
+
+    private static decimal ResolveAmountScore(decimal amountDelta, decimal allowedAmountVariance)
+    {
+        if (allowedAmountVariance == 0)
+        {
+            return amountDelta == 0 ? 1m : 0m;
+        }
+
+        var normalizedDelta = decimal.Min(1m, amountDelta / allowedAmountVariance);
+        return 1m - normalizedDelta;
+    }
+
+    private static decimal ResolveRecencyScore(
+        RecurringItem recurringItem,
+        DateOnly transactionDate,
+        DateOnly? lastObservedDate)
+    {
+        if (!lastObservedDate.HasValue)
+        {
+            return 1m;
+        }
+
+        var expectedNextDate = AdvanceRecurringDueDate(lastObservedDate.Value, recurringItem.Frequency);
+        var expectedDistance = Math.Max(1, Math.Abs(expectedNextDate.DayNumber - lastObservedDate.Value.DayNumber));
+        var observedDistance = Math.Abs(transactionDate.DayNumber - expectedNextDate.DayNumber);
+
+        var normalizedDistance = decimal.Min(1m, observedDistance / (decimal)expectedDistance);
+        return 1m - normalizedDistance;
+    }
+
+    private static DateOnly AdvanceRecurringDueDate(DateOnly dueDate, RecurringFrequency frequency)
+    {
+        return frequency switch
+        {
+            RecurringFrequency.Weekly => dueDate.AddDays(7),
+            RecurringFrequency.BiWeekly => dueDate.AddDays(14),
+            RecurringFrequency.Monthly => dueDate.AddMonths(1),
+            RecurringFrequency.Quarterly => dueDate.AddMonths(3),
+            RecurringFrequency.Annually => dueDate.AddYears(1),
+            _ => dueDate,
+        };
+    }
+
+    private sealed record RecurringCandidate(
+        RecurringItem RecurringItem,
+        decimal Score,
+        int DueDateDistanceDays,
+        decimal AmountDelta,
+        DateOnly? LastObservedDate);
+
+    private sealed class RecurringMatchContext(
+        IReadOnlyList<RecurringItem> recurringItems,
+        Dictionary<Guid, DateOnly> lastObservedByRecurringId)
+    {
+        public static readonly RecurringMatchContext Empty = new(
+            [],
+            new Dictionary<Guid, DateOnly>());
+
+        public IReadOnlyList<RecurringItem> RecurringItems { get; } = recurringItems;
+
+        public Dictionary<Guid, DateOnly> LastObservedByRecurringId { get; } = lastObservedByRecurringId;
     }
 }

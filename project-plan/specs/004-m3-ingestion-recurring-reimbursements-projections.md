@@ -49,10 +49,10 @@ Implement deterministic recurring matching, human-approved reimbursement linking
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
 | MM-BE-07A | Backend | Recurring policy contract | MM-BE-03, MM-BE-04 | Configurable due window, variance rules, deterministic scoring/tie-break behavior. | Done |
-| MM-BE-07B | Backend | Recurring matcher execution in ingestion | MM-BE-06, MM-BE-07A, MM-BE-05 | Confident matches link recurring items and advance next due date idempotently. | Not Started |
+| MM-BE-07B | Backend | Recurring matcher execution in ingestion | MM-BE-06, MM-BE-07A, MM-BE-05 | Confident matches link recurring items and advance next due date idempotently. | Done |
 | MM-BE-07C | Backend | Recurring ambiguity routing | MM-BE-07B, MM-BE-05 | Ambiguous/competing recurring candidates create `NeedsReview` items with reason codes. | Not Started |
 | MM-BE-08A | Backend | Reimbursement proposal model (1:N) | MM-BE-04, MM-BE-05, MM-BE-06 | Proposal lifecycle with explicit statuses and rationale/provenance fields. | Done |
-| MM-BE-08B | Backend | HITL reimbursement approval/rejection APIs | MM-BE-08A, MM-BE-05 | Approval-only persistence with actor/time/audit metadata. | Not Started |
+| MM-BE-08B | Backend | HITL reimbursement approval/rejection APIs | MM-BE-08A, MM-BE-05 | Approval-only persistence with actor/time/audit metadata. | Done |
 | MM-BE-08C | Backend | Reimbursement conflict routing | MM-BE-08A, MM-BE-05 | Over-allocation/duplicate/stale proposal conflicts route to `NeedsReview`. | Not Started |
 | MM-BE-09A | Backend | Projection metadata read contract | MM-BE-04, MM-BE-07B, MM-BE-08B | API payload includes projection fields without changing ledger truth. | Not Started |
 | MM-BE-09B | Backend | Projection-safe query path | MM-BE-03, MM-BE-09A | Read-optimized query/view exposing projection metadata only. | Not Started |

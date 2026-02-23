@@ -1077,9 +1077,12 @@ v1.MapPost("/reimbursements/{id:guid}/decision", async (
 	ReimbursementDecisionRequest request) =>
 {
 	var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
-	var action = request.Action?.Trim().ToLowerInvariant() ?? string.Empty;
+	if (request.DecisionedByUserId == Guid.Empty)
+	{
+		errors.Add(new ApiValidationError(nameof(request.DecisionedByUserId), "DecisionedByUserId is required."));
+	}
 
-	if (action is not ("approve" or "reject"))
+	if (!ReimbursementDecisionPolicy.TryParseAction(request.Action, out var action))
 	{
 		errors.Add(new ApiValidationError(nameof(request.Action), "Action must be one of: approve, reject."));
 	}
@@ -1105,19 +1108,13 @@ v1.MapPost("/reimbursements/{id:guid}/decision", async (
 		return ApiValidation.ToConflictResult(httpContext, "reimbursement_not_pending", "Only pending reimbursement proposals can be decisioned.");
 	}
 
-	proposal.Status = action == "approve"
-		? ReimbursementProposalStatus.Approved
-		: ReimbursementProposalStatus.Rejected;
-	proposal.StatusReasonCode = action == "approve"
-		? "approved_by_human"
-		: "rejected_by_human";
-	proposal.StatusRationale = action == "approve"
-		? "Proposal approved by human reviewer."
-		: "Proposal rejected by human reviewer.";
-	proposal.DecisionedByUserId = request.DecisionedByUserId;
-	proposal.DecisionedAtUtc = DateTime.UtcNow;
-	proposal.UserNote = request.UserNote ?? proposal.UserNote;
-	proposal.AgentNote = request.AgentNote ?? proposal.AgentNote;
+	ReimbursementDecisionPolicy.ApplyDecision(
+		proposal,
+		action,
+		request.DecisionedByUserId,
+		DateTime.UtcNow,
+		request.UserNote,
+		request.AgentNote);
 
 	await dbContext.SaveChangesAsync();
 	return Results.Ok(MapReimbursement(proposal));

@@ -168,6 +168,141 @@ public sealed class PlaidDeltaIngestionServiceTests
         Assert.Equal(TransactionReviewStatus.NeedsReview, secondResult.Items[0].ReviewStatus);
     }
 
+    [Fact]
+    public async Task IngestAsync_ConfidentRecurringMatch_LinksTransactionAndAdvancesDueDateOnce()
+    {
+        await using var dbContext = CreateDbContext();
+        var accountId = await SeedAccountAsync(dbContext);
+        var householdId = await dbContext.Accounts
+            .Where(x => x.Id == accountId)
+            .Select(x => x.HouseholdId)
+            .SingleAsync();
+
+        var recurringItem = new RecurringItem
+        {
+            Id = Guid.NewGuid(),
+            HouseholdId = householdId,
+            MerchantName = "Coffee Club",
+            ExpectedAmount = 25.00m,
+            Frequency = RecurringFrequency.Monthly,
+            NextDueDate = new DateOnly(2026, 2, 22),
+            DueWindowDaysBefore = 3,
+            DueWindowDaysAfter = 3,
+            AmountVariancePercent = 5.00m,
+            AmountVarianceAbsolute = 2.00m,
+            DeterministicMatchThreshold = 0.7000m,
+            DueDateScoreWeight = 0.5000m,
+            AmountScoreWeight = 0.3500m,
+            RecencyScoreWeight = 0.1500m,
+            DeterministicScoreVersion = "mm-be-07a-v1",
+            TieBreakPolicy = "due_date_distance_then_amount_delta_then_latest_observed",
+            IsActive = true,
+        };
+
+        dbContext.RecurringItems.Add(recurringItem);
+        await dbContext.SaveChangesAsync();
+
+        var service = new PlaidDeltaIngestionService(dbContext);
+        var request = BuildRequest(
+            accountId,
+            "cursor-6",
+            "plaid-tx-6",
+            "Coffee Club Membership",
+            -25.00m,
+            new DateOnly(2026, 2, 22),
+            "{\"transaction_id\":\"plaid-tx-6\",\"name\":\"Coffee Club Membership\",\"amount\":-25.00}",
+            isAmbiguous: false,
+            reviewReason: null);
+
+        await service.IngestAsync(request);
+        await service.IngestAsync(request);
+
+        var transaction = await dbContext.EnrichedTransactions.SingleAsync(x => x.PlaidTransactionId == "plaid-tx-6");
+        var updatedRecurringItem = await dbContext.RecurringItems.SingleAsync(x => x.Id == recurringItem.Id);
+
+        Assert.Equal(recurringItem.Id, transaction.RecurringItemId);
+        Assert.Equal(new DateOnly(2026, 3, 22), updatedRecurringItem.NextDueDate);
+    }
+
+    [Fact]
+    public async Task IngestAsync_CompetingRecurringCandidates_FailsClosedWithoutAutoLinking()
+    {
+        await using var dbContext = CreateDbContext();
+        var accountId = await SeedAccountAsync(dbContext);
+        var householdId = await dbContext.Accounts
+            .Where(x => x.Id == accountId)
+            .Select(x => x.HouseholdId)
+            .SingleAsync();
+
+        var nextDueDate = new DateOnly(2026, 2, 23);
+        var recurringA = new RecurringItem
+        {
+            Id = Guid.NewGuid(),
+            HouseholdId = householdId,
+            MerchantName = "Streaming Service",
+            ExpectedAmount = 15.99m,
+            Frequency = RecurringFrequency.Monthly,
+            NextDueDate = nextDueDate,
+            DueWindowDaysBefore = 2,
+            DueWindowDaysAfter = 2,
+            AmountVariancePercent = 5.00m,
+            AmountVarianceAbsolute = 1.00m,
+            DeterministicMatchThreshold = 0.7000m,
+            DueDateScoreWeight = 0.5000m,
+            AmountScoreWeight = 0.3500m,
+            RecencyScoreWeight = 0.1500m,
+            DeterministicScoreVersion = "mm-be-07a-v1",
+            TieBreakPolicy = "due_date_distance_then_amount_delta_then_latest_observed",
+            IsActive = true,
+        };
+
+        var recurringB = new RecurringItem
+        {
+            Id = Guid.NewGuid(),
+            HouseholdId = householdId,
+            MerchantName = "Streaming Service",
+            ExpectedAmount = 15.99m,
+            Frequency = RecurringFrequency.Monthly,
+            NextDueDate = nextDueDate,
+            DueWindowDaysBefore = 2,
+            DueWindowDaysAfter = 2,
+            AmountVariancePercent = 5.00m,
+            AmountVarianceAbsolute = 1.00m,
+            DeterministicMatchThreshold = 0.7000m,
+            DueDateScoreWeight = 0.5000m,
+            AmountScoreWeight = 0.3500m,
+            RecencyScoreWeight = 0.1500m,
+            DeterministicScoreVersion = "mm-be-07a-v1",
+            TieBreakPolicy = "due_date_distance_then_amount_delta_then_latest_observed",
+            IsActive = true,
+        };
+
+        dbContext.RecurringItems.AddRange(recurringA, recurringB);
+        await dbContext.SaveChangesAsync();
+
+        var service = new PlaidDeltaIngestionService(dbContext);
+        var request = BuildRequest(
+            accountId,
+            "cursor-7",
+            "plaid-tx-7",
+            "Streaming Service Premium",
+            -15.99m,
+            nextDueDate,
+            "{\"transaction_id\":\"plaid-tx-7\",\"name\":\"Streaming Service Premium\",\"amount\":-15.99}",
+            isAmbiguous: false,
+            reviewReason: null);
+
+        await service.IngestAsync(request);
+
+        var transaction = await dbContext.EnrichedTransactions.SingleAsync(x => x.PlaidTransactionId == "plaid-tx-7");
+        var updatedRecurringA = await dbContext.RecurringItems.SingleAsync(x => x.Id == recurringA.Id);
+        var updatedRecurringB = await dbContext.RecurringItems.SingleAsync(x => x.Id == recurringB.Id);
+
+        Assert.Null(transaction.RecurringItemId);
+        Assert.Equal(nextDueDate, updatedRecurringA.NextDueDate);
+        Assert.Equal(nextDueDate, updatedRecurringB.NextDueDate);
+    }
+
     private static MosaicMoneyDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<MosaicMoneyDbContext>()
