@@ -52,3 +52,12 @@ These instructions are always on for this repository.
 - Prefer focused, incremental changes with explicit verification.
 - If a request conflicts with architecture or PRD constraints, follow repository constraints and explain the trade-off.
 - Keep policy/context docs synchronized when governance or behavior changes.
+
+## Code Organization And Readability
+- Optimize every change for readability and maintainability over short-term convenience.
+- Keep entrypoint files thin. `Program.cs` (API/Worker/AppHost) should act as composition root and delegate feature logic to focused modules.
+- Avoid oversized files. When a file becomes hard to scan, split by feature/domain into subfolders (for example `Apis/`, `Domain/`, `Services/`, `Components/`, `hooks/`, `lib/`).
+- For Minimal APIs, prefer route-group extension files by resource/workflow instead of accumulating endpoint handlers in one file.
+- Apply building-block composition across backend, frontend, and workers: small cohesive units that compose cleanly.
+- Do not force a strict frontend methodology, but follow atomic-style decomposition concepts (smaller reusable building blocks, clear boundaries, low coupling).
+- Extract shared contracts/helpers only when there is proven multi-project reuse; avoid premature shared packages that add coupling without active consumers.

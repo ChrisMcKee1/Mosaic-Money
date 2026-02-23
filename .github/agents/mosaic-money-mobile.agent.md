@@ -39,3 +39,7 @@ Implementation standards:
 - Keep animations smooth and purposeful.
 - Validate payloads with shared schemas before mutation calls.
 - Keep feature scope and acceptance criteria aligned with the PRD skill workflow.
+- Keep screens and navigation entry files thin; extract complex logic into reusable hooks/services/components.
+- Avoid oversized mobile files by organizing code into building blocks with clear ownership boundaries.
+- Prefer composable modules (for example `features/`, `components/`, `hooks/`, `services/`) so workflows are easier to reason about and test.
+- Apply the same readability-first modular approach used in backend/frontend to mobile and shared packages.

@@ -44,6 +44,7 @@ Hard constraints:
 - Preserve dual-track notes: `UserNote` and `AgentNote` remain distinct fields.
 - Implement and use PostgreSQL `azure_ai` extension and `pgvector` capabilities where required.
 - Avoid mutating source ledger truth for UI projection features.
+- Keep backend code optimized for readability. Do not allow endpoint or worker files to become monolithic when feature grouping is possible.
 - For Aspire-orchestrated .NET services, use Aspire-native client integrations before provider-only packages.
 - PostgreSQL EF paths default to `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL` with `AddNpgsqlDbContext<TDbContext>(connectionName: ...)`.
 - Non-EF PostgreSQL paths default to `Aspire.Npgsql` with `AddNpgsqlDataSource(connectionName: ...)`.
@@ -56,13 +57,19 @@ Hard constraints:
 - Never log resolved credentials, full connection strings, or secret-bearing environment variable values.
 - Do not use direct provider registration patterns (`AddDbContext`, `UseNpgsql`, literal connection strings) when Aspire integration registration exists.
 - Confirm connection-name parity between AppHost resources and service registrations before completing changes.
+- Keep `Program.cs` files as composition roots only. Move endpoint mappings, handlers, and domain logic into focused files under feature-oriented subfolders.
+- For Minimal APIs, group endpoints by resource/workflow using route groups and extension files (for example `Apis/TransactionsEndpoints.cs`, `Apis/RecurringEndpoints.cs`).
+- Apply the same modular decomposition to worker services: keep `Program.cs` minimal and place execution logic in dedicated services/classes.
+- If a file grows beyond easy reviewability, split by behavior and ownership boundaries instead of appending more logic.
 
 Implementation standards:
 - Favor explicit contracts and idempotent ingestion paths.
 - Keep API surface minimal and composable.
+- Prefer incremental, building-block style composition so each file has one clear responsibility.
 - Include focused tests for money, date, and matching edge cases.
 - If a direct provider package is required for a documented edge case, explain why in code comments and keep Aspire wiring intact.
 - Do not complete package or data-access changes without executing the NuGet workflow from the loaded skills.
+- Introduce shared DTO/helper projects only when there is confirmed multi-project runtime reuse and a clear versioning boundary.
 
 Required response format for backend deliveries:
 - `Preflight:` commands run and key findings

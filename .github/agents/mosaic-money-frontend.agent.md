@@ -49,3 +49,7 @@ Implementation standards:
 - Reflect backend truth and avoid front-end-only financial side effects.
 - Keep internal service endpoints on server boundaries when possible, and avoid leaking internal URLs into browser bundles.
 - Validate changed UI behavior using the webapp testing skill workflow before completion.
+- Optimize for readability over file-size growth. Split large pages/routes into focused components, hooks, and helpers.
+- Prefer building-block composition concepts (atomic-style decomposition) without enforcing strict Atomic Design nomenclature.
+- When files become difficult to scan, move related logic into subfolders such as `components/`, `hooks/`, `lib/`, and route-local modules.
+- Keep route entry files thin and orchestration-focused; delegate rendering and behavior to smaller units.
