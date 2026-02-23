@@ -33,6 +33,11 @@ node_modules/
 out/
 build/
 
+# Playwright artifacts
+playwright-report/
+test-results/
+blob-report/
+
 # Environment files (block real secrets)
 .env
 .env.local

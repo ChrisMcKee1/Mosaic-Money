@@ -152,3 +152,18 @@ File-based AppHost flow (`src/apphost.cs`):
 dotnet user-secrets set "<Key>" "<Value>" --file src/apphost.cs
 dotnet user-secrets list --file src/apphost.cs
 ```
+
+## FE-08 Playwright regression path (backend-independent)
+
+Use this path for deterministic web regression checks when backend resources are unavailable or when validating error-state rendering.
+
+```powershell
+cd src/MosaicMoney.Web
+npm install
+npm run test:e2e
+```
+
+Notes:
+- The suite starts a local test-only mock API (`tests/e2e/mock-api-server.mjs`) and runs Next.js against it.
+- No production secrets are required; browser-visible values remain non-sensitive.
+- Aspire full-stack runs are still preferred for integrated service validation, but FE-08 gating does not require backend availability.

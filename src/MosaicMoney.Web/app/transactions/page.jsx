@@ -22,16 +22,16 @@ export default async function TransactionsPage() {
       </div>
 
       {error ? (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+        <div data-testid="transactions-error-banner" className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
           Failed to load transactions: {error}
         </div>
       ) : (
-        <div className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+        <div data-testid="transactions-table-wrapper" className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
           {transactions.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No transactions found.</p>
+            <p data-testid="transactions-empty-state" className="text-gray-500 text-center py-8">No transactions found.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table data-testid="transactions-table" className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>

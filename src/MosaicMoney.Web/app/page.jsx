@@ -58,12 +58,12 @@ export default async function HomePage() {
           Welcome to Mosaic Money. Your financial overview and projections.
         </p>
         <p className="mt-2 text-xs text-gray-400">
-          API Status: <span className={apiStatus === "Connected" ? "font-medium text-green-600" : "font-medium text-red-600"}>{apiStatus}</span>
+          API Status: <span data-testid="api-status-value" className={apiStatus === "Connected" ? "font-medium text-green-600" : "font-medium text-red-600"}>{apiStatus}</span>
         </p>
       </div>
 
       {apiStatus === "Disconnected" && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+        <div data-testid="dashboard-error-banner" className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
           Failed to load dashboard data. Please ensure the API is running.
         </div>
       )}
@@ -76,7 +76,7 @@ export default async function HomePage() {
               <div className="w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-gray-500 truncate">Total Liquidity</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">${totalLiquidity.toFixed(2)}</dd>
+                  <dd data-testid="metric-total-liquidity" className="text-2xl font-semibold text-gray-900">${totalLiquidity.toFixed(2)}</dd>
                   <dd className="text-xs text-gray-500 mt-1">All accounts combined</dd>
                 </dl>
               </div>
@@ -90,7 +90,7 @@ export default async function HomePage() {
               <div className="w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-green-600 truncate">Household Budget Burn</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">${householdBurn.toFixed(2)}</dd>
+                  <dd data-testid="metric-household-burn" className="text-2xl font-semibold text-gray-900">${householdBurn.toFixed(2)}</dd>
                   <dd className="text-xs text-gray-500 mt-1">Shared expenses</dd>
                 </dl>
               </div>
@@ -104,7 +104,7 @@ export default async function HomePage() {
               <div className="w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-purple-600 truncate">Business Expenses</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">${businessExpenses.toFixed(2)}</dd>
+                  <dd data-testid="metric-business-expenses" className="text-2xl font-semibold text-gray-900">${businessExpenses.toFixed(2)}</dd>
                   <dd className="text-xs text-gray-500 mt-1">Excluded from household budget</dd>
                 </dl>
               </div>
@@ -122,7 +122,7 @@ export default async function HomePage() {
               <div className="w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-blue-600 truncate">Safe to Spend</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">${safeToSpend.toFixed(2)}</dd>
+                  <dd data-testid="metric-safe-to-spend" className="text-2xl font-semibold text-gray-900">${safeToSpend.toFixed(2)}</dd>
                   <dd className="text-xs text-gray-500 mt-1">Liquidity - Upcoming + Pending</dd>
                 </dl>
               </div>
@@ -136,7 +136,7 @@ export default async function HomePage() {
               <div className="w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-orange-600 truncate">Upcoming Recurring</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">${upcomingRecurring.toFixed(2)}</dd>
+                  <dd data-testid="metric-upcoming-recurring" className="text-2xl font-semibold text-gray-900">${upcomingRecurring.toFixed(2)}</dd>
                   <dd className="text-xs text-gray-500 mt-1">{recurringItems.length} active items</dd>
                 </dl>
               </div>
@@ -150,7 +150,7 @@ export default async function HomePage() {
               <div className="w-0 flex-1">
                 <dl>
                   <dt className="text-sm font-medium text-teal-600 truncate">Pending Reimbursements</dt>
-                  <dd className="text-2xl font-semibold text-gray-900">${pendingReimbursements.toFixed(2)}</dd>
+                  <dd data-testid="metric-pending-reimbursements" className="text-2xl font-semibold text-gray-900">${pendingReimbursements.toFixed(2)}</dd>
                   <dd className="text-xs text-gray-500 mt-1">{reimbursements.length} pending proposals</dd>
                 </dl>
               </div>
@@ -161,7 +161,7 @@ export default async function HomePage() {
 
       {/* Recent Transactions with Projection Metadata */}
       <h2 className="text-lg font-medium text-gray-900 mt-8">Recent Transactions (Projection Metadata)</h2>
-      <div className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
+      <div data-testid="dashboard-transactions" className="bg-white shadow rounded-lg border border-gray-200 overflow-hidden">
         {transactions.length === 0 ? (
           <p className="text-gray-500 text-center py-8">No transactions found.</p>
         ) : (

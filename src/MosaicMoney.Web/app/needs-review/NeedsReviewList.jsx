@@ -16,7 +16,7 @@ export default function NeedsReviewList({ transactions }) {
 
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="bg-white shadow rounded-lg border border-gray-200 p-6">
+      <div data-testid="needs-review-empty" className="bg-white shadow rounded-lg border border-gray-200 p-6">
         <p className="text-gray-500 text-center py-8">No items need review.</p>
       </div>
     );
@@ -84,12 +84,12 @@ export default function NeedsReviewList({ transactions }) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div data-testid="needs-review-action-error" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
           {error}
         </div>
       )}
       {transactions.map((tx) => (
-        <div key={tx.id} className="bg-white shadow rounded-lg border border-gray-200 p-6">
+        <div key={tx.id} data-testid={`needs-review-item-${tx.id}`} className="bg-white shadow rounded-lg border border-gray-200 p-6">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-lg font-medium text-gray-900">{tx.description}</h3>
@@ -120,6 +120,7 @@ export default function NeedsReviewList({ transactions }) {
               {reclassifyId === tx.id ? (
                 <div className="flex flex-col space-y-2 items-end bg-gray-50 p-3 rounded border border-gray-200">
                   <input
+                    data-testid={`needs-review-subcategory-${tx.id}`}
                     type="text"
                     placeholder="Subcategory ID (UUID)"
                     className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -127,6 +128,7 @@ export default function NeedsReviewList({ transactions }) {
                     onChange={(e) => setSubcategoryId(e.target.value)}
                   />
                   <input
+                    data-testid={`needs-review-reclassify-reason-${tx.id}`}
                     type="text"
                     placeholder="Reason (optional)"
                     className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -135,6 +137,7 @@ export default function NeedsReviewList({ transactions }) {
                   />
                   <div className="flex space-x-2">
                     <button
+                      data-testid={`needs-review-cancel-reclassify-${tx.id}`}
                       onClick={() => setReclassifyId(null)}
                       className="text-sm text-gray-500 hover:text-gray-700"
                       disabled={loadingId === tx.id}
@@ -142,6 +145,7 @@ export default function NeedsReviewList({ transactions }) {
                       Cancel
                     </button>
                     <button
+                      data-testid={`needs-review-confirm-reclassify-${tx.id}`}
                       onClick={() => handleReclassify(tx.id)}
                       className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
                       disabled={loadingId === tx.id}
@@ -153,6 +157,7 @@ export default function NeedsReviewList({ transactions }) {
               ) : rejectId === tx.id ? (
                 <div className="flex flex-col space-y-2 items-end bg-gray-50 p-3 rounded border border-gray-200">
                   <input
+                    data-testid={`needs-review-user-id-${tx.id}`}
                     type="text"
                     placeholder="NeedsReviewByUserId (UUID)"
                     className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -160,6 +165,7 @@ export default function NeedsReviewList({ transactions }) {
                     onChange={(e) => setNeedsReviewByUserId(e.target.value)}
                   />
                   <input
+                    data-testid={`needs-review-reject-reason-${tx.id}`}
                     type="text"
                     placeholder="Reason (required)"
                     className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -168,6 +174,7 @@ export default function NeedsReviewList({ transactions }) {
                   />
                   <div className="flex space-x-2">
                     <button
+                      data-testid={`needs-review-cancel-reject-${tx.id}`}
                       onClick={() => setRejectId(null)}
                       className="text-sm text-gray-500 hover:text-gray-700"
                       disabled={loadingId === tx.id}
@@ -175,6 +182,7 @@ export default function NeedsReviewList({ transactions }) {
                       Cancel
                     </button>
                     <button
+                      data-testid={`needs-review-confirm-reject-${tx.id}`}
                       onClick={() => handleReject(tx.id, tx.needsReviewByUserId)}
                       className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50"
                       disabled={loadingId === tx.id}
@@ -186,6 +194,7 @@ export default function NeedsReviewList({ transactions }) {
               ) : (
                 <div className="flex space-x-2">
                   <button
+                    data-testid={`needs-review-reject-${tx.id}`}
                     onClick={() => {
                       setRejectId(tx.id);
                       setReviewReason(tx.reviewReason || "");
@@ -196,6 +205,7 @@ export default function NeedsReviewList({ transactions }) {
                     Reject
                   </button>
                   <button
+                    data-testid={`needs-review-reclassify-${tx.id}`}
                     onClick={() => setReclassifyId(tx.id)}
                     className="text-sm bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-50 disabled:opacity-50"
                     disabled={loadingId === tx.id}
@@ -203,6 +213,7 @@ export default function NeedsReviewList({ transactions }) {
                     Reclassify
                   </button>
                   <button
+                    data-testid={`needs-review-approve-${tx.id}`}
                     onClick={() => handleApprove(tx.id)}
                     className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50"
                     disabled={loadingId === tx.id}
