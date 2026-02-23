@@ -43,6 +43,9 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 - `.github/skills/git-commit/SKILL.md`
   - Conventional commit workflow guidance.
   - Improves commit consistency and staging hygiene.
+- `.github/skills/github-projects/SKILL.md`
+  - GitHub Projects V2 board management for Mosaic Money.
+  - Contains project IDs, field IDs, status option IDs, and GraphQL mutation templates for board sync.
 
 ## External skills to use by name when available
 - `aspire`
@@ -57,12 +60,12 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 - Include researched source URLs in implementation summaries for Plaid-related tasks.
 
 ## Agent-to-skill mapping
-- Planner: `prd`, `agent-governance`, `aspire`, `aspire-mosaic-money`, `agentic-eval`, `microsoft-docs`.
+- Planner: `prd`, `agent-governance`, `aspire`, `aspire-mosaic-money`, `agentic-eval`, `github-projects`, `microsoft-docs`.
 - Backend: `aspire`, `aspire-mosaic-money`, `nuget-manager`, `agent-governance`, `agentic-eval`, `microsoft-code-reference`.
 - Frontend: `aspire`, `aspire-mosaic-money`, `webapp-testing`, `playwright-cli`, `agent-governance`, `agentic-eval`.
 - Mobile: `agent-governance`, `agentic-eval`, `prd`.
 - AI: `agent-governance`, `agentic-eval`, `aspire`, `aspire-mosaic-money`, `microsoft-docs`.
-- DevOps: `aspire`, `aspire-mosaic-money`, `agent-governance`, `webapp-testing`, `nuget-manager`, `gh-cli`, `microsoft-docs`.
+- DevOps: `aspire`, `aspire-mosaic-money`, `agent-governance`, `webapp-testing`, `nuget-manager`, `gh-cli`, `github-projects`, `microsoft-docs`.
 
 ## Installation correctness checklist
 - Skill directories are under `.github/skills/<skill-name>/SKILL.md`.

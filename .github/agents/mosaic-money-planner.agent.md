@@ -48,6 +48,7 @@ Primary skills to load before planning or delegation:
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
 - `.github/skills/aspire-mosaic-money/SKILL.md`
+- `.github/skills/github-projects/SKILL.md`
 - `microsoft-docs`
 
 Skill-first workflow:
@@ -102,6 +103,18 @@ Task status tracking responsibility:
 - Periodically review task statuses to identify stale `In Progress` or `Blocked` items that need attention or re-routing.
 - Use the following status values only: `Not Started`, `In Progress`, `Blocked`, `Parked`, `In Review`, `Done`, `Cut`.
 - Status definitions are documented in `project-plan/specs/001-mvp-foundation-task-breakdown.md` under "Task Status Definitions".
+
+GitHub Projects board sync responsibility:
+- Task status must be kept in sync between spec markdown tables and the GitHub Projects board.
+- Load `.github/skills/github-projects/SKILL.md` for project IDs, field IDs, status option IDs, and GraphQL mutation templates.
+- After every spec status change, apply the matching status on the board using `updateProjectV2ItemFieldValue` with the correct project, item, field, and option IDs from the skill.
+- When a new issue is created, add it to the board with `addProjectV2ItemById` and update `.github/scripts/sync-project-board.ps1`.
+- The `gh` CLI must have `project` scope. If missing, run: `gh auth refresh -s project --hostname github.com`.
+- Key identifiers (also documented in the skill):
+  - Project node ID: `PVT_kwHOAYj6Kc4BP962`
+  - Status field ID: `PVTSSF_lAHOAYj6Kc4BP962zg-OQcQ`
+  - Owner: `ChrisMcKee1`, Project number: `1`
+- Use `gh project item-list 1 --owner ChrisMcKee1 --format json --limit 100` to verify board state after changes.
 
 Orchestration responsibility:
 - Ensure clear boundaries and handoff criteria between subagents.

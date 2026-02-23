@@ -33,6 +33,16 @@ These instructions are always on for this repository.
 - Treat `NEXT_PUBLIC_*` variables as public and never place sensitive values in them.
 - Redact secret values from logs, docs, screenshots, and sample command output.
 
+## Task Lifecycle And GitHub Projects
+- Task status lives in two places and must stay synchronized: spec markdown tables and the GitHub Projects board.
+- The master task breakdown is `project-plan/specs/001-mvp-foundation-task-breakdown.md`; milestone-specific specs are `002`–`006`.
+- Allowed status values: `Not Started`, `In Progress`, `Blocked`, `Parked`, `In Review`, `Done`, `Cut`.
+- Only the `mosaic-money-planner` agent may set a task to `Done` or `Cut`.
+- When changing a task status, update the spec file(s) first, then set the matching status on the GitHub Projects board.
+- The GitHub Projects skill (`.github/skills/github-projects/SKILL.md`) contains project IDs, field IDs, status option IDs, and GraphQL mutation templates needed to interact with the board.
+- A batch sync script at `.github/scripts/sync-project-board.ps1` can re-sync all issues and statuses.
+- The `gh` CLI must have the `project` scope (`gh auth refresh -s project --hostname github.com`).
+
 ## Build And Test
 - This repository is currently docs-first (planning/agent governance) with no canonical app build pipeline checked in yet.
 - Do not invent project commands. Prefer commands defined by repo files (`README`, manifests, CI, scripts) once present.
@@ -47,6 +57,7 @@ These instructions are always on for this repository.
 - `docs/agent-context/secrets-and-configuration-playbook.md`
 - `docs/agent-context/skills-catalog.md`
 - `.github/instructions/*.instructions.md`
+- `.github/skills/github-projects/SKILL.md`
 
 ## Change Quality
 - Prefer focused, incremental changes with explicit verification.

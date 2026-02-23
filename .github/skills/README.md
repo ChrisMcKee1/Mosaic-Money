@@ -24,3 +24,4 @@ This folder contains project-local Agent Skills for Mosaic Money.
 - `prd`: PRD decomposition and acceptance criteria workflow.
 - `gh-cli`: GitHub CLI reference for repo/issue/PR/release workflows.
 - `git-commit`: conventional commit workflow and safe staging guidance.
+- `github-projects`: GitHub Projects V2 board management, GraphQL mutations, and status sync workflow.
