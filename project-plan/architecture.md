@@ -7,7 +7,8 @@ When generating code for this repository, the AI agent MUST adhere to the follow
 * **Agentic Observability:** Aspire 13.2 automatically provisions a **Model Context Protocol (MCP) Server**. This allows the Copilot coding agent to directly query live resources, stream logs, and inspect traces during development without requiring human copy-pasting.
 * **Web Frontend:** Next.js 16 LTS (App Router) using React 19 and Tailwind CSS.
 * **Mobile Frontend:** React Native via Expo SDK 55. Shares 60-70% of business logic with the web app.
-* **Database:** PostgreSQL 18.2+ using Entity Framework Core 10. **Must leverage `azure_ai` extension and `pgvector` with DiskANN indexing.**
+* **Database:** PostgreSQL 18.2+ using Entity Framework Core 10. **Must leverage `azure_ai` extension and `pgvector` with HNSW indexing by default.**
+* **Vector indexing policy:** Standardize current implementation on HNSW immediately; evaluate DiskANN in a dedicated spike behind an environment gate before any production default switch.
 * **AI Framework:** Microsoft Agent Framework (MAF) 1.0 RC + `Microsoft.Extensions.AI`. *Note: Copilot is the UI, not the orchestration engine.*
 
 ---
