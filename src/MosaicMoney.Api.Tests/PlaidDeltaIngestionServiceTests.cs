@@ -225,7 +225,7 @@ public sealed class PlaidDeltaIngestionServiceTests
     }
 
     [Fact]
-    public async Task IngestAsync_CompetingRecurringCandidates_FailsClosedWithoutAutoLinking()
+    public async Task IngestAsync_CompetingRecurringCandidates_RoutesToNeedsReviewWithoutAutoLinkingOrOscillation()
     {
         await using var dbContext = CreateDbContext();
         var accountId = await SeedAccountAsync(dbContext);
@@ -292,13 +292,24 @@ public sealed class PlaidDeltaIngestionServiceTests
             isAmbiguous: false,
             reviewReason: null);
 
-        await service.IngestAsync(request);
+        var firstResult = await service.IngestAsync(request);
+        var secondResult = await service.IngestAsync(request);
 
         var transaction = await dbContext.EnrichedTransactions.SingleAsync(x => x.PlaidTransactionId == "plaid-tx-7");
         var updatedRecurringA = await dbContext.RecurringItems.SingleAsync(x => x.Id == recurringA.Id);
         var updatedRecurringB = await dbContext.RecurringItems.SingleAsync(x => x.Id == recurringB.Id);
 
         Assert.Null(transaction.RecurringItemId);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, transaction.ReviewStatus);
+        Assert.Equal("recurring_competing_candidates", transaction.ReviewReason);
+
+        Assert.Equal(TransactionReviewStatus.NeedsReview, firstResult.Items[0].ReviewStatus);
+        Assert.Equal("recurring_competing_candidates", firstResult.Items[0].ReviewReason);
+
+        Assert.Equal(TransactionReviewStatus.NeedsReview, secondResult.Items[0].ReviewStatus);
+        Assert.Equal("recurring_competing_candidates", secondResult.Items[0].ReviewReason);
+        Assert.Equal(1, secondResult.UnchangedCount);
+
         Assert.Equal(nextDueDate, updatedRecurringA.NextDueDate);
         Assert.Equal(nextDueDate, updatedRecurringB.NextDueDate);
     }

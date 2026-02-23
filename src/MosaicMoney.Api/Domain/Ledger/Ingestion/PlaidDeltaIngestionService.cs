@@ -41,6 +41,7 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
     private const string DefaultCursor = "no-cursor";
     private const string SupportedDeterministicScoreVersion = "mm-be-07a-v1";
     private const string SupportedTieBreakPolicy = "due_date_distance_then_amount_delta_then_latest_observed";
+    private const string RecurringAmbiguityReasonCode = "recurring_competing_candidates";
 
     public async Task<PlaidDeltaIngestionResult> IngestAsync(
         PlaidDeltaIngestionRequest request,
@@ -151,8 +152,8 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
                 }
             }
 
-            var linkedRecurring = TryApplyRecurringMatch(transaction, normalizedItem, recurringMatchContext, now);
-            if (linkedRecurring && disposition == IngestionDisposition.Unchanged)
+            var recurringResolutionChanged = TryApplyRecurringMatch(transaction, normalizedItem, recurringMatchContext, now);
+            if (recurringResolutionChanged && disposition == IngestionDisposition.Unchanged)
             {
                 unchangedCount--;
                 updatedCount++;
@@ -395,7 +396,18 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
             return false;
         }
 
-        var candidate = SelectRecurringCandidate(item, recurringMatchContext);
+        var selection = SelectRecurringCandidate(item, recurringMatchContext);
+        if (selection.Kind == RecurringSelectionKind.None)
+        {
+            return false;
+        }
+
+        if (selection.Kind == RecurringSelectionKind.Ambiguous)
+        {
+            return TryRouteRecurringAmbiguityToNeedsReview(transaction, now);
+        }
+
+        var candidate = selection.Candidate;
         if (candidate is null)
         {
             return false;
@@ -409,7 +421,7 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
         return true;
     }
 
-    private static RecurringCandidate? SelectRecurringCandidate(
+    private static RecurringSelectionResult SelectRecurringCandidate(
         PlaidDeltaIngestionItemInput item,
         RecurringMatchContext recurringMatchContext)
     {
@@ -471,12 +483,32 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
 
         if (candidates.Count == 0)
         {
-            return null;
+            return RecurringSelectionResult.None;
         }
 
         return candidates.Count == 1
-            ? candidates[0]
-            : null;
+            ? RecurringSelectionResult.Confident(candidates[0])
+            : RecurringSelectionResult.Ambiguous;
+    }
+
+    private static bool TryRouteRecurringAmbiguityToNeedsReview(EnrichedTransaction transaction, DateTime now)
+    {
+        if (transaction.ReviewStatus != TransactionReviewStatus.NeedsReview)
+        {
+            transaction.ReviewStatus = TransactionReviewStatus.NeedsReview;
+            transaction.ReviewReason = RecurringAmbiguityReasonCode;
+            transaction.LastModifiedAtUtc = now;
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(transaction.ReviewReason))
+        {
+            transaction.ReviewReason = RecurringAmbiguityReasonCode;
+            transaction.LastModifiedAtUtc = now;
+            return true;
+        }
+
+        return false;
     }
 
     private static bool SupportsDeterministicRecurringPolicy(RecurringItem recurringItem)
@@ -576,6 +608,22 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
         int DueDateDistanceDays,
         decimal AmountDelta,
         DateOnly? LastObservedDate);
+
+    private enum RecurringSelectionKind
+    {
+        None = 0,
+        Confident = 1,
+        Ambiguous = 2,
+    }
+
+    private sealed record RecurringSelectionResult(RecurringSelectionKind Kind, RecurringCandidate? Candidate)
+    {
+        public static readonly RecurringSelectionResult None = new(RecurringSelectionKind.None, null);
+
+        public static readonly RecurringSelectionResult Ambiguous = new(RecurringSelectionKind.Ambiguous, null);
+
+        public static RecurringSelectionResult Confident(RecurringCandidate candidate) => new(RecurringSelectionKind.Confident, candidate);
+    }
 
     private sealed class RecurringMatchContext(
         IReadOnlyList<RecurringItem> recurringItems,

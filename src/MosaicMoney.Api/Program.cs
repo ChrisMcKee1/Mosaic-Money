@@ -974,7 +974,12 @@ v1.MapPost("/reimbursements", async (
 		return ApiValidation.ToValidationResult(httpContext, errors);
 	}
 
-	if (!await dbContext.EnrichedTransactions.AnyAsync(x => x.Id == request.IncomingTransactionId))
+	var incomingTransactionAmount = await dbContext.EnrichedTransactions
+		.AsNoTracking()
+		.Where(x => x.Id == request.IncomingTransactionId)
+		.Select(x => (decimal?)x.Amount)
+		.FirstOrDefaultAsync();
+	if (!incomingTransactionAmount.HasValue)
 	{
 		return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.IncomingTransactionId), "IncomingTransactionId does not exist.")]);
 	}
@@ -1042,6 +1047,35 @@ v1.MapPost("/reimbursements", async (
 			"A reimbursement proposal already exists for this lifecycle group and ordinal.");
 	}
 
+	var existingProposals = await dbContext.ReimbursementProposals
+		.AsNoTracking()
+		.Where(x => x.IncomingTransactionId == request.IncomingTransactionId)
+		.ToListAsync();
+
+	var conflictRouting = ReimbursementConflictRoutingPolicy.Evaluate(new ReimbursementConflictRoutingInput(
+		request.IncomingTransactionId,
+		incomingTransactionAmount.Value,
+		request.RelatedTransactionId,
+		request.RelatedTransactionSplitId,
+		request.ProposedAmount,
+		lifecycleGroupId,
+		lifecycleOrdinal,
+		request.SupersedesProposalId,
+		supersededProposal,
+		existingProposals));
+
+	var initialStatus = conflictRouting.RouteToNeedsReview
+		? ReimbursementProposalStatus.NeedsReview
+		: ReimbursementProposalStatus.PendingApproval;
+
+	var initialStatusReasonCode = conflictRouting.RouteToNeedsReview
+		? conflictRouting.ReasonCode!
+		: request.StatusReasonCode.Trim();
+
+	var initialStatusRationale = conflictRouting.RouteToNeedsReview
+		? conflictRouting.Rationale!
+		: request.StatusRationale.Trim();
+
 	var proposal = new ReimbursementProposal
 	{
 		Id = Guid.NewGuid(),
@@ -1051,9 +1085,9 @@ v1.MapPost("/reimbursements", async (
 		ProposedAmount = decimal.Round(request.ProposedAmount, 2),
 		LifecycleGroupId = lifecycleGroupId,
 		LifecycleOrdinal = lifecycleOrdinal,
-		Status = ReimbursementProposalStatus.PendingApproval,
-		StatusReasonCode = request.StatusReasonCode.Trim(),
-		StatusRationale = request.StatusRationale.Trim(),
+		Status = initialStatus,
+		StatusReasonCode = initialStatusReasonCode,
+		StatusRationale = initialStatusRationale,
 		ProposalSource = parsedProposalSource,
 		ProvenanceSource = request.ProvenanceSource.Trim(),
 		ProvenanceReference = request.ProvenanceReference,
