@@ -48,12 +48,52 @@ public sealed record ExchangePlaidPublicTokenResult(
     string? InstitutionId,
     DateTime StoredAtUtc);
 
+public sealed record ProcessPlaidItemRecoveryWebhookCommand(
+    string WebhookType,
+    string WebhookCode,
+    string ItemId,
+    string Environment,
+    string? ProviderRequestId,
+    string? ErrorCode,
+    string? ErrorType,
+    string? MetadataJson);
+
+public sealed record ProcessPlaidItemRecoveryWebhookResult(
+    Guid CredentialId,
+    Guid? LinkSessionId,
+    string ItemId,
+    string Environment,
+    PlaidItemCredentialStatus CredentialStatus,
+    PlaidLinkSessionStatus? SessionStatus,
+    string RecoveryAction,
+    string RecoveryReasonCode,
+    DateTime ProcessedAtUtc);
+
 public sealed class PlaidLinkLifecycleService(
     MosaicMoneyDbContext dbContext,
     IPlaidTokenProvider tokenProvider,
     PlaidAccessTokenProtector tokenProtector,
     IOptions<PlaidOptions> options)
 {
+    private static readonly HashSet<string> RequiresRelinkErrorCodes =
+    [
+        "USER_PERMISSION_REVOKED",
+        "ACCESS_NOT_GRANTED",
+        "ITEM_REVOKED",
+    ];
+
+    private static readonly HashSet<string> RequiresUpdateModeErrorCodes =
+    [
+        "ITEM_LOGIN_REQUIRED",
+        "INVALID_CREDENTIALS",
+        "INVALID_MFA",
+        "ITEM_LOCKED",
+        "OAUTH_LOGIN_REQUIRED",
+        "OAUTH_INVALID_TOKEN",
+        "OAUTH_STATE_ID_MISMATCH",
+        "OAUTH_STATE_ID_INVALID",
+    ];
+
     public async Task<IssuePlaidLinkTokenResult> IssueLinkTokenAsync(
         IssuePlaidLinkTokenCommand command,
         CancellationToken cancellationToken = default)
@@ -251,11 +291,99 @@ public sealed class PlaidLinkLifecycleService(
             credential.LastRotatedAtUtc);
     }
 
+    public async Task<ProcessPlaidItemRecoveryWebhookResult?> ProcessItemRecoveryWebhookAsync(
+        ProcessPlaidItemRecoveryWebhookCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedEnvironment = NormalizeEnvironment(command.Environment);
+        var normalizedItemId = command.ItemId.Trim();
+        var normalizedWebhookType = command.WebhookType.Trim().ToUpperInvariant();
+        var normalizedWebhookCode = command.WebhookCode.Trim().ToUpperInvariant();
+        var normalizedErrorCode = NormalizeOptionalUpper(command.ErrorCode);
+
+        var credential = await dbContext.PlaidItemCredentials
+            .FirstOrDefaultAsync(
+                x => x.PlaidEnvironment == normalizedEnvironment && x.ItemId == normalizedItemId,
+                cancellationToken);
+
+        if (credential is null)
+        {
+            return null;
+        }
+
+        var decision = ResolveRecoveryDecision(normalizedWebhookType, normalizedWebhookCode, normalizedErrorCode);
+        var now = DateTime.UtcNow;
+        var normalizedProviderRequestId = NormalizeOptional(command.ProviderRequestId);
+
+        credential.Status = decision.CredentialStatus;
+        credential.LastProviderRequestId = normalizedProviderRequestId;
+        credential.LastClientMetadataJson = command.MetadataJson;
+        credential.RecoveryAction = decision.RecoveryAction;
+        credential.RecoveryReasonCode = decision.RecoveryReasonCode;
+        credential.RecoverySignaledAtUtc = now;
+
+        PlaidLinkSession? session = null;
+        if (credential.LastLinkedSessionId.HasValue)
+        {
+            session = await dbContext.PlaidLinkSessions
+                .FirstOrDefaultAsync(x => x.Id == credential.LastLinkedSessionId.Value, cancellationToken);
+        }
+
+        session ??= await dbContext.PlaidLinkSessions
+            .Where(x => x.LinkedItemId == normalizedItemId && x.RequestedEnvironment == normalizedEnvironment)
+            .OrderByDescending(x => x.LastEventAtUtc ?? x.LinkTokenCreatedAtUtc)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (session is not null)
+        {
+            session.Status = decision.SessionStatus;
+            session.LastEventAtUtc = now;
+            session.LastProviderRequestId = normalizedProviderRequestId;
+            session.LastClientMetadataJson = command.MetadataJson;
+            session.RecoveryAction = decision.RecoveryAction;
+            session.RecoveryReasonCode = decision.RecoveryReasonCode;
+            session.RecoverySignaledAtUtc = now;
+
+            dbContext.PlaidLinkSessionEvents.Add(new PlaidLinkSessionEvent
+            {
+                Id = Guid.NewGuid(),
+                PlaidLinkSessionId = session.Id,
+                EventType = "ITEM_RECOVERY_WEBHOOK",
+                Source = "provider",
+                ClientMetadataJson = command.MetadataJson,
+                ProviderRequestId = normalizedProviderRequestId,
+                OccurredAtUtc = now,
+            });
+
+            credential.LastLinkedSessionId = session.Id;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new ProcessPlaidItemRecoveryWebhookResult(
+            credential.Id,
+            session?.Id,
+            credential.ItemId,
+            credential.PlaidEnvironment,
+            credential.Status,
+            session?.Status,
+            decision.RecoveryAction,
+            decision.RecoveryReasonCode,
+            now);
+    }
+
     private string ResolveEnvironment()
     {
         var environment = options.Value.Environment;
         return string.IsNullOrWhiteSpace(environment)
             ? "sandbox"
+            : environment.Trim().ToLowerInvariant();
+    }
+
+    private string NormalizeEnvironment(string environment)
+    {
+        return string.IsNullOrWhiteSpace(environment)
+            ? ResolveEnvironment()
             : environment.Trim().ToLowerInvariant();
     }
 
@@ -295,6 +423,51 @@ public sealed class PlaidLinkLifecycleService(
         return configuredUri;
     }
 
+    private static string? NormalizeOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string? NormalizeOptionalUpper(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
+    }
+
+    private static PlaidRecoveryDecision ResolveRecoveryDecision(string webhookType, string webhookCode, string? errorCode)
+    {
+        if (!string.Equals(webhookType, "ITEM", StringComparison.Ordinal))
+        {
+            return PlaidRecoveryDecision.NeedsReview("webhook_type_unrecognized");
+        }
+
+        if (string.Equals(webhookCode, "USER_PERMISSION_REVOKED", StringComparison.Ordinal))
+        {
+            return PlaidRecoveryDecision.RequiresRelink("item_permission_revoked");
+        }
+
+        if (string.Equals(webhookCode, "PENDING_EXPIRATION", StringComparison.Ordinal))
+        {
+            return PlaidRecoveryDecision.RequiresUpdateMode("oauth_pending_expiration");
+        }
+
+        if (string.Equals(webhookCode, "ERROR", StringComparison.Ordinal))
+        {
+            if (errorCode is not null && RequiresRelinkErrorCodes.Contains(errorCode))
+            {
+                return PlaidRecoveryDecision.RequiresRelink("item_error_requires_relink");
+            }
+
+            if (errorCode is not null && RequiresUpdateModeErrorCodes.Contains(errorCode))
+            {
+                return PlaidRecoveryDecision.RequiresUpdateMode("item_error_requires_update_mode");
+            }
+
+            return PlaidRecoveryDecision.NeedsReview("item_error_ambiguous");
+        }
+
+        return PlaidRecoveryDecision.NeedsReview("webhook_signal_unrecognized");
+    }
+
     private static PlaidLinkSessionStatus ResolveSessionStatusFromEvent(string eventType, PlaidLinkSessionStatus current)
     {
         return eventType switch
@@ -304,5 +477,21 @@ public sealed class PlaidLinkLifecycleService(
             "SUCCESS" => PlaidLinkSessionStatus.Success,
             _ => current,
         };
+    }
+
+    private sealed record PlaidRecoveryDecision(
+        PlaidItemCredentialStatus CredentialStatus,
+        PlaidLinkSessionStatus SessionStatus,
+        string RecoveryAction,
+        string RecoveryReasonCode)
+    {
+        public static PlaidRecoveryDecision RequiresRelink(string reasonCode)
+            => new(PlaidItemCredentialStatus.RequiresRelink, PlaidLinkSessionStatus.RequiresRelink, "requires_relink", reasonCode);
+
+        public static PlaidRecoveryDecision RequiresUpdateMode(string reasonCode)
+            => new(PlaidItemCredentialStatus.RequiresUpdateMode, PlaidLinkSessionStatus.RequiresUpdateMode, "requires_update_mode", reasonCode);
+
+        public static PlaidRecoveryDecision NeedsReview(string reasonCode)
+            => new(PlaidItemCredentialStatus.NeedsReview, PlaidLinkSessionStatus.NeedsReview, "needs_review", reasonCode);
     }
 }

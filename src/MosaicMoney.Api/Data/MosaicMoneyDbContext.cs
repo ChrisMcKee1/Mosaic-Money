@@ -158,6 +158,14 @@ public sealed class MosaicMoneyDbContext : DbContext
                 t.HasCheckConstraint(
                     "CK_PlaidLinkSession_RequestedProductsRequired",
                     "LENGTH(TRIM(\"RequestedProducts\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidLinkSession_RecoveryAudit",
+                    "\"RecoveryAction\" IS NULL OR (\"RecoveryReasonCode\" IS NOT NULL AND LENGTH(TRIM(\"RecoveryReasonCode\")) > 0 AND \"RecoverySignaledAtUtc\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidLinkSession_RecoveryActionAllowed",
+                    "\"RecoveryAction\" IS NULL OR \"RecoveryAction\" IN ('none', 'requires_relink', 'requires_update_mode', 'needs_review')");
             });
 
         modelBuilder.Entity<PlaidLinkSession>()
@@ -195,6 +203,14 @@ public sealed class MosaicMoneyDbContext : DbContext
                 t.HasCheckConstraint(
                     "CK_PlaidItemCredential_AccessTokenFingerprintRequired",
                     "LENGTH(TRIM(\"AccessTokenFingerprint\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidItemCredential_RecoveryAudit",
+                    "\"RecoveryAction\" IS NULL OR (\"RecoveryReasonCode\" IS NOT NULL AND LENGTH(TRIM(\"RecoveryReasonCode\")) > 0 AND \"RecoverySignaledAtUtc\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidItemCredential_RecoveryActionAllowed",
+                    "\"RecoveryAction\" IS NULL OR \"RecoveryAction\" IN ('none', 'requires_relink', 'requires_update_mode', 'needs_review')");
             });
 
         modelBuilder.Entity<PlaidItemCredential>()

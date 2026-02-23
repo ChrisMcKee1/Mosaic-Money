@@ -47,4 +47,43 @@ public sealed class PlaidLinkLifecycleEndpointValidationTests
         Assert.Contains(errors, x => x.Field == nameof(ExchangePlaidPublicTokenRequest.LinkSessionId));
         Assert.Contains(errors, x => x.Field == nameof(ExchangePlaidPublicTokenRequest.ClientMetadataJson));
     }
+
+    [Theory]
+    [InlineData("ERROR")]
+    [InlineData("PENDING_EXPIRATION")]
+    [InlineData("USER_PERMISSION_REVOKED")]
+    public void ValidatePlaidItemRecoveryWebhookRequest_AcceptsSupportedWebhookCodes(string webhookCode)
+    {
+        var request = new PlaidItemRecoveryWebhookRequest
+        {
+            WebhookType = "ITEM",
+            WebhookCode = webhookCode,
+            ItemId = "item-123",
+            Environment = "sandbox",
+            MetadataJson = "{\"source\":\"test\"}",
+        };
+
+        var errors = PlaidLinkLifecycleEndpoints.ValidatePlaidItemRecoveryWebhookRequest(request);
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidatePlaidItemRecoveryWebhookRequest_RejectsUnsupportedTypeAndCode_AndInvalidMetadata()
+    {
+        var request = new PlaidItemRecoveryWebhookRequest
+        {
+            WebhookType = "TRANSACTIONS",
+            WebhookCode = "INITIAL_UPDATE",
+            ItemId = "item-123",
+            Environment = "sandbox",
+            MetadataJson = "{invalid",
+        };
+
+        var errors = PlaidLinkLifecycleEndpoints.ValidatePlaidItemRecoveryWebhookRequest(request);
+
+        Assert.Contains(errors, x => x.Field == nameof(PlaidItemRecoveryWebhookRequest.WebhookType));
+        Assert.Contains(errors, x => x.Field == nameof(PlaidItemRecoveryWebhookRequest.WebhookCode));
+        Assert.Contains(errors, x => x.Field == nameof(PlaidItemRecoveryWebhookRequest.MetadataJson));
+    }
 }

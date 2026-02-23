@@ -18,6 +18,13 @@ public static class PlaidLinkLifecycleEndpoints
         "ERROR",
     ];
 
+    private static readonly HashSet<string> AllowedItemRecoveryWebhookCodes =
+    [
+        "ERROR",
+        "PENDING_EXPIRATION",
+        "USER_PERMISSION_REVOKED",
+    ];
+
     public static RouteGroupBuilder MapPlaidLinkLifecycleEndpoints(this RouteGroupBuilder group)
     {
         group.MapPost("/plaid/link-tokens", async (
@@ -190,6 +197,52 @@ public static class PlaidLinkLifecycleEndpoints
             }
         });
 
+        group.MapPost("/plaid/webhooks/item-recovery", async (
+            HttpContext httpContext,
+            PlaidLinkLifecycleService lifecycleService,
+            PlaidItemRecoveryWebhookRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            var errors = ValidatePlaidItemRecoveryWebhookRequest(request).ToList();
+            if (errors.Count > 0)
+            {
+                return ApiValidation.ToValidationResult(httpContext, errors);
+            }
+
+            var result = await lifecycleService.ProcessItemRecoveryWebhookAsync(
+                new ProcessPlaidItemRecoveryWebhookCommand(
+                    request.WebhookType,
+                    request.WebhookCode,
+                    request.ItemId,
+                    request.Environment,
+                    request.ProviderRequestId,
+                    request.ErrorCode,
+                    request.ErrorType,
+                    request.MetadataJson),
+                cancellationToken);
+
+            if (result is null)
+            {
+                return ApiValidation.ToNotFoundResult(
+                    httpContext,
+                    "plaid_item_credential_not_found",
+                    "No Plaid item credential exists for the supplied item and environment.");
+            }
+
+            return Results.Accepted(
+                $"/api/v1/plaid/items/{result.ItemId}/recovery",
+                new PlaidItemRecoveryWebhookProcessedDto(
+                    result.CredentialId,
+                    result.LinkSessionId,
+                    result.ItemId,
+                    result.Environment,
+                    result.CredentialStatus.ToString(),
+                    result.SessionStatus?.ToString(),
+                    result.RecoveryAction,
+                    result.RecoveryReasonCode,
+                    result.ProcessedAtUtc));
+        });
+
         return group;
     }
 
@@ -273,6 +326,42 @@ public static class PlaidLinkLifecycleEndpoints
         }
 
         AddJsonValidationError(errors, nameof(request.ClientMetadataJson), request.ClientMetadataJson);
+        return errors;
+    }
+
+    internal static IReadOnlyList<ApiValidationError> ValidatePlaidItemRecoveryWebhookRequest(PlaidItemRecoveryWebhookRequest request)
+    {
+        var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
+
+        if (string.IsNullOrWhiteSpace(request.WebhookType))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookType), "WebhookType is required."));
+        }
+        else if (!string.Equals(request.WebhookType.Trim(), "ITEM", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookType), "WebhookType must be ITEM for item recovery processing."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.WebhookCode))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookCode), "WebhookCode is required."));
+        }
+        else if (!AllowedItemRecoveryWebhookCodes.Contains(request.WebhookCode.Trim().ToUpperInvariant()))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookCode), "WebhookCode must be one of: ERROR, PENDING_EXPIRATION, USER_PERMISSION_REVOKED."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ItemId))
+        {
+            errors.Add(new ApiValidationError(nameof(request.ItemId), "ItemId is required."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Environment))
+        {
+            errors.Add(new ApiValidationError(nameof(request.Environment), "Environment is required."));
+        }
+
+        AddJsonValidationError(errors, nameof(request.MetadataJson), request.MetadataJson);
         return errors;
     }
 }

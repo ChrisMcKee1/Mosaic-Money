@@ -64,6 +64,9 @@ public enum PlaidLinkSessionStatus
     Success = 4,
     Exchanged = 5,
     Error = 6,
+    RequiresUpdateMode = 7,
+    RequiresRelink = 8,
+    NeedsReview = 9,
 }
 
 public enum PlaidItemCredentialStatus
@@ -71,6 +74,8 @@ public enum PlaidItemCredentialStatus
     Active = 1,
     RequiresRelink = 2,
     Revoked = 3,
+    RequiresUpdateMode = 4,
+    NeedsReview = 5,
 }
 
 public sealed class Household
@@ -359,6 +364,14 @@ public sealed class PlaidLinkSession
 
     public string? LastClientMetadataJson { get; set; }
 
+    [MaxLength(32)]
+    public string? RecoveryAction { get; set; }
+
+    [MaxLength(120)]
+    public string? RecoveryReasonCode { get; set; }
+
+    public DateTime? RecoverySignaledAtUtc { get; set; }
+
     [MaxLength(128)]
     public string? LinkedItemId { get; set; }
 
@@ -419,6 +432,14 @@ public sealed class PlaidItemCredential
     public Guid? LastLinkedSessionId { get; set; }
 
     public string? LastClientMetadataJson { get; set; }
+
+    [MaxLength(32)]
+    public string? RecoveryAction { get; set; }
+
+    [MaxLength(120)]
+    public string? RecoveryReasonCode { get; set; }
+
+    public DateTime? RecoverySignaledAtUtc { get; set; }
 }
 
 public sealed class TransactionSplit

@@ -164,6 +164,17 @@ public sealed record PlaidPublicTokenExchangeResultDto(
     string? InstitutionId,
     DateTime StoredAtUtc);
 
+public sealed record PlaidItemRecoveryWebhookProcessedDto(
+    Guid CredentialId,
+    Guid? LinkSessionId,
+    string ItemId,
+    string Environment,
+    string CredentialStatus,
+    string? SessionStatus,
+    string RecoveryAction,
+    string RecoveryReasonCode,
+    DateTime ProcessedAtUtc);
+
 public sealed record ClassificationStageOutputDto(
     Guid Id,
     string Stage,
@@ -423,6 +434,37 @@ public sealed class ExchangePlaidPublicTokenRequest
 
     [MaxLength(4000)]
     public string? ClientMetadataJson { get; init; }
+}
+
+public sealed class PlaidItemRecoveryWebhookRequest
+{
+    [Required]
+    [MaxLength(80)]
+    public string WebhookType { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(80)]
+    public string WebhookCode { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(128)]
+    public string ItemId { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(32)]
+    public string Environment { get; init; } = string.Empty;
+
+    [MaxLength(120)]
+    public string? ProviderRequestId { get; init; }
+
+    [MaxLength(64)]
+    public string? ErrorCode { get; init; }
+
+    [MaxLength(128)]
+    public string? ErrorType { get; init; }
+
+    [MaxLength(4000)]
+    public string? MetadataJson { get; init; }
 }
 
 public sealed class CreateClassificationStageOutputRequest
