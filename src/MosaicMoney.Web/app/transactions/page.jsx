@@ -7,7 +7,7 @@ export default async function TransactionsPage() {
   let error = null;
 
   try {
-    transactions = await fetchApi("/api/v1/transactions");
+    transactions = await fetchApi("/api/v1/transactions/projection-metadata?pageSize=200");
   } catch (e) {
     error = e.message;
   }
@@ -17,7 +17,7 @@ export default async function TransactionsPage() {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Transactions</h1>
         <p className="mt-1 text-sm text-gray-500">
-          View your financial transactions. Read-only ledger truth.
+          View your financial transactions. Read-only ledger truth with projection context.
         </p>
       </div>
 
@@ -38,6 +38,7 @@ export default async function TransactionsPage() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Context</th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
                   </tr>
                 </thead>
@@ -45,19 +46,19 @@ export default async function TransactionsPage() {
                   {transactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {tx.transactionDate}
+                        {tx.rawTransactionDate}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="font-medium">{tx.description}</div>
                         {tx.excludeFromBudget && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mt-1">
-                            Excluded from budget
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mt-1">
+                            Business Expense
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                        <span className={tx.amount < 0 ? "text-red-600" : "text-green-600"}>
-                          ${Math.abs(tx.amount).toFixed(2)}
+                        <span className={tx.rawAmount < 0 ? "text-red-600" : "text-green-600"}>
+                          ${Math.abs(tx.rawAmount).toFixed(2)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -68,6 +69,25 @@ export default async function TransactionsPage() {
                         }`}>
                           {tx.reviewStatus}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        <div className="flex flex-col gap-1">
+                          {tx.recurring?.isLinked && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 w-fit">
+                              Recurring: {tx.recurring.frequency}
+                            </span>
+                          )}
+                          {tx.reimbursement?.hasProposals && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800 w-fit">
+                              Reimbursement: {tx.reimbursement.latestStatus}
+                            </span>
+                          )}
+                          {tx.splits?.length > 0 && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 w-fit">
+                              Amortized: {tx.splits.length} splits
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
                         {tx.userNote && (
