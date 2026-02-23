@@ -90,3 +90,27 @@ When a PR adds or changes a secret/config key, verify all items:
 4. Production source documented.
 5. No real secret committed.
 6. No private values exposed via `NEXT_PUBLIC_*`.
+
+## Plaid local setup contract (Sandbox and Production)
+
+Plaid keys are always private and must be configured via AppHost parameters and user-secrets.
+
+Required keys:
+
+1. `Parameters:plaid-client-id` (secret)
+2. `Parameters:plaid-secret` (secret)
+3. `Plaid:Environment` (`sandbox` or `production`, non-secret)
+
+File-based AppHost commands:
+
+```bash
+dotnet user-secrets set "Parameters:plaid-client-id" "<plaid-client-id>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:plaid-secret" "<plaid-secret>" --file src/apphost.cs
+dotnet user-secrets list --file src/apphost.cs
+```
+
+Notes:
+
+- Never commit Plaid `client_id`, `secret`, `access_token`, or `public_token` values.
+- Plaid Link `public_token` is ephemeral and must be exchanged server-side.
+- Persist `access_token` and `item_id` only in backend secure storage paths.

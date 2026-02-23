@@ -9,14 +9,20 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var postgres = builder.AddPostgres("postgres");
 var ledgerDb = postgres.AddDatabase("mosaicmoneydb");
+var plaidClientId = builder.AddParameter("plaid-client-id", secret: true);
+var plaidSecret = builder.AddParameter("plaid-secret", secret: true);
 
 var api = builder
 	.AddProject<Projects.MosaicMoney_Api>("api")
+	.WithEnvironment("Plaid__ClientId", plaidClientId)
+	.WithEnvironment("Plaid__Secret", plaidSecret)
 	.WithReference(ledgerDb)
 	.WaitFor(ledgerDb);
 
 builder
 	.AddProject<Projects.MosaicMoney_Worker>("worker")
+	.WithEnvironment("Plaid__ClientId", plaidClientId)
+	.WithEnvironment("Plaid__Secret", plaidSecret)
 	.WithReference(ledgerDb)
 	.WithReference(api)
 	.WaitFor(ledgerDb)
