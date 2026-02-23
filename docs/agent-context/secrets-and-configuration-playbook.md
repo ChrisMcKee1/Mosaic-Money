@@ -101,6 +101,11 @@ Required keys:
 2. `Parameters:plaid-secret` (secret)
 3. `Plaid:Environment` (`sandbox` or `production`, non-secret)
 
+Optional non-secret keys:
+
+1. `Plaid:RedirectUri` (OAuth redirect URI used for Link token issuance)
+2. `Plaid:CountryCodes` (for example `US`)
+
 File-based AppHost commands:
 
 ```bash

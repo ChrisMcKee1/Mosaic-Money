@@ -56,6 +56,23 @@ public enum IngestionDisposition
     Unchanged = 3,
 }
 
+public enum PlaidLinkSessionStatus
+{
+    Issued = 1,
+    Open = 2,
+    Exit = 3,
+    Success = 4,
+    Exchanged = 5,
+    Error = 6,
+}
+
+public enum PlaidItemCredentialStatus
+{
+    Active = 1,
+    RequiresRelink = 2,
+    Revoked = 3,
+}
+
 public sealed class Household
 {
     public Guid Id { get; set; }
@@ -303,6 +320,105 @@ public sealed class RawTransactionIngestionRecord
     public Account Account { get; set; } = null!;
 
     public EnrichedTransaction? EnrichedTransaction { get; set; }
+}
+
+public sealed class PlaidLinkSession
+{
+    public Guid Id { get; set; }
+
+    public Guid? HouseholdId { get; set; }
+
+    [MaxLength(200)]
+    public string ClientUserId { get; set; } = string.Empty;
+
+    [MaxLength(64)]
+    public string LinkTokenHash { get; set; } = string.Empty;
+
+    [MaxLength(64)]
+    public string OAuthStateId { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? RedirectUri { get; set; }
+
+    [MaxLength(500)]
+    public string RequestedProducts { get; set; } = string.Empty;
+
+    [MaxLength(32)]
+    public string RequestedEnvironment { get; set; } = "sandbox";
+
+    public PlaidLinkSessionStatus Status { get; set; } = PlaidLinkSessionStatus.Issued;
+
+    public DateTime LinkTokenCreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LinkTokenExpiresAtUtc { get; set; }
+
+    public DateTime? LastEventAtUtc { get; set; }
+
+    [MaxLength(120)]
+    public string? LastProviderRequestId { get; set; }
+
+    public string? LastClientMetadataJson { get; set; }
+
+    [MaxLength(128)]
+    public string? LinkedItemId { get; set; }
+
+    public ICollection<PlaidLinkSessionEvent> Events { get; set; } = new List<PlaidLinkSessionEvent>();
+}
+
+public sealed class PlaidLinkSessionEvent
+{
+    public Guid Id { get; set; }
+
+    public Guid PlaidLinkSessionId { get; set; }
+
+    [MaxLength(80)]
+    public string EventType { get; set; } = string.Empty;
+
+    [MaxLength(32)]
+    public string Source { get; set; } = "client";
+
+    public string? ClientMetadataJson { get; set; }
+
+    [MaxLength(120)]
+    public string? ProviderRequestId { get; set; }
+
+    public DateTime OccurredAtUtc { get; set; } = DateTime.UtcNow;
+
+    public PlaidLinkSession PlaidLinkSession { get; set; } = null!;
+}
+
+public sealed class PlaidItemCredential
+{
+    public Guid Id { get; set; }
+
+    public Guid? HouseholdId { get; set; }
+
+    [MaxLength(128)]
+    public string ItemId { get; set; } = string.Empty;
+
+    [MaxLength(32)]
+    public string PlaidEnvironment { get; set; } = "sandbox";
+
+    public string AccessTokenCiphertext { get; set; } = string.Empty;
+
+    [MaxLength(64)]
+    public string AccessTokenFingerprint { get; set; } = string.Empty;
+
+    [MaxLength(128)]
+    public string? InstitutionId { get; set; }
+
+    public PlaidItemCredentialStatus Status { get; set; } = PlaidItemCredentialStatus.Active;
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastRotatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(120)]
+    public string? LastProviderRequestId { get; set; }
+
+    public Guid? LastLinkedSessionId { get; set; }
+
+    public string? LastClientMetadataJson { get; set; }
 }
 
 public sealed class TransactionSplit

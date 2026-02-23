@@ -28,6 +28,12 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<RawTransactionIngestionRecord> RawTransactionIngestionRecords => Set<RawTransactionIngestionRecord>();
 
+    public DbSet<PlaidLinkSession> PlaidLinkSessions => Set<PlaidLinkSession>();
+
+    public DbSet<PlaidLinkSessionEvent> PlaidLinkSessionEvents => Set<PlaidLinkSessionEvent>();
+
+    public DbSet<PlaidItemCredential> PlaidItemCredentials => Set<PlaidItemCredential>();
+
     public DbSet<TransactionSplit> TransactionSplits => Set<TransactionSplit>();
 
     public DbSet<ReimbursementProposal> ReimbursementProposals => Set<ReimbursementProposal>();
@@ -137,6 +143,66 @@ public sealed class MosaicMoneyDbContext : DbContext
             .WithMany(x => x.RawIngestionRecords)
             .HasForeignKey(x => x.EnrichedTransactionId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PlaidLinkSession>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_PlaidLinkSession_LinkTokenHashRequired",
+                    "LENGTH(TRIM(\"LinkTokenHash\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidLinkSession_ClientUserIdRequired",
+                    "LENGTH(TRIM(\"ClientUserId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidLinkSession_RequestedProductsRequired",
+                    "LENGTH(TRIM(\"RequestedProducts\")) > 0");
+            });
+
+        modelBuilder.Entity<PlaidLinkSession>()
+            .HasIndex(x => x.LinkTokenHash)
+            .IsUnique();
+
+        modelBuilder.Entity<PlaidLinkSession>()
+            .HasIndex(x => new { x.HouseholdId, x.LinkTokenCreatedAtUtc });
+
+        modelBuilder.Entity<PlaidLinkSessionEvent>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_PlaidLinkSessionEvent_EventTypeRequired",
+                "LENGTH(TRIM(\"EventType\")) > 0"));
+
+        modelBuilder.Entity<PlaidLinkSessionEvent>()
+            .HasIndex(x => new { x.PlaidLinkSessionId, x.OccurredAtUtc });
+
+        modelBuilder.Entity<PlaidLinkSessionEvent>()
+            .HasOne(x => x.PlaidLinkSession)
+            .WithMany(x => x.Events)
+            .HasForeignKey(x => x.PlaidLinkSessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PlaidItemCredential>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_PlaidItemCredential_ItemIdRequired",
+                    "LENGTH(TRIM(\"ItemId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidItemCredential_AccessTokenCiphertextRequired",
+                    "LENGTH(TRIM(\"AccessTokenCiphertext\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidItemCredential_AccessTokenFingerprintRequired",
+                    "LENGTH(TRIM(\"AccessTokenFingerprint\")) > 0");
+            });
+
+        modelBuilder.Entity<PlaidItemCredential>()
+            .HasIndex(x => new { x.PlaidEnvironment, x.ItemId })
+            .IsUnique();
+
+        modelBuilder.Entity<PlaidItemCredential>()
+            .HasIndex(x => new { x.HouseholdId, x.Status, x.LastRotatedAtUtc });
 
         modelBuilder.Entity<ReimbursementProposal>()
             .ToTable(t => t.HasCheckConstraint(

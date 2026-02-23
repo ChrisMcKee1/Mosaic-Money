@@ -12,6 +12,7 @@ public static class ApiRouteGroups
         var v1 = app.MapGroup("/api/v1");
         v1.MapTransactionEndpoints();
         v1.MapPlaidIngestionEndpoints();
+        v1.MapPlaidLinkLifecycleEndpoints();
         v1.MapClassificationOutcomeEndpoints();
         v1.MapRecurringEndpoints();
         v1.MapReviewActionEndpoints();

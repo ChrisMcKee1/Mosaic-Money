@@ -50,6 +50,13 @@ public static class ApiValidation
         return Results.Conflict(new ApiErrorResponse(
             new ApiErrorEnvelope(code, message, httpContext.TraceIdentifier)));
     }
+
+    public static IResult ToServiceUnavailableResult(HttpContext httpContext, string code, string message)
+    {
+        return Results.Json(
+            new ApiErrorResponse(new ApiErrorEnvelope(code, message, httpContext.TraceIdentifier)),
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
 }
 
 public sealed record TransactionSplitDto(
@@ -133,6 +140,29 @@ public sealed record PlaidDeltaIngestionResultDto(
     int UpdatedCount,
     int UnchangedCount,
     IReadOnlyList<PlaidDeltaIngestionItemResultDto> Items);
+
+public sealed record PlaidLinkTokenIssuedDto(
+    Guid LinkSessionId,
+    string LinkToken,
+    DateTime ExpiresAtUtc,
+    string Environment,
+    IReadOnlyList<string> Products,
+    bool OAuthEnabled,
+    string? RedirectUri);
+
+public sealed record PlaidLinkSessionEventLoggedDto(
+    Guid LinkSessionId,
+    string EventType,
+    DateTime LoggedAtUtc);
+
+public sealed record PlaidPublicTokenExchangeResultDto(
+    Guid CredentialId,
+    Guid? LinkSessionId,
+    string ItemId,
+    string Environment,
+    string Status,
+    string? InstitutionId,
+    DateTime StoredAtUtc);
 
 public sealed record ClassificationStageOutputDto(
     Guid Id,
@@ -345,6 +375,54 @@ public sealed class IngestPlaidDeltaRequest
 
     [Required]
     public IReadOnlyList<IngestPlaidDeltaTransactionRequest> Transactions { get; init; } = [];
+}
+
+public sealed class CreatePlaidLinkTokenRequest
+{
+    public Guid? HouseholdId { get; init; }
+
+    [Required]
+    [MaxLength(200)]
+    public string ClientUserId { get; init; } = string.Empty;
+
+    [MaxLength(500)]
+    [Url]
+    public string? RedirectUri { get; init; }
+
+    [MaxLength(4000)]
+    public string? ClientMetadataJson { get; init; }
+
+    public IReadOnlyList<string>? Products { get; init; }
+}
+
+public sealed class LogPlaidLinkSessionEventRequest
+{
+    [Required]
+    [MaxLength(80)]
+    public string EventType { get; init; } = string.Empty;
+
+    [MaxLength(32)]
+    public string? Source { get; init; }
+
+    [MaxLength(4000)]
+    public string? ClientMetadataJson { get; init; }
+}
+
+public sealed class ExchangePlaidPublicTokenRequest
+{
+    public Guid? HouseholdId { get; init; }
+
+    public Guid? LinkSessionId { get; init; }
+
+    [Required]
+    [MaxLength(512)]
+    public string PublicToken { get; init; } = string.Empty;
+
+    [MaxLength(128)]
+    public string? InstitutionId { get; init; }
+
+    [MaxLength(4000)]
+    public string? ClientMetadataJson { get; init; }
 }
 
 public sealed class CreateClassificationStageOutputRequest

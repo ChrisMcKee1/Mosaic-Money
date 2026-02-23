@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Receipt, AlertCircle, Settings } from "lucide-react";
+import { LayoutDashboard, Receipt, AlertCircle, Link2, Settings } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -14,6 +14,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Transactions", href: "/transactions", icon: Receipt },
   { name: "Needs Review", href: "/needs-review", icon: AlertCircle },
+  { name: "Connect Bank", href: "/onboarding/plaid", icon: Link2 },
 ];
 
 export function Shell({ children }) {

@@ -1,0 +1,18 @@
+namespace MosaicMoney.Api.Domain.Ledger.Plaid;
+
+public sealed class PlaidOptions
+{
+    public const string SectionName = "Plaid";
+
+    public string Environment { get; init; } = "sandbox";
+
+    public string ClientId { get; init; } = string.Empty;
+
+    public string Secret { get; init; } = string.Empty;
+
+    public IReadOnlyList<string> Products { get; init; } = ["transactions"];
+
+    public string? RedirectUri { get; init; }
+
+    public IReadOnlyList<string> CountryCodes { get; init; } = ["US"];
+}
