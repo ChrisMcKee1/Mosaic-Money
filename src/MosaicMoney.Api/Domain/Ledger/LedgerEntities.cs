@@ -56,6 +56,14 @@ public enum IngestionDisposition
     Unchanged = 3,
 }
 
+public enum EmbeddingQueueStatus
+{
+    Pending = 1,
+    Processing = 2,
+    Succeeded = 3,
+    DeadLetter = 4,
+}
+
 public enum PlaidLinkSessionStatus
 {
     Issued = 1,
@@ -260,6 +268,9 @@ public sealed class EnrichedTransaction
     // Stores semantic embedding for vector similarity lookup.
     public Vector? DescriptionEmbedding { get; set; }
 
+    [MaxLength(64)]
+    public string? DescriptionEmbeddingHash { get; set; }
+
     public bool ExcludeFromBudget { get; set; }
 
     public bool IsExtraPrincipal { get; set; }
@@ -287,6 +298,41 @@ public sealed class EnrichedTransaction
     public ICollection<RawTransactionIngestionRecord> RawIngestionRecords { get; set; } = new List<RawTransactionIngestionRecord>();
 
     public ICollection<ReimbursementProposal> ReimbursementProposals { get; set; } = new List<ReimbursementProposal>();
+
+    public ICollection<TransactionEmbeddingQueueItem> EmbeddingQueueItems { get; set; } = new List<TransactionEmbeddingQueueItem>();
+}
+
+public sealed class TransactionEmbeddingQueueItem
+{
+    public Guid Id { get; set; }
+
+    public Guid TransactionId { get; set; }
+
+    [MaxLength(64)]
+    public string DescriptionHash { get; set; } = string.Empty;
+
+    public EmbeddingQueueStatus Status { get; set; } = EmbeddingQueueStatus.Pending;
+
+    [Range(0, int.MaxValue)]
+    public int AttemptCount { get; set; }
+
+    [Range(1, int.MaxValue)]
+    public int MaxAttempts { get; set; } = 5;
+
+    public DateTime EnqueuedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime NextAttemptAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime? LastAttemptedAtUtc { get; set; }
+
+    public DateTime? CompletedAtUtc { get; set; }
+
+    public DateTime? DeadLetteredAtUtc { get; set; }
+
+    [MaxLength(300)]
+    public string? LastError { get; set; }
+
+    public EnrichedTransaction Transaction { get; set; } = null!;
 }
 
 public sealed class RawTransactionIngestionRecord

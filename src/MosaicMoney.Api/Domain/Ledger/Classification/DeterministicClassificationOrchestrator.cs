@@ -13,14 +13,18 @@ public interface IDeterministicClassificationOrchestrator
 {
     Task<DeterministicClassificationExecutionResult?> ClassifyAndPersistAsync(
         Guid transactionId,
-    Guid? needsReviewByUserId = null,
+        Guid? needsReviewByUserId = null,
         CancellationToken cancellationToken = default);
 }
 
 public sealed class DeterministicClassificationOrchestrator(
     MosaicMoneyDbContext dbContext,
     IDeterministicClassificationEngine deterministicClassificationEngine,
-    IClassificationAmbiguityPolicyGate ambiguityPolicyGate) : IDeterministicClassificationOrchestrator
+    IClassificationAmbiguityPolicyGate ambiguityPolicyGate,
+    IClassificationConfidenceFusionPolicy confidenceFusionPolicy,
+    IPostgresSemanticRetrievalService semanticRetrievalService,
+    IMafFallbackEligibilityGate mafFallbackEligibilityGate,
+    IMafFallbackGraphService mafFallbackGraphService) : IDeterministicClassificationOrchestrator
 {
     public async Task<DeterministicClassificationExecutionResult?> ClassifyAndPersistAsync(
         Guid transactionId,
@@ -50,20 +54,49 @@ public sealed class DeterministicClassificationOrchestrator(
         var stageResult = deterministicClassificationEngine.Execute(deterministicRequest);
         var gateDecision = ambiguityPolicyGate.Evaluate(transaction.ReviewStatus, stageResult);
         var now = DateTime.UtcNow;
+        var shouldAttemptSemanticStage = gateDecision.Decision == ClassificationDecision.NeedsReview;
+        var semanticResult = shouldAttemptSemanticStage
+            ? await semanticRetrievalService.RetrieveCandidatesAsync(transaction.Id, cancellationToken: cancellationToken)
+            : null;
+        var fusionDecision = confidenceFusionPolicy.Evaluate(
+            transaction.ReviewStatus,
+            stageResult,
+            gateDecision,
+            semanticResult);
+        var mafEligibilityDecision = mafFallbackEligibilityGate.Evaluate(
+            gateDecision,
+            fusionDecision,
+            shouldAttemptSemanticStage);
+
+        MafFallbackGraphResult? mafResult = null;
+        if (mafEligibilityDecision.IsEligible)
+        {
+            var mafRequest = new MafFallbackGraphRequest(
+                transaction.Id,
+                transaction.Description,
+                transaction.Amount,
+                transaction.TransactionDate,
+                subcategories,
+                stageResult,
+                semanticResult,
+                fusionDecision);
+
+            mafResult = await mafFallbackGraphService.ExecuteAsync(mafRequest, cancellationToken);
+        }
 
         var outcome = new TransactionClassificationOutcome
         {
             Id = Guid.NewGuid(),
             TransactionId = transaction.Id,
-            ProposedSubcategoryId = stageResult.ProposedSubcategoryId,
-            FinalConfidence = RoundConfidence(gateDecision.FinalConfidence),
-            Decision = gateDecision.Decision,
-            ReviewStatus = gateDecision.ReviewStatus,
-            DecisionReasonCode = Truncate(gateDecision.DecisionReasonCode.Trim(), 120),
-            DecisionRationale = Truncate(gateDecision.DecisionRationale.Trim(), 500),
-            AgentNoteSummary = string.IsNullOrWhiteSpace(gateDecision.AgentNoteSummary)
+            ProposedSubcategoryId = fusionDecision.ProposedSubcategoryId,
+            FinalConfidence = RoundConfidence(fusionDecision.FinalConfidence),
+            Decision = fusionDecision.Decision,
+            ReviewStatus = fusionDecision.ReviewStatus,
+            DecisionReasonCode = Truncate(fusionDecision.DecisionReasonCode.Trim(), 120),
+            DecisionRationale = Truncate(fusionDecision.DecisionRationale.Trim(), 500),
+            AgentNoteSummary = string.IsNullOrWhiteSpace(fusionDecision.AgentNoteSummary)
                 ? null
-                : Truncate(gateDecision.AgentNoteSummary.Trim(), 600),
+                : Truncate(fusionDecision.AgentNoteSummary.Trim(), 600),
             CreatedAtUtc = now,
         };
 
@@ -76,11 +109,40 @@ public sealed class DeterministicClassificationOrchestrator(
             Confidence = RoundConfidence(stageResult.Confidence),
             RationaleCode = Truncate(stageResult.RationaleCode.Trim(), 120),
             Rationale = Truncate(stageResult.Rationale.Trim(), 500),
-            EscalatedToNextStage = false,
+            EscalatedToNextStage = shouldAttemptSemanticStage,
             ProducedAtUtc = now,
         });
 
-        ApplyDecisionToTransaction(transaction, stageResult, gateDecision, now, needsReviewByUserId);
+        if (shouldAttemptSemanticStage)
+        {
+            outcome.StageOutputs.Add(BuildSemanticStageOutput(
+                semanticResult,
+                now,
+                fusionDecision.EscalatedToNextStage));
+        }
+
+        if (mafEligibilityDecision.IsEligible)
+        {
+            outcome.StageOutputs.Add(BuildMafFallbackStageOutput(mafResult, now));
+
+            var topProposal = mafResult?.Proposals.FirstOrDefault();
+            if (topProposal is not null
+                && outcome.Decision == ClassificationDecision.NeedsReview
+                && !outcome.ProposedSubcategoryId.HasValue)
+            {
+                // Keep review routing fail-closed while persisting a bounded fallback proposal for human review.
+                outcome.ProposedSubcategoryId = topProposal.ProposedSubcategoryId;
+            }
+
+            if (topProposal is not null
+                && string.IsNullOrWhiteSpace(outcome.AgentNoteSummary)
+                && !string.IsNullOrWhiteSpace(topProposal.AgentNoteSummary))
+            {
+                outcome.AgentNoteSummary = Truncate(topProposal.AgentNoteSummary.Trim(), 600);
+            }
+        }
+
+        ApplyDecisionToTransaction(transaction, fusionDecision, now, needsReviewByUserId);
 
         dbContext.TransactionClassificationOutcomes.Add(outcome);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -94,16 +156,15 @@ public sealed class DeterministicClassificationOrchestrator(
 
     private static void ApplyDecisionToTransaction(
         EnrichedTransaction transaction,
-        DeterministicClassificationStageResult stageResult,
-        ClassificationAmbiguityDecision gateDecision,
+        ClassificationConfidenceFusionDecision fusionDecision,
         DateTime now,
         Guid? needsReviewByUserId)
     {
-        transaction.ReviewStatus = gateDecision.ReviewStatus;
+        transaction.ReviewStatus = fusionDecision.ReviewStatus;
 
-        if (gateDecision.ReviewStatus == TransactionReviewStatus.NeedsReview)
+        if (fusionDecision.ReviewStatus == TransactionReviewStatus.NeedsReview)
         {
-            transaction.ReviewReason = gateDecision.DecisionReasonCode;
+            transaction.ReviewReason = fusionDecision.DecisionReasonCode;
 
             if (needsReviewByUserId.HasValue)
             {
@@ -116,9 +177,9 @@ public sealed class DeterministicClassificationOrchestrator(
             transaction.NeedsReviewByUserId = null;
         }
 
-        if (gateDecision.Decision == ClassificationDecision.Categorized && stageResult.ProposedSubcategoryId.HasValue)
+        if (fusionDecision.Decision == ClassificationDecision.Categorized && fusionDecision.ProposedSubcategoryId.HasValue)
         {
-            transaction.SubcategoryId = stageResult.ProposedSubcategoryId.Value;
+            transaction.SubcategoryId = fusionDecision.ProposedSubcategoryId.Value;
         }
 
         transaction.LastModifiedAtUtc = now;
@@ -127,6 +188,113 @@ public sealed class DeterministicClassificationOrchestrator(
     private static decimal RoundConfidence(decimal value)
     {
         return decimal.Round(value, 4, MidpointRounding.AwayFromZero);
+    }
+
+    private static ClassificationStageOutput BuildSemanticStageOutput(
+        SemanticRetrievalResult? semanticResult,
+        DateTime producedAtUtc,
+        bool escalatedToNextStage)
+    {
+        if (semanticResult is null)
+        {
+            return new ClassificationStageOutput
+            {
+                Id = Guid.NewGuid(),
+                Stage = ClassificationStage.Semantic,
+                StageOrder = 2,
+                ProposedSubcategoryId = null,
+                Confidence = 0m,
+                RationaleCode = SemanticRetrievalStatusCodes.QueryFailed,
+                Rationale = "Semantic retrieval did not execute.",
+                EscalatedToNextStage = escalatedToNextStage,
+                ProducedAtUtc = producedAtUtc,
+            };
+        }
+
+        if (!semanticResult.Succeeded)
+        {
+            return new ClassificationStageOutput
+            {
+                Id = Guid.NewGuid(),
+                Stage = ClassificationStage.Semantic,
+                StageOrder = 2,
+                ProposedSubcategoryId = null,
+                Confidence = 0m,
+                RationaleCode = Truncate(semanticResult.StatusCode, 120),
+                Rationale = Truncate(semanticResult.StatusMessage, 500),
+                EscalatedToNextStage = escalatedToNextStage,
+                ProducedAtUtc = producedAtUtc,
+            };
+        }
+
+        var top = semanticResult.Candidates.FirstOrDefault();
+        var rationale = top is null
+            ? semanticResult.StatusMessage
+            : $"Top semantic candidate score {top.NormalizedScore:F4} from source transaction {top.SourceTransactionId:D}.";
+
+        return new ClassificationStageOutput
+        {
+            Id = Guid.NewGuid(),
+            Stage = ClassificationStage.Semantic,
+            StageOrder = 2,
+            ProposedSubcategoryId = top?.ProposedSubcategoryId,
+            Confidence = RoundConfidence(top?.NormalizedScore ?? 0m),
+            RationaleCode = Truncate(semanticResult.StatusCode, 120),
+            Rationale = Truncate(rationale, 500),
+            EscalatedToNextStage = escalatedToNextStage,
+            ProducedAtUtc = producedAtUtc,
+        };
+    }
+
+    private static ClassificationStageOutput BuildMafFallbackStageOutput(
+        MafFallbackGraphResult? mafResult,
+        DateTime producedAtUtc)
+    {
+        if (mafResult is null)
+        {
+            return new ClassificationStageOutput
+            {
+                Id = Guid.NewGuid(),
+                Stage = ClassificationStage.MafFallback,
+                StageOrder = 3,
+                ProposedSubcategoryId = null,
+                Confidence = 0m,
+                RationaleCode = MafFallbackGraphStatusCodes.ExecutionFailed,
+                Rationale = "MAF fallback did not execute.",
+                EscalatedToNextStage = false,
+                ProducedAtUtc = producedAtUtc,
+            };
+        }
+
+        if (!mafResult.Succeeded || mafResult.Proposals.Count == 0)
+        {
+            return new ClassificationStageOutput
+            {
+                Id = Guid.NewGuid(),
+                Stage = ClassificationStage.MafFallback,
+                StageOrder = 3,
+                ProposedSubcategoryId = null,
+                Confidence = 0m,
+                RationaleCode = Truncate(mafResult.StatusCode, 120),
+                Rationale = Truncate(mafResult.StatusMessage, 500),
+                EscalatedToNextStage = false,
+                ProducedAtUtc = producedAtUtc,
+            };
+        }
+
+        var topProposal = mafResult.Proposals[0];
+        return new ClassificationStageOutput
+        {
+            Id = Guid.NewGuid(),
+            Stage = ClassificationStage.MafFallback,
+            StageOrder = 3,
+            ProposedSubcategoryId = topProposal.ProposedSubcategoryId,
+            Confidence = RoundConfidence(topProposal.Confidence),
+            RationaleCode = Truncate(topProposal.RationaleCode, 120),
+            Rationale = Truncate(topProposal.Rationale, 500),
+            EscalatedToNextStage = false,
+            ProducedAtUtc = producedAtUtc,
+        };
     }
 
     private static string Truncate(string value, int maxLength)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
+using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
 
 namespace MosaicMoney.Api.Apis;
@@ -13,9 +14,12 @@ public static class PlaidIngestionEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             PlaidDeltaIngestionService ingestionService,
+            ITransactionEmbeddingQueueService embeddingQueueService,
+            ILoggerFactory loggerFactory,
             IngestPlaidDeltaRequest request,
             CancellationToken cancellationToken) =>
         {
+            var logger = loggerFactory.CreateLogger("MosaicMoney.Api.PlaidIngestion");
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
 
             if (request.Transactions.Count == 0)
@@ -78,6 +82,29 @@ public static class PlaidIngestionEndpoints
                     .ToList());
 
             var result = await ingestionService.IngestAsync(ingestionRequest, cancellationToken);
+
+            try
+            {
+                var transactionIds = result.Items
+                    .Select(x => x.EnrichedTransactionId)
+                    .Distinct()
+                    .ToArray();
+
+                if (transactionIds.Length > 0)
+                {
+                    await embeddingQueueService.EnqueueTransactionsAsync(transactionIds, cancellationToken);
+                }
+            }
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Ingestion/write paths must remain non-blocking for embedding generation failures.
+                logger.LogError(
+                    ex,
+                    "Plaid ingestion succeeded but embedding enqueue failed for account {AccountId} and cursor {DeltaCursor}.",
+                    request.AccountId,
+                    request.DeltaCursor);
+            }
+
             return Results.Ok(ApiEndpointHelpers.MapPlaidDeltaIngestionResult(result));
         });
 

@@ -26,6 +26,8 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<EnrichedTransaction> EnrichedTransactions => Set<EnrichedTransaction>();
 
+    public DbSet<TransactionEmbeddingQueueItem> TransactionEmbeddingQueueItems => Set<TransactionEmbeddingQueueItem>();
+
     public DbSet<RawTransactionIngestionRecord> RawTransactionIngestionRecords => Set<RawTransactionIngestionRecord>();
 
     public DbSet<PlaidLinkSession> PlaidLinkSessions => Set<PlaidLinkSession>();
@@ -95,6 +97,9 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasIndex(x => new { x.ReviewStatus, x.NeedsReviewByUserId, x.TransactionDate });
 
         modelBuilder.Entity<EnrichedTransaction>()
+            .HasIndex(x => x.DescriptionEmbeddingHash);
+
+        modelBuilder.Entity<EnrichedTransaction>()
             .HasIndex(x => new { x.RecurringItemId, x.TransactionDate });
 
         modelBuilder.Entity<RecurringItem>()
@@ -143,6 +148,35 @@ public sealed class MosaicMoneyDbContext : DbContext
             .WithMany(x => x.RawIngestionRecords)
             .HasForeignKey(x => x.EnrichedTransactionId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<TransactionEmbeddingQueueItem>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_TransactionEmbeddingQueueItem_AttemptCountRange",
+                    "\"AttemptCount\" >= 0");
+
+                t.HasCheckConstraint(
+                    "CK_TransactionEmbeddingQueueItem_MaxAttemptsRange",
+                    "\"MaxAttempts\" >= 1");
+
+                t.HasCheckConstraint(
+                    "CK_TransactionEmbeddingQueueItem_AttemptBoundedByMax",
+                    "\"AttemptCount\" <= \"MaxAttempts\"");
+            });
+
+        modelBuilder.Entity<TransactionEmbeddingQueueItem>()
+            .HasIndex(x => new { x.Status, x.NextAttemptAtUtc, x.EnqueuedAtUtc });
+
+        modelBuilder.Entity<TransactionEmbeddingQueueItem>()
+            .HasIndex(x => new { x.TransactionId, x.DescriptionHash })
+            .IsUnique();
+
+        modelBuilder.Entity<TransactionEmbeddingQueueItem>()
+            .HasOne(x => x.Transaction)
+            .WithMany(x => x.EmbeddingQueueItems)
+            .HasForeignKey(x => x.TransactionId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<PlaidLinkSession>()
             .ToTable(t =>
