@@ -56,8 +56,8 @@ Deliver a bounded, auditable AI escalation pipeline that executes in strict orde
 ## Task Breakdown
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
-| MM-AI-03 | AI | Deterministic classification rules engine | MM-AI-01, MM-AI-02, MM-BE-06 | Stage-1 rules execute first and produce class, confidence, and reason code set. | Not Started |
-| MM-AI-04 | AI | Ambiguity policy gate to `NeedsReview` | MM-AI-03, MM-BE-05 | Explicit fail-closed gate routes low-confidence/conflict outcomes to review with rationale. | Not Started |
+| MM-AI-03 | AI | Deterministic classification rules engine | MM-AI-01, MM-AI-02, MM-BE-06 | Stage-1 rules execute first and produce class, confidence, and reason code set. | Done |
+| MM-AI-04 | AI | Ambiguity policy gate to `NeedsReview` | MM-AI-03, MM-BE-05 | Explicit fail-closed gate routes low-confidence/conflict outcomes to review with rationale. | Done |
 | MM-BE-10 | Backend | Async embeddings queue pipeline | MM-BE-03, MM-BE-06 | Queue-backed embedding generation is non-blocking for writes; retries and dead-letter behavior are defined. | Not Started |
 | MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database retrieval returns bounded candidates with normalized scores and provenance fields. | Not Started |
 | MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence, semantic fallback thresholds, and conflict-to-review behavior are encoded. | Not Started |

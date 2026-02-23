@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
+using MosaicMoney.Api.Domain.Ledger.Classification;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -31,6 +32,48 @@ public static class ClassificationOutcomeEndpoints
                 .ToListAsync();
 
             return Results.Ok(outcomes.Select(ApiEndpointHelpers.MapClassificationOutcome).ToList());
+        });
+
+        group.MapPost("/transactions/{transactionId:guid}/classification-outcomes/deterministic", async (
+            HttpContext httpContext,
+            MosaicMoneyDbContext dbContext,
+            IDeterministicClassificationOrchestrator deterministicClassificationOrchestrator,
+            Guid transactionId,
+            Guid? needsReviewByUserId,
+            CancellationToken cancellationToken) =>
+        {
+            if (needsReviewByUserId.HasValue)
+            {
+                var reviewerExists = await dbContext.HouseholdUsers
+                    .AsNoTracking()
+                    .AnyAsync(x => x.Id == needsReviewByUserId.Value, cancellationToken);
+
+                if (!reviewerExists)
+                {
+                    return ApiValidation.ToValidationResult(
+                        httpContext,
+                        [new ApiValidationError(nameof(needsReviewByUserId), "NeedsReviewByUserId does not exist.")]);
+                }
+            }
+
+            var executionResult = await deterministicClassificationOrchestrator.ClassifyAndPersistAsync(
+                transactionId,
+                needsReviewByUserId,
+                cancellationToken);
+
+            if (executionResult is null)
+            {
+                return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
+            }
+
+            var persistedOutcome = await dbContext.TransactionClassificationOutcomes
+                .AsNoTracking()
+                .Include(x => x.StageOutputs)
+                .FirstAsync(x => x.Id == executionResult.Outcome.Id, cancellationToken);
+
+            return Results.Created(
+                $"/api/v1/transactions/{transactionId}/classification-outcomes/{persistedOutcome.Id}",
+                ApiEndpointHelpers.MapClassificationOutcome(persistedOutcome));
         });
 
         group.MapPost("/transactions/{transactionId:guid}/classification-outcomes", async (
