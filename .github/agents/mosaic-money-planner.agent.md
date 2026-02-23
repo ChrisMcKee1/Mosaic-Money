@@ -65,7 +65,7 @@ Operating model:
 Delegation policy:
 - Backend domain: C# 14, .NET 10 Minimal APIs, EF Core 10, PostgreSQL schema, migrations, queues.
 - Frontend domain: Next.js 16, React 19, Tailwind, dashboard UX, client projections.
-- Mobile domain: Expo SDK 55, React Native UX, shared hooks and schemas.
+- Mobile domain: Expo SDK 55, React Native mobile UX (iPhone-first MVP), shared hooks and schemas.
 - AI domain: MAF workflows, semantic retrieval, confidence routing, HITL.
 - DevOps domain: Aspire 13.2 AppHost, service composition, containers, MCP observability.
 

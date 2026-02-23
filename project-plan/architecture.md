@@ -6,7 +6,7 @@ When generating code for this repository, the AI agent MUST adhere to the follow
 * **Orchestration:** .NET Aspire 13.2 (Daily Build). The platform is natively polyglot, orchestrating the C# API, Background Workers, and the Next.js frontend via `AddJavaScriptApp`.
 * **Agentic Observability:** Aspire 13.2 automatically provisions a **Model Context Protocol (MCP) Server**. This allows the Copilot coding agent to directly query live resources, stream logs, and inspect traces during development without requiring human copy-pasting.
 * **Web Frontend:** Next.js 16 LTS (App Router) using React 19 and Tailwind CSS.
-* **Mobile Frontend:** React Native via Expo SDK 55. Shares 60-70% of business logic with the web app.
+* **Mobile Frontend:** React Native via Expo SDK 55 for mobile apps. MVP release focus is iPhone. Primary developer flow is Windows dev host + Expo dev server + physical phone testing. Shares 60-70% of business logic with the web app.
 * **Database:** PostgreSQL 18.2+ using Entity Framework Core 10. **Must leverage `azure_ai` extension and `pgvector` with HNSW indexing by default.**
 * **Vector indexing policy:** Standardize current implementation on HNSW immediately; evaluate DiskANN in a dedicated spike behind an environment gate before any production default switch.
 * **AI Framework:** Microsoft Agent Framework (MAF) 1.0 RC + `Microsoft.Extensions.AI`. *Note: Copilot is the UI, not the orchestration engine.*
@@ -21,7 +21,12 @@ This diagram illustrates the macro-level boundaries. Notice how Aspire 13.2 orch
 flowchart TB
     subgraph Client [Client Applications]
         UI[Next.js 16 Web / Copilot UI]
-        Mobile[Expo 55 React Native]
+        Mobile[Expo 55 React Native Mobile App]
+        Phone[Physical Mobile Device]
+    end
+
+    subgraph MobileDev [Mobile Development Path]
+        WinDev[Windows Dev Host + Expo Dev Server]
     end
 
     subgraph AppHost [Aspire 13.2 AppHost]
@@ -47,6 +52,9 @@ flowchart TB
     Copilot <-->|Reads Logs/Traces via MCP| MCP
     UI <-->|REST / JWT| API
     Mobile <-->|REST / JWT| API
+    WinDev --> Mobile
+    Phone --> Mobile
+    Phone <-->|REST / JWT| API
     
     API <--> DB
     API <--> MAF
@@ -54,6 +62,13 @@ flowchart TB
     Worker <--> DB
     Worker -->|Batch Fetch| Plaid
 ```
+
+### Mobile development and deployment path
+- Develop mobile UI and features on Windows using Expo dev server (`start`, `start:lan`, `start:tunnel`).
+- Validate day-to-day mobile behavior on physical phone devices (Expo Go or development builds).
+- Produce installable phone artifacts via cloud iOS build/signing pipeline when release-ready.
+- Keep API interactions server-backed and secret-free on client surfaces (`EXPO_PUBLIC_*` values are public).
+- Use Mac-backed iOS simulator workflows only when explicitly needed for simulator-specific debugging.
 
 ---
 

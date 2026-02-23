@@ -134,6 +134,34 @@ Notes:
 - `API_URL` is a fallback for standalone runs only.
 - For normal local development, prefer Path A so service discovery and references remain orchestration-driven.
 
+### Path C (mobile on Windows to physical phone)
+
+Use this path for day-to-day mobile development when running Expo on Windows and validating on a physical phone.
+
+```powershell
+dotnet build src/apphost.cs
+aspire run --project src/apphost.cs --detach --isolated
+aspire wait api --project src/apphost.cs --status healthy --timeout 180
+
+cd src/MosaicMoney.Mobile
+copy .env.example .env.local
+# Edit .env.local and set EXPO_PUBLIC_API_BASE_URL to your reachable API host, typically LAN IP.
+npm install
+npm run typecheck
+npm run start:lan
+```
+
+If LAN mode cannot reach the dev server from your phone, use:
+
+```powershell
+npm run start:tunnel
+```
+
+Notes:
+- `EXPO_PUBLIC_*` values are public and must not contain secrets.
+- `127.0.0.1` works only from the same machine. Physical phones usually need the host LAN IP or a reachable endpoint.
+- `npm run ios` requires a Mac-backed iOS simulator path.
+
 ## Secret setup reference (required command variants)
 
 When AppHost secret parameters are introduced or renamed, use one of these flows.
@@ -167,3 +195,29 @@ Notes:
 - The suite starts a local test-only mock API (`tests/e2e/mock-api-server.mjs`) and runs Next.js against it.
 - No production secrets are required; browser-visible values remain non-sensitive.
 - Aspire full-stack runs are still preferred for integrated service validation, but FE-08 gating does not require backend availability.
+
+## Azure emulator guidance (Windows)
+
+Use Azure emulators only when a feature under development depends on that Azure service. Mosaic Money's current default stack (AppHost + API + Worker + PostgreSQL) does not require Azure emulators for baseline local runs.
+
+Recommended options on Windows:
+- Azurite (Storage): primary local emulator for Blob/Queue/Table. Azure Storage Emulator is deprecated.
+- Azure Cosmos DB Emulator: use local Windows installer or Docker variants for Cosmos-specific development.
+- Azure Service Bus emulator: containerized local emulator; requires Docker Desktop and WSL on Windows.
+- Azure Event Hubs emulator: containerized local emulator; requires Docker Desktop and WSL on Windows.
+
+Windows prerequisites for Service Bus/Event Hubs emulators:
+- Docker Desktop installed and running.
+- WSL configured and Docker integrated with WSL.
+- Use official installer repositories/scripts from Microsoft docs for setup.
+
+Key caveats:
+- Emulators are for development/test only, not production validation.
+- Feature gaps vs cloud are expected (quotas, networking, security, management operations).
+- Preserve production parity checks against real Azure resources before release.
+
+References:
+- https://learn.microsoft.com/azure/storage/common/storage-use-azurite
+- https://learn.microsoft.com/azure/cosmos-db/how-to-develop-emulator
+- https://learn.microsoft.com/azure/service-bus-messaging/test-locally-with-service-bus-emulator
+- https://learn.microsoft.com/azure/event-hubs/test-locally-with-event-hub-emulator

@@ -7,7 +7,7 @@ Canonical source: [Full Architecture](../../project-plan/architecture.md)
 - Backend: C# 14 with .NET 10 Minimal APIs.
 - Orchestration: Aspire 13.2 AppHost with API, worker, and frontend composition.
 - Web: Next.js 16 with React 19 and Tailwind CSS.
-- Mobile: React Native via Expo SDK 55 with shared logic.
+- Mobile: React Native via Expo SDK 55 for mobile apps, with iPhone-first MVP release focus and Windows dev host + physical phone testing workflow.
 - Data: PostgreSQL 18 with `azure_ai` extension and `pgvector`.
 - AI: Microsoft Agent Framework 1.0 RC plus `Microsoft.Extensions.AI`.
 
