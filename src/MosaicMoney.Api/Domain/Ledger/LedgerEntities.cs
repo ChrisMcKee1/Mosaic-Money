@@ -25,6 +25,15 @@ public enum ReimbursementProposalStatus
     PendingApproval = 1,
     Approved = 2,
     Rejected = 3,
+    NeedsReview = 4,
+    Superseded = 5,
+    Cancelled = 6,
+}
+
+public enum ReimbursementProposalSource
+{
+    Deterministic = 1,
+    Manual = 2,
 }
 
 public enum ClassificationStage
@@ -156,6 +165,36 @@ public sealed class RecurringItem
 
     public DateOnly NextDueDate { get; set; }
 
+    [Range(0, 90)]
+    public int DueWindowDaysBefore { get; set; } = 3;
+
+    [Range(0, 90)]
+    public int DueWindowDaysAfter { get; set; } = 3;
+
+    [Precision(5, 2)]
+    public decimal AmountVariancePercent { get; set; } = 5.00m;
+
+    [Precision(18, 2)]
+    public decimal AmountVarianceAbsolute { get; set; }
+
+    [Precision(5, 4)]
+    public decimal DeterministicMatchThreshold { get; set; } = 0.7000m;
+
+    [Precision(5, 4)]
+    public decimal DueDateScoreWeight { get; set; } = 0.5000m;
+
+    [Precision(5, 4)]
+    public decimal AmountScoreWeight { get; set; } = 0.3500m;
+
+    [Precision(5, 4)]
+    public decimal RecencyScoreWeight { get; set; } = 0.1500m;
+
+    [MaxLength(120)]
+    public string DeterministicScoreVersion { get; set; } = "mm-be-07a-v1";
+
+    [MaxLength(240)]
+    public string TieBreakPolicy { get; set; } = "due_date_distance_then_amount_delta_then_latest_observed";
+
     public bool IsActive { get; set; } = true;
 
     public string? UserNote { get; set; }
@@ -224,6 +263,8 @@ public sealed class EnrichedTransaction
     public ICollection<TransactionClassificationOutcome> ClassificationOutcomes { get; set; } = new List<TransactionClassificationOutcome>();
 
     public ICollection<RawTransactionIngestionRecord> RawIngestionRecords { get; set; } = new List<RawTransactionIngestionRecord>();
+
+    public ICollection<ReimbursementProposal> ReimbursementProposals { get; set; } = new List<ReimbursementProposal>();
 }
 
 public sealed class RawTransactionIngestionRecord
@@ -301,7 +342,30 @@ public sealed class ReimbursementProposal
     [Precision(18, 2)]
     public decimal ProposedAmount { get; set; }
 
+    public Guid LifecycleGroupId { get; set; }
+
+    [Range(1, int.MaxValue)]
+    public int LifecycleOrdinal { get; set; } = 1;
+
     public ReimbursementProposalStatus Status { get; set; } = ReimbursementProposalStatus.PendingApproval;
+
+    [MaxLength(120)]
+    public string StatusReasonCode { get; set; } = "proposal_created";
+
+    [MaxLength(500)]
+    public string StatusRationale { get; set; } = "Proposal created and awaiting human review.";
+
+    public ReimbursementProposalSource ProposalSource { get; set; } = ReimbursementProposalSource.Deterministic;
+
+    [MaxLength(120)]
+    public string ProvenanceSource { get; set; } = "unknown";
+
+    [MaxLength(200)]
+    public string? ProvenanceReference { get; set; }
+
+    public string? ProvenancePayloadJson { get; set; }
+
+    public Guid? SupersedesProposalId { get; set; }
 
     public Guid? DecisionedByUserId { get; set; }
 
@@ -312,6 +376,12 @@ public sealed class ReimbursementProposal
     public string? AgentNote { get; set; }
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public EnrichedTransaction IncomingTransaction { get; set; } = null!;
+
+    public ReimbursementProposal? SupersedesProposal { get; set; }
+
+    public ICollection<ReimbursementProposal> SupersededByProposals { get; set; } = new List<ReimbursementProposal>();
 }
 
 public sealed class TransactionClassificationOutcome

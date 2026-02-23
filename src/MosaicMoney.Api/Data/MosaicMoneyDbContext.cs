@@ -91,6 +91,34 @@ public sealed class MosaicMoneyDbContext : DbContext
         modelBuilder.Entity<EnrichedTransaction>()
             .HasIndex(x => new { x.RecurringItemId, x.TransactionDate });
 
+        modelBuilder.Entity<RecurringItem>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_RecurringItem_DueWindowRange",
+                    "\"DueWindowDaysBefore\" >= 0 AND \"DueWindowDaysBefore\" <= 90 AND \"DueWindowDaysAfter\" >= 0 AND \"DueWindowDaysAfter\" <= 90");
+
+                t.HasCheckConstraint(
+                    "CK_RecurringItem_VarianceRange",
+                    "\"AmountVariancePercent\" >= 0 AND \"AmountVariancePercent\" <= 100 AND \"AmountVarianceAbsolute\" >= 0");
+
+                t.HasCheckConstraint(
+                    "CK_RecurringItem_DeterministicThresholdRange",
+                    "\"DeterministicMatchThreshold\" >= 0 AND \"DeterministicMatchThreshold\" <= 1");
+
+                t.HasCheckConstraint(
+                    "CK_RecurringItem_ScoreWeightsRange",
+                    "\"DueDateScoreWeight\" >= 0 AND \"DueDateScoreWeight\" <= 1 AND \"AmountScoreWeight\" >= 0 AND \"AmountScoreWeight\" <= 1 AND \"RecencyScoreWeight\" >= 0 AND \"RecencyScoreWeight\" <= 1");
+
+                t.HasCheckConstraint(
+                    "CK_RecurringItem_ScoreWeightsSum",
+                    "ROUND(\"DueDateScoreWeight\" + \"AmountScoreWeight\" + \"RecencyScoreWeight\", 4) = 1");
+
+                t.HasCheckConstraint(
+                    "CK_RecurringItem_DeterministicMetadataRequired",
+                    "LENGTH(TRIM(\"DeterministicScoreVersion\")) > 0 AND LENGTH(TRIM(\"TieBreakPolicy\")) > 0");
+            });
+
         modelBuilder.Entity<RawTransactionIngestionRecord>()
             .HasIndex(x => new { x.Source, x.DeltaCursor, x.SourceTransactionId, x.PayloadHash })
             .IsUnique();
@@ -116,14 +144,41 @@ public sealed class MosaicMoneyDbContext : DbContext
                 "(\"RelatedTransactionId\" IS NOT NULL AND \"RelatedTransactionSplitId\" IS NULL) OR (\"RelatedTransactionId\" IS NULL AND \"RelatedTransactionSplitId\" IS NOT NULL)"));
 
         modelBuilder.Entity<ReimbursementProposal>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_ReimbursementProposal_LifecycleOrdinal",
+                    "\"LifecycleOrdinal\" >= 1");
+
+                t.HasCheckConstraint(
+                    "CK_ReimbursementProposal_RationaleRequired",
+                    "LENGTH(TRIM(\"StatusReasonCode\")) > 0 AND LENGTH(TRIM(\"StatusRationale\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_ReimbursementProposal_ProvenanceRequired",
+                    "LENGTH(TRIM(\"ProvenanceSource\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_ReimbursementProposal_DecisionAuditForFinalStates",
+                    "(\"Status\" IN (2, 3) AND \"DecisionedByUserId\" IS NOT NULL AND \"DecisionedAtUtc\" IS NOT NULL) OR (\"Status\" NOT IN (2, 3))");
+            });
+
+        modelBuilder.Entity<ReimbursementProposal>()
             .HasIndex(x => new { x.IncomingTransactionId, x.Status });
 
         modelBuilder.Entity<ReimbursementProposal>()
             .HasIndex(x => new { x.Status, x.CreatedAtUtc });
 
         modelBuilder.Entity<ReimbursementProposal>()
-            .HasOne<EnrichedTransaction>()
-            .WithMany()
+            .HasIndex(x => new { x.IncomingTransactionId, x.LifecycleGroupId, x.LifecycleOrdinal })
+            .IsUnique();
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasIndex(x => new { x.LifecycleGroupId, x.CreatedAtUtc });
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasOne(x => x.IncomingTransaction)
+            .WithMany(x => x.ReimbursementProposals)
             .HasForeignKey(x => x.IncomingTransactionId)
             .OnDelete(DeleteBehavior.Cascade);
 
@@ -143,6 +198,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasOne<HouseholdUser>()
             .WithMany()
             .HasForeignKey(x => x.DecisionedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ReimbursementProposal>()
+            .HasOne(x => x.SupersedesProposal)
+            .WithMany(x => x.SupersededByProposals)
+            .HasForeignKey(x => x.SupersedesProposalId)
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<TransactionClassificationOutcome>()

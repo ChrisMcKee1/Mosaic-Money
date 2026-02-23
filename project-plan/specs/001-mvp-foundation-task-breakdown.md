@@ -87,8 +87,8 @@ All task tables use a `Status` column with the following values:
 ### M3 Ingestion, Recurring, Reimbursements, and Projection Metadata
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-BE-07 | Backend | Recurring matcher (variance + date drift) | MM-BE-06 | Matching supports configurable amount variance and due-window drift; uncertain matches route to `NeedsReview`. | Not Started |
-| MM-BE-08 | Backend | Reimbursement proposal + approval linking | MM-BE-05, MM-BE-06 | 1:N proposal model with approval-only persistence; no autonomous resolution. | Not Started |
+| MM-BE-07 | Backend | Recurring matcher (variance + date drift) | MM-BE-06 | Matching supports configurable amount variance and due-window drift; uncertain matches route to `NeedsReview`. | In Progress |
+| MM-BE-08 | Backend | Reimbursement proposal + approval linking | MM-BE-05, MM-BE-06 | 1:N proposal model with approval-only persistence; no autonomous resolution. | In Progress |
 | MM-BE-09 | Backend | Projection-support read metadata | MM-BE-04, MM-BE-07 | API returns raw truth plus projection metadata (`AmortizationMonths`, flags, recurring status) without ledger mutation. | Not Started |
 | MM-FE-06 | Web | Business vs household isolation visuals | MM-FE-02, MM-BE-09 | Dashboard separates household budget burn from total liquidity views using backend truth. | Not Started |
 | MM-FE-07 | Web | Recurring bills and safe-to-spend projection UI | MM-FE-06, MM-BE-07, MM-BE-09 | Projection view reflects recurring expectations and amortization as visual-only calculations. | Not Started |

@@ -573,6 +573,21 @@ v1.MapPost("/recurring", async (
 		errors.Add(new ApiValidationError(nameof(request.NextDueDate), "NextDueDate is required."));
 	}
 
+	if (!AreScoreWeightsValid(request.DueDateScoreWeight, request.AmountScoreWeight, request.RecencyScoreWeight))
+	{
+		errors.Add(new ApiValidationError(nameof(request.DueDateScoreWeight), "DueDateScoreWeight, AmountScoreWeight, and RecencyScoreWeight must sum to 1.0000."));
+	}
+
+	if (string.IsNullOrWhiteSpace(request.DeterministicScoreVersion))
+	{
+		errors.Add(new ApiValidationError(nameof(request.DeterministicScoreVersion), "DeterministicScoreVersion is required."));
+	}
+
+	if (string.IsNullOrWhiteSpace(request.TieBreakPolicy))
+	{
+		errors.Add(new ApiValidationError(nameof(request.TieBreakPolicy), "TieBreakPolicy is required."));
+	}
+
 	if (errors.Count > 0)
 	{
 		return ApiValidation.ToValidationResult(httpContext, errors);
@@ -593,6 +608,16 @@ v1.MapPost("/recurring", async (
 		IsVariable = request.IsVariable,
 		Frequency = frequency,
 		NextDueDate = request.NextDueDate,
+		DueWindowDaysBefore = request.DueWindowDaysBefore,
+		DueWindowDaysAfter = request.DueWindowDaysAfter,
+		AmountVariancePercent = decimal.Round(request.AmountVariancePercent, 2),
+		AmountVarianceAbsolute = decimal.Round(request.AmountVarianceAbsolute, 2),
+		DeterministicMatchThreshold = decimal.Round(request.DeterministicMatchThreshold, 4),
+		DueDateScoreWeight = decimal.Round(request.DueDateScoreWeight, 4),
+		AmountScoreWeight = decimal.Round(request.AmountScoreWeight, 4),
+		RecencyScoreWeight = decimal.Round(request.RecencyScoreWeight, 4),
+		DeterministicScoreVersion = request.DeterministicScoreVersion.Trim(),
+		TieBreakPolicy = request.TieBreakPolicy.Trim(),
 		IsActive = request.IsActive,
 		UserNote = request.UserNote,
 		AgentNote = request.AgentNote,
@@ -630,6 +655,35 @@ v1.MapPatch("/recurring/{id:guid}", async (
 		errors.Add(new ApiValidationError(nameof(request.ExpectedAmount), "ExpectedAmount must be greater than zero when provided."));
 	}
 
+	var dueDateWeight = request.DueDateScoreWeight;
+	var amountWeight = request.AmountScoreWeight;
+	var recencyWeight = request.RecencyScoreWeight;
+	if (dueDateWeight.HasValue || amountWeight.HasValue || recencyWeight.HasValue)
+	{
+		var resolvedDueDateWeight = dueDateWeight ?? 0m;
+		var resolvedAmountWeight = amountWeight ?? 0m;
+		var resolvedRecencyWeight = recencyWeight ?? 0m;
+
+		if (!(dueDateWeight.HasValue && amountWeight.HasValue && recencyWeight.HasValue))
+		{
+			errors.Add(new ApiValidationError(nameof(request.DueDateScoreWeight), "DueDateScoreWeight, AmountScoreWeight, and RecencyScoreWeight must be patched together."));
+		}
+		else if (!AreScoreWeightsValid(resolvedDueDateWeight, resolvedAmountWeight, resolvedRecencyWeight))
+		{
+			errors.Add(new ApiValidationError(nameof(request.DueDateScoreWeight), "DueDateScoreWeight, AmountScoreWeight, and RecencyScoreWeight must sum to 1.0000."));
+		}
+	}
+
+	if (request.DeterministicScoreVersion is not null && string.IsNullOrWhiteSpace(request.DeterministicScoreVersion))
+	{
+		errors.Add(new ApiValidationError(nameof(request.DeterministicScoreVersion), "DeterministicScoreVersion cannot be empty when provided."));
+	}
+
+	if (request.TieBreakPolicy is not null && string.IsNullOrWhiteSpace(request.TieBreakPolicy))
+	{
+		errors.Add(new ApiValidationError(nameof(request.TieBreakPolicy), "TieBreakPolicy cannot be empty when provided."));
+	}
+
 	if (errors.Count > 0)
 	{
 		return ApiValidation.ToValidationResult(httpContext, errors);
@@ -664,6 +718,56 @@ v1.MapPatch("/recurring/{id:guid}", async (
 	if (request.NextDueDate.HasValue)
 	{
 		recurringItem.NextDueDate = request.NextDueDate.Value;
+	}
+
+	if (request.DueWindowDaysBefore.HasValue)
+	{
+		recurringItem.DueWindowDaysBefore = request.DueWindowDaysBefore.Value;
+	}
+
+	if (request.DueWindowDaysAfter.HasValue)
+	{
+		recurringItem.DueWindowDaysAfter = request.DueWindowDaysAfter.Value;
+	}
+
+	if (request.AmountVariancePercent.HasValue)
+	{
+		recurringItem.AmountVariancePercent = decimal.Round(request.AmountVariancePercent.Value, 2);
+	}
+
+	if (request.AmountVarianceAbsolute.HasValue)
+	{
+		recurringItem.AmountVarianceAbsolute = decimal.Round(request.AmountVarianceAbsolute.Value, 2);
+	}
+
+	if (request.DeterministicMatchThreshold.HasValue)
+	{
+		recurringItem.DeterministicMatchThreshold = decimal.Round(request.DeterministicMatchThreshold.Value, 4);
+	}
+
+	if (request.DueDateScoreWeight.HasValue)
+	{
+		recurringItem.DueDateScoreWeight = decimal.Round(request.DueDateScoreWeight.Value, 4);
+	}
+
+	if (request.AmountScoreWeight.HasValue)
+	{
+		recurringItem.AmountScoreWeight = decimal.Round(request.AmountScoreWeight.Value, 4);
+	}
+
+	if (request.RecencyScoreWeight.HasValue)
+	{
+		recurringItem.RecencyScoreWeight = decimal.Round(request.RecencyScoreWeight.Value, 4);
+	}
+
+	if (!string.IsNullOrWhiteSpace(request.DeterministicScoreVersion))
+	{
+		recurringItem.DeterministicScoreVersion = request.DeterministicScoreVersion.Trim();
+	}
+
+	if (!string.IsNullOrWhiteSpace(request.TieBreakPolicy))
+	{
+		recurringItem.TieBreakPolicy = request.TieBreakPolicy.Trim();
 	}
 
 	if (request.IsActive.HasValue)
@@ -799,7 +903,7 @@ v1.MapGet("/reimbursements", async (
 	{
 		if (!TryParseEnum<ReimbursementProposalStatus>(status, out var parsedStatus))
 		{
-			errors.Add(new ApiValidationError(nameof(status), "status must be one of: PendingApproval, Approved, Rejected."));
+			errors.Add(new ApiValidationError(nameof(status), "status must be one of: PendingApproval, Approved, Rejected, NeedsReview, Superseded, Cancelled."));
 		}
 		else
 		{
@@ -838,6 +942,26 @@ v1.MapPost("/reimbursements", async (
 		errors.Add(new ApiValidationError(nameof(request.ProposedAmount), "ProposedAmount must be greater than zero."));
 	}
 
+	if (!TryParseEnum<ReimbursementProposalSource>(request.ProposalSource, out var parsedProposalSource))
+	{
+		errors.Add(new ApiValidationError(nameof(request.ProposalSource), "ProposalSource must be one of: Deterministic, Manual."));
+	}
+
+	if (string.IsNullOrWhiteSpace(request.StatusReasonCode))
+	{
+		errors.Add(new ApiValidationError(nameof(request.StatusReasonCode), "StatusReasonCode is required."));
+	}
+
+	if (string.IsNullOrWhiteSpace(request.StatusRationale))
+	{
+		errors.Add(new ApiValidationError(nameof(request.StatusRationale), "StatusRationale is required."));
+	}
+
+	if (string.IsNullOrWhiteSpace(request.ProvenanceSource))
+	{
+		errors.Add(new ApiValidationError(nameof(request.ProvenanceSource), "ProvenanceSource is required."));
+	}
+
 	var hasRelatedTransaction = request.RelatedTransactionId.HasValue;
 	var hasRelatedSplit = request.RelatedTransactionSplitId.HasValue;
 	if (hasRelatedTransaction == hasRelatedSplit)
@@ -865,6 +989,59 @@ v1.MapPost("/reimbursements", async (
 		return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.RelatedTransactionSplitId), "RelatedTransactionSplitId does not exist.")]);
 	}
 
+	ReimbursementProposal? supersededProposal = null;
+	if (request.SupersedesProposalId.HasValue)
+	{
+		supersededProposal = await dbContext.ReimbursementProposals
+			.AsNoTracking()
+			.FirstOrDefaultAsync(x => x.Id == request.SupersedesProposalId.Value);
+
+		if (supersededProposal is null)
+		{
+			return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.SupersedesProposalId), "SupersedesProposalId does not exist.")]);
+		}
+
+		if (supersededProposal.IncomingTransactionId != request.IncomingTransactionId)
+		{
+			return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.SupersedesProposalId), "Superseded proposal must reference the same IncomingTransactionId.")]);
+		}
+
+		if (request.LifecycleGroupId.HasValue && request.LifecycleGroupId.Value != supersededProposal.LifecycleGroupId)
+		{
+			return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.LifecycleGroupId), "LifecycleGroupId must match the superseded proposal lifecycle group when SupersedesProposalId is provided.")]);
+		}
+	}
+
+	var lifecycleGroupId = request.LifecycleGroupId
+		?? supersededProposal?.LifecycleGroupId
+		?? Guid.NewGuid();
+	var lifecycleOrdinal = request.LifecycleOrdinal ?? 1;
+
+	if (!request.LifecycleOrdinal.HasValue)
+	{
+		var maxOrdinalInGroup = await dbContext.ReimbursementProposals
+			.AsNoTracking()
+			.Where(x => x.IncomingTransactionId == request.IncomingTransactionId && x.LifecycleGroupId == lifecycleGroupId)
+			.Select(x => (int?)x.LifecycleOrdinal)
+			.MaxAsync();
+
+		lifecycleOrdinal = (maxOrdinalInGroup ?? 0) + 1;
+	}
+
+	var lifecycleOrdinalExists = await dbContext.ReimbursementProposals
+		.AsNoTracking()
+		.AnyAsync(x =>
+			x.IncomingTransactionId == request.IncomingTransactionId &&
+			x.LifecycleGroupId == lifecycleGroupId &&
+			x.LifecycleOrdinal == lifecycleOrdinal);
+	if (lifecycleOrdinalExists)
+	{
+		return ApiValidation.ToConflictResult(
+			httpContext,
+			"reimbursement_lifecycle_conflict",
+			"A reimbursement proposal already exists for this lifecycle group and ordinal.");
+	}
+
 	var proposal = new ReimbursementProposal
 	{
 		Id = Guid.NewGuid(),
@@ -872,7 +1049,16 @@ v1.MapPost("/reimbursements", async (
 		RelatedTransactionId = request.RelatedTransactionId,
 		RelatedTransactionSplitId = request.RelatedTransactionSplitId,
 		ProposedAmount = decimal.Round(request.ProposedAmount, 2),
+		LifecycleGroupId = lifecycleGroupId,
+		LifecycleOrdinal = lifecycleOrdinal,
 		Status = ReimbursementProposalStatus.PendingApproval,
+		StatusReasonCode = request.StatusReasonCode.Trim(),
+		StatusRationale = request.StatusRationale.Trim(),
+		ProposalSource = parsedProposalSource,
+		ProvenanceSource = request.ProvenanceSource.Trim(),
+		ProvenanceReference = request.ProvenanceReference,
+		ProvenancePayloadJson = request.ProvenancePayloadJson,
+		SupersedesProposalId = request.SupersedesProposalId,
 		UserNote = request.UserNote,
 		AgentNote = request.AgentNote,
 		CreatedAtUtc = DateTime.UtcNow,
@@ -922,6 +1108,12 @@ v1.MapPost("/reimbursements/{id:guid}/decision", async (
 	proposal.Status = action == "approve"
 		? ReimbursementProposalStatus.Approved
 		: ReimbursementProposalStatus.Rejected;
+	proposal.StatusReasonCode = action == "approve"
+		? "approved_by_human"
+		: "rejected_by_human";
+	proposal.StatusRationale = action == "approve"
+		? "Proposal approved by human reviewer."
+		: "Proposal rejected by human reviewer.";
 	proposal.DecisionedByUserId = request.DecisionedByUserId;
 	proposal.DecisionedAtUtc = DateTime.UtcNow;
 	proposal.UserNote = request.UserNote ?? proposal.UserNote;
@@ -935,7 +1127,7 @@ app.Run();
 
 static bool TryParseEnum<TEnum>(string value, out TEnum parsed) where TEnum : struct, Enum
 {
-	return Enum.TryParse<TEnum>(value, ignoreCase: true, out parsed);
+	return Enum.TryParse<TEnum>(value, ignoreCase: true, out parsed) && Enum.IsDefined(parsed);
 }
 
 static TransactionDto MapTransaction(EnrichedTransaction transaction)
@@ -980,6 +1172,16 @@ static RecurringItemDto MapRecurringItem(RecurringItem recurringItem)
 		recurringItem.IsVariable,
 		recurringItem.Frequency.ToString(),
 		recurringItem.NextDueDate,
+		recurringItem.DueWindowDaysBefore,
+		recurringItem.DueWindowDaysAfter,
+		recurringItem.AmountVariancePercent,
+		recurringItem.AmountVarianceAbsolute,
+		recurringItem.DeterministicMatchThreshold,
+		recurringItem.DueDateScoreWeight,
+		recurringItem.AmountScoreWeight,
+		recurringItem.RecencyScoreWeight,
+		recurringItem.DeterministicScoreVersion,
+		recurringItem.TieBreakPolicy,
 		recurringItem.IsActive,
 		recurringItem.UserNote,
 		recurringItem.AgentNote);
@@ -993,12 +1195,26 @@ static ReimbursementProposalDto MapReimbursement(ReimbursementProposal proposal)
 		proposal.RelatedTransactionId,
 		proposal.RelatedTransactionSplitId,
 		proposal.ProposedAmount,
+		proposal.LifecycleGroupId,
+		proposal.LifecycleOrdinal,
 		proposal.Status.ToString(),
+		proposal.StatusReasonCode,
+		proposal.StatusRationale,
+		proposal.ProposalSource.ToString(),
+		proposal.ProvenanceSource,
+		proposal.ProvenanceReference,
+		proposal.ProvenancePayloadJson,
+		proposal.SupersedesProposalId,
 		proposal.DecisionedByUserId,
 		proposal.DecisionedAtUtc,
 		proposal.UserNote,
 		proposal.AgentNote,
 		proposal.CreatedAtUtc);
+}
+
+static bool AreScoreWeightsValid(decimal dueDateWeight, decimal amountWeight, decimal recencyWeight)
+{
+	return decimal.Round(dueDateWeight + amountWeight + recencyWeight, 4) == 1.0000m;
 }
 
 static ClassificationOutcomeDto MapClassificationOutcome(TransactionClassificationOutcome outcome)

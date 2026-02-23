@@ -128,6 +128,16 @@ public sealed record RecurringItemDto(
     bool IsVariable,
     string Frequency,
     DateOnly NextDueDate,
+    int DueWindowDaysBefore,
+    int DueWindowDaysAfter,
+    decimal AmountVariancePercent,
+    decimal AmountVarianceAbsolute,
+    decimal DeterministicMatchThreshold,
+    decimal DueDateScoreWeight,
+    decimal AmountScoreWeight,
+    decimal RecencyScoreWeight,
+    string DeterministicScoreVersion,
+    string TieBreakPolicy,
     bool IsActive,
     string? UserNote,
     string? AgentNote);
@@ -138,7 +148,16 @@ public sealed record ReimbursementProposalDto(
     Guid? RelatedTransactionId,
     Guid? RelatedTransactionSplitId,
     decimal ProposedAmount,
+    Guid LifecycleGroupId,
+    int LifecycleOrdinal,
     string Status,
+    string StatusReasonCode,
+    string StatusRationale,
+    string ProposalSource,
+    string ProvenanceSource,
+    string? ProvenanceReference,
+    string? ProvenancePayloadJson,
+    Guid? SupersedesProposalId,
     Guid? DecisionedByUserId,
     DateTime? DecisionedAtUtc,
     string? UserNote,
@@ -214,6 +233,38 @@ public sealed class CreateRecurringItemRequest
     public string Frequency { get; init; } = "Monthly";
 
     public DateOnly NextDueDate { get; init; }
+
+    [Range(0, 90)]
+    public int DueWindowDaysBefore { get; init; } = 3;
+
+    [Range(0, 90)]
+    public int DueWindowDaysAfter { get; init; } = 3;
+
+    [Range(0, 100)]
+    public decimal AmountVariancePercent { get; init; } = 5.00m;
+
+    [Range(0, double.MaxValue)]
+    public decimal AmountVarianceAbsolute { get; init; }
+
+    [Range(0, 1)]
+    public decimal DeterministicMatchThreshold { get; init; } = 0.7000m;
+
+    [Range(0, 1)]
+    public decimal DueDateScoreWeight { get; init; } = 0.5000m;
+
+    [Range(0, 1)]
+    public decimal AmountScoreWeight { get; init; } = 0.3500m;
+
+    [Range(0, 1)]
+    public decimal RecencyScoreWeight { get; init; } = 0.1500m;
+
+    [Required]
+    [MaxLength(120)]
+    public string DeterministicScoreVersion { get; init; } = "mm-be-07a-v1";
+
+    [Required]
+    [MaxLength(240)]
+    public string TieBreakPolicy { get; init; } = "due_date_distance_then_amount_delta_then_latest_observed";
 
     public bool IsActive { get; init; } = true;
 
@@ -324,6 +375,36 @@ public sealed class UpdateRecurringItemRequest
 
     public DateOnly? NextDueDate { get; init; }
 
+    [Range(0, 90)]
+    public int? DueWindowDaysBefore { get; init; }
+
+    [Range(0, 90)]
+    public int? DueWindowDaysAfter { get; init; }
+
+    [Range(0, 100)]
+    public decimal? AmountVariancePercent { get; init; }
+
+    [Range(0, double.MaxValue)]
+    public decimal? AmountVarianceAbsolute { get; init; }
+
+    [Range(0, 1)]
+    public decimal? DeterministicMatchThreshold { get; init; }
+
+    [Range(0, 1)]
+    public decimal? DueDateScoreWeight { get; init; }
+
+    [Range(0, 1)]
+    public decimal? AmountScoreWeight { get; init; }
+
+    [Range(0, 1)]
+    public decimal? RecencyScoreWeight { get; init; }
+
+    [MaxLength(120)]
+    public string? DeterministicScoreVersion { get; init; }
+
+    [MaxLength(240)]
+    public string? TieBreakPolicy { get; init; }
+
     public bool? IsActive { get; init; }
 
     public string? UserNote { get; init; }
@@ -365,6 +446,33 @@ public sealed class CreateReimbursementProposalRequest
     public Guid? RelatedTransactionSplitId { get; init; }
 
     public decimal ProposedAmount { get; init; }
+
+    public Guid? LifecycleGroupId { get; init; }
+
+    [Range(1, int.MaxValue)]
+    public int? LifecycleOrdinal { get; init; }
+
+    [Required]
+    [MaxLength(120)]
+    public string StatusReasonCode { get; init; } = "proposal_created";
+
+    [Required]
+    [MaxLength(500)]
+    public string StatusRationale { get; init; } = "Proposal created and awaiting human review.";
+
+    [Required]
+    public string ProposalSource { get; init; } = "Deterministic";
+
+    [Required]
+    [MaxLength(120)]
+    public string ProvenanceSource { get; init; } = "api";
+
+    [MaxLength(200)]
+    public string? ProvenanceReference { get; init; }
+
+    public string? ProvenancePayloadJson { get; init; }
+
+    public Guid? SupersedesProposalId { get; init; }
 
     public string? UserNote { get; init; }
 
