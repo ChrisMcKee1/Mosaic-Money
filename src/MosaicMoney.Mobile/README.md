@@ -1,23 +1,68 @@
-# Mosaic Money Mobile (Scaffold)
+# Mosaic Money Mobile
 
-This folder contains the initial Expo TypeScript scaffold for the Mosaic Money mobile app.
+This package contains the mobile app surface for Mosaic Money built with Expo SDK 55 and Expo Router.
 
-## Current scope
+Current MVP target is iPhone, but this is still mobile application development (not desktop app development).
 
-- Establishes an executable mobile runtime surface at `src/MosaicMoney.Mobile`.
-- Unblocks mobile feature tasks that were previously blocked by missing project scaffold.
-- Uses Expo tooling generated via `create-expo-app` and aligned to Expo SDK 55 preview dependencies.
+## Implemented feature slice
 
-## Next implementation tasks
+- `MM-MOB-03`: NeedsReview queue screen with explicit pending status and pull-to-refresh behavior.
+- `MM-MOB-04`: Transaction detail screen with read-only ledger truth fields and distinct `UserNote` / `AgentNote` lanes.
 
-- Build NeedsReview queue screen (`MM-MOB-03`).
-- Build transaction detail with dual notes (`MM-MOB-04`).
-- Add shared contract integration from `packages/shared` where applicable.
+## Environment contract
+
+Mobile API calls require a non-secret public endpoint:
+
+- `EXPO_PUBLIC_API_BASE_URL`: Base URL for the Mosaic Money API.
+
+Use `.env.example` as the contract template and keep real values in local-only env files.
+
+For physical phone testing, set this to a host reachable by your phone:
+- LAN mode example: `http://192.168.x.y:5001`
+- Tunnel mode: use an internet-reachable API endpoint.
+
+Do not place secrets in `EXPO_PUBLIC_*` values.
+
+## Windows dev -> phone workflow
+
+1. Start backend services (Aspire path).
+2. Set `EXPO_PUBLIC_API_BASE_URL` to your reachable API URL.
+3. Start the Expo dev server on Windows.
+4. Open the app on your phone with Expo Go or a development build.
+
+Recommended commands:
+
+```bash
+cd src/MosaicMoney.Mobile
+npm install
+npm run typecheck
+npm run start:lan
+```
+
+If LAN networking is blocked or flaky, use tunnel mode:
+
+```bash
+npm run start:tunnel
+```
 
 ## Local run
 
 ```bash
 cd src/MosaicMoney.Mobile
 npm install
+npm run typecheck
 npm run start
 ```
+
+Notes:
+- `npm run ios` requires a Mac-backed iOS simulator workflow.
+- Windows-only teams can still complete day-to-day mobile development using physical phone testing and cloud/mobile build paths.
+
+## Ship to phone workflow
+
+Two common options:
+
+1. Development testing on phone: Expo Go or development builds.
+2. Installable artifact path: cloud iOS build/signing pipeline (for example EAS Build) and then install/test on provisioned phone devices.
+
+Keep all sensitive operations and credentials in backend/AppHost secret paths. The mobile client should only receive public configuration and authenticated API surfaces.
