@@ -48,11 +48,11 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
 | MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. | Done |
-| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | Not Started |
+| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | In Progress |
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Not Started |
 | MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | Not Started |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | Not Started |
-| MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Not Started |
+| MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Done |
 | MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Not Started |
 | MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Not Started |
 | MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | Not Started |

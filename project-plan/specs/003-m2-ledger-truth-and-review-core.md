@@ -42,10 +42,12 @@ Deliver the first complete human-reviewed ledger loop: Plaid account-link onboar
 | MM-FE-05 | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify user actions integrated with backend review endpoints. | Done |
 | MM-FE-09 | Plaid Link onboarding flow (web) | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued token and posts `public_token` + metadata to backend exchange endpoint. | Done |
 | MM-MOB-02 | Offline-safe state/caching foundation | MM-MOB-01 | Queue-friendly offline cache and sync baseline. | Done |
-| MM-MOB-03 | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile review inbox with clear pending statuses. | Not Started |
-| MM-MOB-04 | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Clear distinction of `UserNote` and `AgentNote` in mobile detail view. | Not Started |
+| MM-MOB-03 | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile review inbox with clear pending statuses. | Blocked |
+| MM-MOB-04 | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Clear distinction of `UserNote` and `AgentNote` in mobile detail view. | Blocked |
 | MM-MOB-05 | Human-in-the-loop approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Mobile approve/reject actions with explicit user confirmation and sync behavior. | Not Started |
 | MM-MOB-08 | Plaid Link onboarding flow (mobile) | MM-MOB-01, MM-BE-12, MM-BE-13 | React Native Link SDK flow submits `public_token` for backend exchange and does not expose Plaid secrets on-device. | Not Started |
+
+Blocker note (2026-02-23): `MM-MOB-03` and `MM-MOB-04` cannot proceed until a mobile app scaffold exists in the repository (for example, `src/MosaicMoney.Mobile` with Expo SDK 55). The shared contracts/offline package exists, but there is currently no mobile runtime project to wire UI screens and tests.
 
 ## Acceptance Criteria
 - Plaid onboarding uses server-generated `link_token` and server-side `public_token` exchange only.
