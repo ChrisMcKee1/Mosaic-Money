@@ -14,13 +14,13 @@ Implement a distinctive, production-grade frontend interface with high design qu
 
 | Task ID | Owner | Status | Description |
 |---|---|---|---|
-| MM-FE-10 | `mosaic-money-frontend` | In Progress | **Global Layout & Theming**: Implement Dark/Light mode toggle, CSS variable color system, distinctive typography, and the main application shell (Left Sidebar, Main Content, Right Context Panel). |
-| MM-FE-11 | `mosaic-money-frontend` | In Progress | **Dashboard Overview Screen**: Implement Monthly spending line chart, Net worth line chart, Transactions to review widget, Top categories summary, and Next two weeks recurring widget. |
-| MM-FE-12 | `mosaic-money-frontend` | In Progress | **Accounts Screen**: Implement Assets/Debts summary chart, and grouped lists for Credit cards, Depository, Investment, Loan, and Real estate with sparklines. Right panel for specific account details. |
-| MM-FE-13 | `mosaic-money-frontend` | In Progress | **Transactions Screen**: Implement grouped transaction list (Today, Yesterday, etc.) with category tags and amounts. Right panel for transaction details, categorization, and history. |
-| MM-FE-14 | `mosaic-money-frontend` | In Progress | **Categories & Budgeting Screen**: Implement total spent vs budget donut chart, detailed progress bars for regular categories. Right panel for category breakdown and historical bar chart. |
-| MM-FE-15 | `mosaic-money-frontend` | In Progress | **Investments Screen**: Implement live balance estimate chart, top movers widget, and account list with 1W balance change. Right panel for specific asset details (e.g., Crypto chart and positions). |
-| MM-FE-16 | `mosaic-money-frontend` | In Progress | **Recurrings Screen**: Implement left to pay vs paid so far donut chart, list of recurring transactions with status (paid, overdue, upcoming). Right panel for recurring rule details and history. |
+| MM-FE-10 | `mosaic-money-frontend` | Parked | **Global Layout & Theming**: Implement Dark/Light mode toggle, CSS variable color system, distinctive typography, and the main application shell (Left Sidebar, Main Content, Right Context Panel). |
+| MM-FE-11 | `mosaic-money-frontend` | Parked | **Dashboard Overview Screen**: Implement Monthly spending line chart, Net worth line chart, Transactions to review widget, Top categories summary, and Next two weeks recurring widget. |
+| MM-FE-12 | `mosaic-money-frontend` | Parked | **Accounts Screen**: Implement Assets/Debts summary chart, and grouped lists for Credit cards, Depository, Investment, Loan, and Real estate with sparklines. Right panel for specific account details. |
+| MM-FE-13 | `mosaic-money-frontend` | Parked | **Transactions Screen**: Implement grouped transaction list (Today, Yesterday, etc.) with category tags and amounts. Right panel for transaction details, categorization, and history. |
+| MM-FE-14 | `mosaic-money-frontend` | Parked | **Categories & Budgeting Screen**: Implement total spent vs budget donut chart, detailed progress bars for regular categories. Right panel for category breakdown and historical bar chart. |
+| MM-FE-15 | `mosaic-money-frontend` | Parked | **Investments Screen**: Implement live balance estimate chart, top movers widget, and account list with 1W balance change. Right panel for specific asset details (e.g., Crypto chart and positions). |
+| MM-FE-16 | `mosaic-money-frontend` | Parked | **Recurrings Screen**: Implement left to pay vs paid so far donut chart, list of recurring transactions with status (paid, overdue, upcoming). Right panel for recurring rule details and history. |
 
 ## Implementation Guidelines
 - Follow the `frontend-design` skill principles.

@@ -37,13 +37,13 @@ Deliver the first complete human-reviewed ledger loop: Plaid account-link onboar
 |---|---|---|---|---|
 | MM-BE-05 | NeedsReview state machine and transitions | MM-BE-04, MM-AI-01 | Explicit transition rules with fail-closed behavior for ambiguity. | Done |
 | MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | Done |
-| MM-BE-12 | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configs and records link session metadata for diagnostics/support. | Parked |
-| MM-BE-13 | Public token exchange and Item credential storage | MM-BE-12 | Backend exchanges `public_token` to `access_token` + `item_id` and stores credentials in secure backend storage paths only. | Parked |
-| MM-BE-14 | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook errors (including OAuth expiry/revocation) produce explicit relink/update-mode actions and review-safe routing. | Parked |
+| MM-BE-12 | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configs and records link session metadata for diagnostics/support. | In Progress |
+| MM-BE-13 | Public token exchange and Item credential storage | MM-BE-12 | Backend exchanges `public_token` to `access_token` + `item_id` and stores credentials in secure backend storage paths only. | In Progress |
+| MM-BE-14 | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook errors (including OAuth expiry/revocation) produce explicit relink/update-mode actions and review-safe routing. | In Progress |
 | MM-BE-15 | Plaid product capability mapping research | MM-BE-12, MM-BE-13, MM-BE-14 | Cross-reference PRD capabilities to Plaid products/endpoints/webhooks, validate sandbox simulation coverage, and publish MVP product decisions with schema + ingestion implications. | Done |
 | MM-FE-04 | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Web list view with separated dual notes and no ledger mutation controls. | Done |
 | MM-FE-05 | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify user actions integrated with backend review endpoints. | Done |
-| MM-FE-09 | Plaid Link onboarding flow (web) | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued token and posts `public_token` + metadata to backend exchange endpoint. | Parked |
+| MM-FE-09 | Plaid Link onboarding flow (web) | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued token and posts `public_token` + metadata to backend exchange endpoint. | In Progress |
 | MM-MOB-02 | Offline-safe state/caching foundation | MM-MOB-01 | Queue-friendly offline cache and sync baseline. | Done |
 | MM-MOB-03 | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile review inbox with clear pending statuses. | Done |
 | MM-MOB-04 | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Clear distinction of `UserNote` and `AgentNote` in mobile detail view. | Done |

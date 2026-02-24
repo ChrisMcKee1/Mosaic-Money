@@ -62,8 +62,8 @@ Deliver a bounded, auditable AI escalation pipeline that executes in strict orde
 | MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database retrieval returns bounded candidates with normalized scores and provenance fields. | Done |
 | MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence, semantic fallback thresholds, and conflict-to-review behavior are encoded. | Done |
 | MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF graph runs only after stage insufficiency and returns schema-validated proposals with bounded cost/latency. | Done |
-| MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | Parked |
-| MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | Parked |
+| MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | In Progress |
+| MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | In Progress |
 | MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Pipeline emits final classification or `NeedsReview` with traceable stage-by-stage rationale. | Not Started |
 
 Implementation note (2026-02-23): `MM-AI-05` now includes an advisory PostgreSQL semantic retrieval contract that reads existing transaction embeddings (`pgvector` cosine distance), returns bounded candidates with normalized `[0..1]` scores, and emits explicit provenance (`ProvenanceSource`, `ProvenanceReference`, `ProvenancePayloadJson`). Deterministic stage remains first and authoritative for decisioning; semantic stage evidence is appended only after deterministic `NeedsReview` routing and does not auto-categorize independently.
