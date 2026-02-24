@@ -1,0 +1,167 @@
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e8]: Mosaic
+      - navigation [ref=e9]:
+        - generic [ref=e10]: Overview
+        - link "Dashboard" [ref=e11] [cursor=pointer]:
+          - /url: /
+          - img [ref=e12]
+          - text: Dashboard
+        - link "Accounts" [ref=e17] [cursor=pointer]:
+          - /url: /accounts
+          - img [ref=e18]
+          - text: Accounts
+        - link "Transactions" [ref=e21] [cursor=pointer]:
+          - /url: /transactions
+          - img [ref=e22]
+          - text: Transactions
+        - link "Categories" [ref=e25] [cursor=pointer]:
+          - /url: /categories
+          - img [ref=e26]
+          - text: Categories
+        - link "Investments" [ref=e29] [cursor=pointer]:
+          - /url: /investments
+          - img [ref=e30]
+          - text: Investments
+        - link "Recurrings" [ref=e33] [cursor=pointer]:
+          - /url: /recurrings
+          - img [ref=e34]
+          - text: Recurrings
+        - link "Needs Review" [ref=e39] [cursor=pointer]:
+          - /url: /needs-review
+          - img [ref=e40]
+          - text: Needs Review
+      - link "Settings" [ref=e43] [cursor=pointer]:
+        - /url: /settings
+        - img [ref=e44]
+        - text: Settings
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e50]:
+          - generic [ref=e51]:
+            - heading "Dashboard" [level=1] [ref=e52]
+            - paragraph [ref=e53]: Your financial overview and projections.
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - paragraph [ref=e56]: Safe to Spend
+              - paragraph [ref=e57]: $215611.50
+              - generic [ref=e58]:
+                - img [ref=e59]
+                - text: +2.4% from last month
+            - generic [ref=e62]:
+              - paragraph [ref=e63]: Household Burn
+              - paragraph [ref=e64]: $0.00
+              - generic [ref=e65]: Shared expenses
+            - generic [ref=e66]:
+              - paragraph [ref=e67]: Business Expenses
+              - paragraph [ref=e68]: $0.00
+              - generic [ref=e69]: Excluded from budget
+          - generic [ref=e71]:
+            - generic [ref=e73]:
+              - heading "Net Worth Trend" [level=3] [ref=e74]
+              - paragraph [ref=e75]: $-121,974.06
+            - generic [ref=e79]:
+              - heading "Monthly Spending" [level=3] [ref=e80]
+              - paragraph [ref=e81]: $0.00
+          - generic [ref=e84]:
+            - generic [ref=e85]:
+              - heading "Recent Transactions" [level=2] [ref=e86]
+              - link "View all" [ref=e87] [cursor=pointer]:
+                - /url: /transactions
+            - generic [ref=e89]:
+              - generic [ref=e90]:
+                - generic [ref=e91]:
+                  - generic [ref=e92]: A
+                  - generic [ref=e93]:
+                    - paragraph [ref=e94]: ACH Electronic CreditGUSTO PAY 123456
+                    - generic [ref=e96]: 2026-01-13
+                - paragraph [ref=e98]: +$5850.00
+              - generic [ref=e99]:
+                - generic [ref=e100]:
+                  - generic [ref=e101]: A
+                  - generic [ref=e102]:
+                    - paragraph [ref=e103]: ACH Electronic CreditGUSTO PAY 123456
+                    - generic [ref=e105]: 2025-12-14
+                - paragraph [ref=e107]: +$5850.00
+              - generic [ref=e108]:
+                - generic [ref=e109]:
+                  - generic [ref=e110]: A
+                  - generic [ref=e111]:
+                    - paragraph [ref=e112]: ACH Electronic CreditGUSTO PAY 123456
+                    - generic [ref=e114]: 2025-11-14
+                - paragraph [ref=e116]: +$5850.00
+              - generic [ref=e117]:
+                - generic [ref=e118]:
+                  - generic [ref=e119]: A
+                  - generic [ref=e120]:
+                    - paragraph [ref=e121]: ACH Electronic CreditGUSTO PAY 123456
+                    - generic [ref=e123]: 2025-10-15
+                - paragraph [ref=e125]: +$5850.00
+              - generic [ref=e126]:
+                - generic [ref=e127]:
+                  - generic [ref=e128]: A
+                  - generic [ref=e129]:
+                    - paragraph [ref=e130]: AUTOMATIC PAYMENT - THANK
+                    - generic [ref=e132]: 2025-09-25
+                - paragraph [ref=e134]: +$2078.50
+        - complementary [ref=e135]:
+          - generic [ref=e137]:
+            - generic [ref=e140]:
+              - generic [ref=e141]:
+                - heading "Action Required" [level=3] [ref=e142]:
+                  - img [ref=e143]
+                  - text: Action Required
+                - paragraph [ref=e145]: "3"
+                - paragraph [ref=e146]: Transactions need review
+              - link [ref=e147] [cursor=pointer]:
+                - /url: /needs-review
+                - img [ref=e148]
+            - generic [ref=e150]:
+              - heading "Next 14 Days" [level=3] [ref=e151]:
+                - img [ref=e152]
+                - text: Next 14 Days
+              - generic [ref=e155]: No upcoming bills
+            - generic [ref=e156]:
+              - heading "Top Categories" [level=3] [ref=e157]:
+                - img [ref=e158]
+                - text: Top Categories
+              - generic [ref=e161]:
+                - generic [ref=e163]:
+                  - generic [ref=e164]: Groceries
+                  - generic [ref=e165]: $450
+                - generic [ref=e169]:
+                  - generic [ref=e170]: Dining Out
+                  - generic [ref=e171]: $321
+                - generic [ref=e175]:
+                  - generic [ref=e176]: Transportation
+                  - generic [ref=e177]: $150
+            - generic [ref=e180]:
+              - heading "Debt & Liabilities" [level=3] [ref=e181]:
+                - img [ref=e182]
+                - text: Debt & Liabilities
+              - generic [ref=e184]:
+                - generic [ref=e185]:
+                  - generic [ref=e186]:
+                    - paragraph [ref=e187]: Plaid Checking
+                    - paragraph [ref=e188]: checking
+                  - generic [ref=e189]: Active
+                - generic [ref=e190]:
+                  - generic [ref=e191]:
+                    - paragraph [ref=e192]: Plaid Cash Management
+                    - paragraph [ref=e193]: cash management
+                  - generic [ref=e194]: Active
+                - generic [ref=e195]:
+                  - generic [ref=e196]:
+                    - paragraph [ref=e197]: Plaid 401k
+                    - paragraph [ref=e198]: 401k
+                  - generic [ref=e199]: Active
+                - generic [ref=e200]:
+                  - generic [ref=e201]:
+                    - paragraph [ref=e202]: Plaid Student Loan
+                    - paragraph [ref=e203]: student
+                  - generic [ref=e204]: $65262.00
+  - button "Open Next.js Dev Tools" [ref=e210] [cursor=pointer]:
+    - img [ref=e211]

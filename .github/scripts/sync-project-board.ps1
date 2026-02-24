@@ -93,15 +93,19 @@ $issues = @(
     @{ num=61; nid="I_kwDORVI-G87tOmq3"; status="Not Started" } # MM-QA-01
     @{ num=62; nid="I_kwDORVI-G87tOmsd"; status="Not Started" } # MM-QA-02
     @{ num=63; nid="I_kwDORVI-G87tOmtk"; status="Not Started" } # MM-QA-03
+    @{ num=72; nid="I_kwDORVI-G87tkz1h"; status="Done" } # MM-BE-16
+    @{ num=73; nid="I_kwDORVI-G87tkz1i"; status="Done" } # MM-BE-17
+    @{ num=74; nid="I_kwDORVI-G87tkz1j"; status="Done" } # MM-BE-18
+    @{ num=75; nid="I_kwDORVI-G87tkz1k"; status="Done" } # MM-FE-17
 
     # --- M6: UI Redesign & Theming ---
-    @{ num=65; nid="I_kwDORVI-G87tUSTb"; status="Parked" }      # MM-FE-10
-    @{ num=66; nid="I_kwDORVI-G87tUSUp"; status="Parked" }      # MM-FE-11
-    @{ num=67; nid="I_kwDORVI-G87tUSWo"; status="Parked" }      # MM-FE-12
-    @{ num=68; nid="I_kwDORVI-G87tUSYH"; status="Parked" }      # MM-FE-13
-    @{ num=69; nid="I_kwDORVI-G87tUSZk"; status="Parked" }      # MM-FE-14
-    @{ num=70; nid="I_kwDORVI-G87tUSbK"; status="Parked" }      # MM-FE-15
-    @{ num=71; nid="I_kwDORVI-G87tUScw"; status="Parked" }      # MM-FE-16
+    @{ num=65; nid="I_kwDORVI-G87tUSTb"; status="In Review" } # MM-FE-10
+    @{ num=66; nid="I_kwDORVI-G87tUSUp"; status="In Review" } # MM-FE-11
+    @{ num=67; nid="I_kwDORVI-G87tUSWo"; status="In Review" } # MM-FE-12
+    @{ num=68; nid="I_kwDORVI-G87tUSYH"; status="In Review" } # MM-FE-13
+    @{ num=69; nid="I_kwDORVI-G87tUSZk"; status="In Review" } # MM-FE-14
+    @{ num=70; nid="I_kwDORVI-G87tUSbK"; status="In Review" } # MM-FE-15
+    @{ num=71; nid="I_kwDORVI-G87tUScw"; status="In Review" } # MM-FE-16
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="

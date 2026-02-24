@@ -129,7 +129,7 @@ Update note (2026-02-24): Frontend execution is intentionally paused due fronten
 | MM-AI-09 | AI | AgentNote summarization enforcement | MM-AI-01, MM-AI-07 | Concise `AgentNote` summaries persisted; raw transcript storage suppressed. | In Progress |
 | MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Workflow outputs final categorized or `NeedsReview` state with traceable rationale. | Not Started |
 
-### M5 Verification and Release Gates
+### M5 Verification, Release Gates, and Dashboard Data Wiring
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
 | MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup with dependency waits and documented recovery paths. | Done |
@@ -139,17 +139,21 @@ Update note (2026-02-24): Frontend execution is intentionally paused due fronten
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Measured criteria enforced for routing correctness, ambiguity handling, and explainability. | Not Started |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. | Done |
 | MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | In Progress |
+| MM-BE-16 | Backend | Plaid Investments Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/investments/holdings/get`. | Done |
+| MM-BE-17 | Backend | Plaid Recurring Transactions Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/transactions/recurring/get`. | Done |
+| MM-BE-18 | Backend | Net Worth History Aggregation API | MM-BE-15 | API endpoint to aggregate historical balances across all account types. | Done |
+| MM-FE-17 | Web | Wire M5 Dashboard UI to Backend APIs | MM-BE-16, MM-BE-17, MM-BE-18 | `page.jsx` fetches real data for Net Worth, Asset Allocation, Recent Transactions, Recurring, and Debt. | Done |
 
 ### M6 UI Redesign and Theming
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-FE-10 | Web | Global Layout & Theming | MM-FE-01 | Dark/Light mode toggle, CSS variable color system, distinctive typography, and main application shell implemented. | Parked |
-| MM-FE-11 | Web | Dashboard Overview Screen | MM-FE-10 | Monthly spending chart, Net worth chart, Transactions to review, Top categories, and Next two weeks widgets implemented. | Parked |
-| MM-FE-12 | Web | Accounts Screen | MM-FE-10 | Assets/Debts summary chart, grouped account lists with sparklines, and right detail panel implemented. | Parked |
-| MM-FE-13 | Web | Transactions Screen | MM-FE-10 | Grouped transaction list with category tags and amounts, and right detail panel implemented. | Parked |
-| MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | Parked |
-| MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | Parked |
-| MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | Parked |
+| MM-FE-10 | Web | Global Layout & Theming | MM-FE-01 | Dark/Light mode toggle, CSS variable color system, distinctive typography, and main application shell implemented. | In Review |
+| MM-FE-11 | Web | Dashboard Overview Screen | MM-FE-10 | Monthly spending chart, Net worth chart, Transactions to review, Top categories, and Next two weeks widgets implemented. | In Review |
+| MM-FE-12 | Web | Accounts Screen | MM-FE-10 | Assets/Debts summary chart, grouped account lists with sparklines, and right detail panel implemented. | In Review |
+| MM-FE-13 | Web | Transactions Screen | MM-FE-10 | Grouped transaction list with category tags and amounts, and right detail panel implemented. | In Review |
+| MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | In Review |
+| MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | In Review |
+| MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | In Review |
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

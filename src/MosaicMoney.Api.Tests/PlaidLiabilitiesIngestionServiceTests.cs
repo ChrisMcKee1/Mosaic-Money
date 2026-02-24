@@ -230,5 +230,14 @@ public sealed class PlaidLiabilitiesIngestionServiceTests
 
             return Task.FromResult(liabilities.Dequeue());
         }
+        public Task<PlaidTransactionsRecurringGetResult> GetTransactionsRecurringAsync(PlaidTransactionsRecurringGetRequest request, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PlaidInvestmentsHoldingsGetResult> GetInvestmentsHoldingsAsync(PlaidInvestmentsHoldingsGetRequest request, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

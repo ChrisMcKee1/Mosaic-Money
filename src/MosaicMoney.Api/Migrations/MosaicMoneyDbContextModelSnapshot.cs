@@ -273,6 +273,227 @@ namespace MosaicMoney.Api.Migrations
                     b.ToTable("HouseholdUsers");
                 });
 
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.InvestmentAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AccountSubtype")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("AccountType")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("HouseholdId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("LastProviderRequestId")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime>("LastSeenAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Mask")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("OfficialName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PlaidAccountId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("PlaidEnvironment")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseholdId", "IsActive", "LastSeenAtUtc");
+
+                    b.HasIndex("PlaidEnvironment", "ItemId", "PlaidAccountId")
+                        .IsUnique();
+
+                    b.ToTable("InvestmentAccounts", t =>
+                        {
+                            t.HasCheckConstraint("CK_InvestmentAccount_ItemIdRequired", "LENGTH(TRIM(\"ItemId\")) > 0");
+
+                            t.HasCheckConstraint("CK_InvestmentAccount_NameRequired", "LENGTH(TRIM(\"Name\")) > 0");
+
+                            t.HasCheckConstraint("CK_InvestmentAccount_PlaidAccountIdRequired", "LENGTH(TRIM(\"PlaidAccountId\")) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.InvestmentHoldingSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CapturedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("CostBasis")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("InstitutionPrice")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateOnly?>("InstitutionPriceAsOf")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("InstitutionValue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("InvestmentAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PlaidSecurityId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ProviderRequestId")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("RawHoldingJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SnapshotHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("TickerSymbol")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvestmentAccountId", "CapturedAtUtc");
+
+                    b.HasIndex("InvestmentAccountId", "SnapshotHash")
+                        .IsUnique();
+
+                    b.ToTable("InvestmentHoldingSnapshots", t =>
+                        {
+                            t.HasCheckConstraint("CK_InvestmentHoldingSnapshot_PlaidSecurityIdRequired", "LENGTH(TRIM(\"PlaidSecurityId\")) > 0");
+
+                            t.HasCheckConstraint("CK_InvestmentHoldingSnapshot_SnapshotHashRequired", "LENGTH(TRIM(\"SnapshotHash\")) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.InvestmentTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<decimal?>("Fees")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("InvestmentAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PlaidInvestmentTransactionId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("PlaidSecurityId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("RawTransactionJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Subtype")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvestmentAccountId", "Date");
+
+                    b.HasIndex("InvestmentAccountId", "PlaidInvestmentTransactionId")
+                        .IsUnique();
+
+                    b.ToTable("InvestmentTransactions", t =>
+                        {
+                            t.HasCheckConstraint("CK_InvestmentTransaction_NameRequired", "LENGTH(TRIM(\"Name\")) > 0");
+
+                            t.HasCheckConstraint("CK_InvestmentTransaction_PlaidInvestmentTransactionIdRequired", "LENGTH(TRIM(\"PlaidInvestmentTransactionId\")) > 0");
+                        });
+                });
+
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.LiabilityAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -838,9 +1059,25 @@ namespace MosaicMoney.Api.Migrations
                     b.Property<DateOnly>("NextDueDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("PlaidRecurringConfidence")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("PlaidRecurringLastSeenAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PlaidRecurringStreamId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<decimal>("RecencyScoreWeight")
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)");
+
+                    b.Property<string>("RecurringSource")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("TieBreakPolicy")
                         .IsRequired()
@@ -1219,6 +1456,28 @@ namespace MosaicMoney.Api.Migrations
                     b.Navigation("Household");
                 });
 
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.InvestmentHoldingSnapshot", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.InvestmentAccount", "InvestmentAccount")
+                        .WithMany("Holdings")
+                        .HasForeignKey("InvestmentAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InvestmentAccount");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.InvestmentTransaction", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.InvestmentAccount", "InvestmentAccount")
+                        .WithMany("Transactions")
+                        .HasForeignKey("InvestmentAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InvestmentAccount");
+                });
+
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.LiabilitySnapshot", b =>
                 {
                     b.HasOne("MosaicMoney.Api.Domain.Ledger.LiabilityAccount", "LiabilityAccount")
@@ -1396,6 +1655,13 @@ namespace MosaicMoney.Api.Migrations
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.HouseholdUser", b =>
                 {
                     b.Navigation("NeedsReviewTransactions");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.InvestmentAccount", b =>
+                {
+                    b.Navigation("Holdings");
+
+                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.LiabilityAccount", b =>

@@ -242,5 +242,14 @@ public sealed class PlaidPublicTokenExchangeServiceTests
         {
             throw new NotSupportedException();
         }
+        public Task<PlaidTransactionsRecurringGetResult> GetTransactionsRecurringAsync(PlaidTransactionsRecurringGetRequest request, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<PlaidInvestmentsHoldingsGetResult> GetInvestmentsHoldingsAsync(PlaidInvestmentsHoldingsGetRequest request, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

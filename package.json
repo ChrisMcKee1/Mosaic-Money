@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/outfit": "^5.2.8",
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
+    "recharts": "^3.7.0"
+  }
+}

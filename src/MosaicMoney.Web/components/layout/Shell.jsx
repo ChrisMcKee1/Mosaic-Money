@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Receipt, AlertCircle, Link2, Settings } from "lucide-react";
+import { 
+  LayoutDashboard, 
+  Receipt, 
+  AlertCircle, 
+  Link2, 
+  Settings,
+  PieChart,
+  TrendingUp,
+  Repeat
+} from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -12,80 +21,32 @@ function cn(...inputs) {
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Accounts", href: "/accounts", icon: PieChart },
   { name: "Transactions", href: "/transactions", icon: Receipt },
+  { name: "Categories", href: "/categories", icon: TrendingUp },
+  { name: "Investments", href: "/investments", icon: TrendingUp },
+  { name: "Recurrings", href: "/recurrings", icon: Repeat },
   { name: "Needs Review", href: "/needs-review", icon: AlertCircle },
-  { name: "Connect Bank", href: "/onboarding/plaid", icon: Link2 },
 ];
 
 export function Shell({ children }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 flex flex-col pb-16 sm:pb-0">
-      {/* Accessible Header Landmark */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <span className="text-xl font-bold text-blue-600">Mosaic Money</span>
-              </div>
-              {/* Accessible Navigation Landmark - Desktop */}
-              <nav aria-label="Main Navigation" className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navigation.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={cn(
-                        isActive
-                          ? "border-blue-500 text-gray-900"
-                          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                        "inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                      )}
-                      aria-current={isActive ? "page" : undefined}
-                    >
-                      <item.icon className="w-4 h-4 mr-2" aria-hidden="true" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-            <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              <Link
-                href="/settings"
-                className="p-2 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                aria-label="Settings"
-              >
-                <Settings className="w-6 h-6" aria-hidden="true" />
-              </Link>
-            </div>
+    <div className="flex h-screen overflow-hidden bg-[var(--color-background)] text-[var(--color-text-main)]">
+      {/* Left Sidebar */}
+      <aside className="w-64 flex-shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col">
+        <div className="h-16 flex items-center px-6 border-b border-[var(--color-border)]">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded bg-[var(--color-primary)] shadow-[0_0_15px_var(--color-primary)]" />
+            <span className="text-lg font-bold tracking-tight font-display text-white">Mosaic</span>
           </div>
         </div>
-      </header>
-
-      {/* Accessible Main Content Landmark */}
-      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </main>
-
-      {/* Accessible Footer Landmark - Desktop */}
-      <footer className="hidden sm:block bg-white border-t border-gray-200 mt-auto">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} Mosaic Money. All rights reserved.
-          </p>
-        </div>
-      </footer>
-
-      {/* Mobile Bottom Navigation */}
-      <nav
-        aria-label="Mobile Navigation"
-        className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-20 pb-[env(safe-area-inset-bottom)]"
-      >
-        <div className="flex justify-around items-center h-16">
+        
+        <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+          <div className="text-xs font-semibold text-[var(--color-text-subtle)] uppercase tracking-wider mb-4 px-3">
+            Overview
+          </div>
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -93,29 +54,39 @@ export function Shell({ children }) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  isActive ? "text-blue-600" : "text-gray-500 hover:text-gray-900",
-                  "flex flex-col items-center justify-center w-full h-full space-y-1"
+                  "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
+                  isActive
+                    ? "bg-[var(--color-surface-hover)] text-[var(--color-primary)] shadow-sm"
+                    : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white"
                 )}
-                aria-current={isActive ? "page" : undefined}
               >
-                <item.icon className="w-6 h-6" aria-hidden="true" />
-                <span className="text-[10px] font-medium">{item.name}</span>
+                <item.icon 
+                  className={cn(
+                    "mr-3 flex-shrink-0 h-5 w-5 transition-colors duration-200",
+                    isActive ? "text-[var(--color-primary)]" : "text-[var(--color-text-subtle)] group-hover:text-white"
+                  )} 
+                />
+                {item.name}
               </Link>
             );
           })}
+        </nav>
+
+        <div className="p-4 border-t border-[var(--color-border)]">
           <Link
             href="/settings"
-            className={cn(
-              pathname === "/settings" ? "text-blue-600" : "text-gray-500 hover:text-gray-900",
-              "flex flex-col items-center justify-center w-full h-full space-y-1"
-            )}
-            aria-current={pathname === "/settings" ? "page" : undefined}
+            className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-white transition-all duration-200"
           >
-            <Settings className="w-6 h-6" aria-hidden="true" />
-            <span className="text-[10px] font-medium">Settings</span>
+            <Settings className="mr-3 flex-shrink-0 h-5 w-5 text-[var(--color-text-subtle)] group-hover:text-white transition-colors duration-200" />
+            Settings
           </Link>
         </div>
-      </nav>
+      </aside>
+
+      {/* Main Content Area */}
+      <main id="main-content" className="flex-1 flex overflow-hidden relative">
+        {children}
+      </main>
     </div>
   );
 }

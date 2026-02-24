@@ -197,6 +197,66 @@ public sealed class PlaidHttpTokenProvider(
             snapshots);
     }
 
+    public async Task<PlaidInvestmentsHoldingsGetResult> GetInvestmentsHoldingsAsync(
+        PlaidInvestmentsHoldingsGetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var options = plaidOptions.Value;
+        EnsureConfiguration(options);
+
+        var payload = new
+        {
+            access_token = request.AccessToken,
+        };
+
+        using var response = await SendRequestAsync(
+            path: "/investments/holdings/get",
+            environment: request.Environment,
+            payload,
+            cancellationToken);
+
+        var responseRoot = await ReadResponseJsonAsync(response, "/investments/holdings/get", cancellationToken);
+        
+        var accounts = ParseInvestmentAccounts(responseRoot);
+        var holdings = ParseInvestmentHoldings(responseRoot);
+        var securities = ParseInvestmentSecurities(responseRoot);
+
+        return new PlaidInvestmentsHoldingsGetResult(
+            GetRequiredString(responseRoot, "request_id"),
+            accounts,
+            holdings,
+            securities);
+    }
+
+    public async Task<PlaidTransactionsRecurringGetResult> GetTransactionsRecurringAsync(
+        PlaidTransactionsRecurringGetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var options = plaidOptions.Value;
+        EnsureConfiguration(options);
+
+        var payload = new
+        {
+            access_token = request.AccessToken,
+        };
+
+        using var response = await SendRequestAsync(
+            path: "/transactions/recurring/get",
+            environment: request.Environment,
+            payload,
+            cancellationToken);
+
+        var responseRoot = await ReadResponseJsonAsync(response, "/transactions/recurring/get", cancellationToken);
+        
+        var inflowStreams = ParseRecurringStreams(responseRoot, "inflow_streams");
+        var outflowStreams = ParseRecurringStreams(responseRoot, "outflow_streams");
+
+        return new PlaidTransactionsRecurringGetResult(
+            GetRequiredString(responseRoot, "request_id"),
+            inflowStreams,
+            outflowStreams);
+    }
+
     private async Task<HttpResponseMessage> SendRequestAsync(
         string path,
         string environment,
@@ -453,6 +513,122 @@ public sealed class PlaidHttpTokenProvider(
         }
 
         return snapshots;
+    }
+
+    private static IReadOnlyList<PlaidInvestmentAccount> ParseInvestmentAccounts(JsonElement root)
+    {
+        if (!root.TryGetProperty("accounts", out var accountsElement) || accountsElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var accounts = new List<PlaidInvestmentAccount>();
+        foreach (var accountElement in accountsElement.EnumerateArray())
+        {
+            var accountId = GetOptionalString(accountElement, "account_id");
+            if (string.IsNullOrWhiteSpace(accountId))
+            {
+                continue;
+            }
+
+            accounts.Add(new PlaidInvestmentAccount(
+                accountId.Trim(),
+                GetOptionalString(accountElement, "name")?.Trim() ?? string.Empty,
+                ResolveOptional(GetOptionalString(accountElement, "official_name")),
+                ResolveOptional(GetOptionalString(accountElement, "mask")),
+                ResolveOptional(GetOptionalString(accountElement, "type")),
+                ResolveOptional(GetOptionalString(accountElement, "subtype"))));
+        }
+
+        return accounts;
+    }
+
+    private static IReadOnlyList<PlaidInvestmentHolding> ParseInvestmentHoldings(JsonElement root)
+    {
+        if (!root.TryGetProperty("holdings", out var holdingsElement) || holdingsElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var holdings = new List<PlaidInvestmentHolding>();
+        foreach (var holdingElement in holdingsElement.EnumerateArray())
+        {
+            var accountId = GetOptionalString(holdingElement, "account_id");
+            var securityId = GetOptionalString(holdingElement, "security_id");
+            if (string.IsNullOrWhiteSpace(accountId) || string.IsNullOrWhiteSpace(securityId))
+            {
+                continue;
+            }
+
+            holdings.Add(new PlaidInvestmentHolding(
+                accountId.Trim(),
+                securityId.Trim(),
+                GetOptionalDecimal(holdingElement, "quantity"),
+                GetOptionalDecimal(holdingElement, "institution_price"),
+                GetOptionalDateOnly(holdingElement, "institution_price_as_of"),
+                GetOptionalDecimal(holdingElement, "institution_value"),
+                GetOptionalDecimalNullable(holdingElement, "cost_basis"),
+                holdingElement.GetRawText()));
+        }
+
+        return holdings;
+    }
+
+    private static IReadOnlyList<PlaidInvestmentSecurity> ParseInvestmentSecurities(JsonElement root)
+    {
+        if (!root.TryGetProperty("securities", out var securitiesElement) || securitiesElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var securities = new List<PlaidInvestmentSecurity>();
+        foreach (var securityElement in securitiesElement.EnumerateArray())
+        {
+            var securityId = GetOptionalString(securityElement, "security_id");
+            if (string.IsNullOrWhiteSpace(securityId))
+            {
+                continue;
+            }
+
+            securities.Add(new PlaidInvestmentSecurity(
+                securityId.Trim(),
+                ResolveOptional(GetOptionalString(securityElement, "ticker_symbol")),
+                ResolveOptional(GetOptionalString(securityElement, "name"))));
+        }
+
+        return securities;
+    }
+
+    private static IReadOnlyList<PlaidRecurringStream> ParseRecurringStreams(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var streamsElement) || streamsElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var streams = new List<PlaidRecurringStream>();
+        foreach (var streamElement in streamsElement.EnumerateArray())
+        {
+            var streamId = GetOptionalString(streamElement, "stream_id");
+            var accountId = GetOptionalString(streamElement, "account_id");
+            if (string.IsNullOrWhiteSpace(streamId) || string.IsNullOrWhiteSpace(accountId))
+            {
+                continue;
+            }
+
+            streams.Add(new PlaidRecurringStream(
+                streamId.Trim(),
+                accountId.Trim(),
+                GetOptionalString(streamElement, "description")?.Trim() ?? string.Empty,
+                GetOptionalString(streamElement, "merchant_name")?.Trim() ?? string.Empty,
+                GetOptionalNestedDecimal(streamElement, "last_amount", "amount"),
+                GetOptionalDateOnly(streamElement, "last_date"),
+                GetOptionalString(streamElement, "frequency")?.Trim() ?? string.Empty,
+                GetOptionalBool(streamElement, "is_active"),
+                streamElement.GetRawText()));
+        }
+
+        return streams;
     }
 
     private static string BuildEndpointUri(string environment, string path)

@@ -23,6 +23,12 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 - Spec 005 defines M4 AI pipeline behavior but does not finalize cross-surface release hardening.
 - M5 needed unified go/no-go criteria tying backend correctness, AI safety, web/mobile regressions, and orchestration policy checks.
 - M5 needed explicit release rehearsal and rollback criteria before production promotion.
+- **UI Data Gap Analysis (2026-02-24)**: The new M5 Dashboard UI requires data that is not currently exposed by the backend or ingested from Plaid.
+  - **Net Worth History**: Requires historical balances. Needs a backend API to aggregate historical snapshots.
+  - **Asset Allocation**: Requires Plaid Investments API (`/investments/holdings/get`).
+  - **Recurring Subscriptions**: Requires Plaid Recurring Transactions API (`/transactions/recurring/get`).
+  - **Debt / Liabilities**: Requires Plaid Liabilities API (`/liabilities/get`) - backend ingestion is done, but needs UI API endpoints.
+  - **Recent Transactions**: Requires Plaid Transactions API (`/transactions/sync`) - backend ingestion is done, but needs UI API endpoints.
 
 ## In Scope
 - DevOps release-hardening gates (`MM-ASP-05`, `MM-ASP-06`, `MM-ASP-07`).
@@ -31,6 +37,7 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 - Web Playwright regression completion (`MM-FE-08`).
 - Mobile integration/offline reliability validation (`MM-MOB-07`).
 - Cross-domain QA gates, release rehearsal, and rollback readiness.
+- **M5 Dashboard Data Wiring**: Implementing Plaid integrations and backend APIs for Investments, Recurring, and Net Worth History to support the new UI (`MM-BE-16`, `MM-BE-17`, `MM-BE-18`, `MM-FE-17`).
 
 ## Out of Scope
 - New product feature scope beyond M1-M4.
@@ -59,6 +66,10 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | Not Started |
 | MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Not Started |
 | MM-QA-03 | QA | Release rehearsal and rollback drill | MM-QA-01, MM-QA-02 | Rehearsed release with validated rollback path and go/no-go artifact. | Not Started |
+| MM-BE-16 | Backend | Plaid Investments Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/investments/holdings/get`. | Done |
+| MM-BE-17 | Backend | Plaid Recurring Transactions Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/transactions/recurring/get`. | Done |
+| MM-BE-18 | Backend | Net Worth History Aggregation API | MM-BE-15 | API endpoint to aggregate historical balances across all account types. | Done |
+| MM-FE-17 | Web | Wire M5 Dashboard UI to Backend APIs | MM-BE-16, MM-BE-17, MM-BE-18 | `page.jsx` fetches real data for Net Worth, Asset Allocation, Recent Transactions, Recurring, and Debt. | Done |
 
 ## Verification Matrix
 | Area | Validation | Pass Criteria |

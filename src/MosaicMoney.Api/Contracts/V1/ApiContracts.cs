@@ -189,6 +189,13 @@ public sealed record PlaidTransactionsWebhookProcessedDto(
     DateTime? LastWebhookAtUtc,
     string? LastProviderRequestId);
 
+public sealed record NetWorthHistoryPointDto(
+    DateTime Date,
+    decimal DepositoryBalance,
+    decimal InvestmentBalance,
+    decimal LiabilityBalance,
+    decimal NetWorth);
+
 public sealed record LiabilitySnapshotDto(
     Guid Id,
     string LiabilityType,
@@ -219,6 +226,35 @@ public sealed record LiabilityAccountDto(
     DateTime LastSeenAtUtc,
     string? LastProviderRequestId,
     IReadOnlyList<LiabilitySnapshotDto> Snapshots);
+
+public sealed record InvestmentHoldingSnapshotDto(
+    Guid Id,
+    string PlaidSecurityId,
+    string? TickerSymbol,
+    string? Name,
+    decimal Quantity,
+    decimal InstitutionPrice,
+    DateOnly? InstitutionPriceAsOf,
+    decimal InstitutionValue,
+    decimal? CostBasis,
+    DateTime CapturedAtUtc,
+    string? ProviderRequestId);
+
+public sealed record InvestmentAccountDto(
+    Guid Id,
+    Guid? HouseholdId,
+    string ItemId,
+    string Environment,
+    string PlaidAccountId,
+    string Name,
+    string? OfficialName,
+    string? Mask,
+    string? AccountType,
+    string? AccountSubtype,
+    bool IsActive,
+    DateTime CreatedAtUtc,
+    DateTime LastSeenAtUtc,
+    string? LastProviderRequestId);
 
 public sealed record PlaidLiabilitiesWebhookProcessedDto(
     Guid CredentialId,
@@ -271,6 +307,10 @@ public sealed record RecurringItemDto(
     decimal RecencyScoreWeight,
     string DeterministicScoreVersion,
     string TieBreakPolicy,
+    string? PlaidRecurringStreamId,
+    string? PlaidRecurringConfidence,
+    DateTime? PlaidRecurringLastSeenAtUtc,
+    string RecurringSource,
     bool IsActive,
     string? UserNote,
     string? AgentNote);

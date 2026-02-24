@@ -1,8 +1,70 @@
 @import "tailwindcss";
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+@theme {
+  --color-background: #0B0F19;
+  --color-surface: #131B2F;
+  --color-surface-hover: #1E293B;
+  --color-border: #1F2937;
+  
+  --color-primary: #00F0FF;
+  --color-primary-hover: #38BDF8;
+  
+  --color-positive: #00FF94;
+  --color-positive-bg: rgba(0, 255, 148, 0.1);
+  
+  --color-negative: #FF3366;
+  --color-negative-bg: rgba(255, 51, 102, 0.1);
+  
+  --color-warning: #F59E0B;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+
+  --color-text-main: #F9FAFB;
+  --color-text-muted: #9CA3AF;
+  --color-text-subtle: #6B7280;
+
+  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-background);
+    color: var(--color-text-main);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Custom Scrollbar for a refined look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-subtle);
 }

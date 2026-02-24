@@ -98,6 +98,31 @@ public sealed class DeterministicPlaidTokenProvider(IOptions<PlaidOptions> plaid
             Snapshots: []));
     }
 
+    public Task<PlaidInvestmentsHoldingsGetResult> GetInvestmentsHoldingsAsync(
+        PlaidInvestmentsHoldingsGetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureConfiguration();
+
+        return Task.FromResult(new PlaidInvestmentsHoldingsGetResult(
+            RequestId: $"req-sim-{Guid.NewGuid():N}",
+            Accounts: [],
+            Holdings: [],
+            Securities: []));
+    }
+
+    public Task<PlaidTransactionsRecurringGetResult> GetTransactionsRecurringAsync(
+        PlaidTransactionsRecurringGetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureConfiguration();
+
+        return Task.FromResult(new PlaidTransactionsRecurringGetResult(
+            RequestId: $"req-sim-{Guid.NewGuid():N}",
+            InflowStreams: [],
+            OutflowStreams: []));
+    }
+
     private void EnsureConfiguration()
     {
         var options = plaidOptions.Value;

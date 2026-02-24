@@ -80,6 +80,10 @@ internal static class ApiEndpointHelpers
             recurringItem.RecencyScoreWeight,
             recurringItem.DeterministicScoreVersion,
             recurringItem.TieBreakPolicy,
+            recurringItem.PlaidRecurringStreamId,
+            recurringItem.PlaidRecurringConfidence,
+            recurringItem.PlaidRecurringLastSeenAtUtc,
+            recurringItem.RecurringSource,
             recurringItem.IsActive,
             recurringItem.UserNote,
             recurringItem.AgentNote);
@@ -194,5 +198,40 @@ internal static class ApiEndpointHelpers
                 .Take(Math.Max(1, snapshotLimit))
                 .Select(MapLiabilitySnapshot)
                 .ToList());
+    }
+
+    internal static InvestmentHoldingSnapshotDto MapInvestmentHoldingSnapshot(InvestmentHoldingSnapshot snapshot)
+    {
+        return new InvestmentHoldingSnapshotDto(
+            snapshot.Id,
+            snapshot.PlaidSecurityId,
+            snapshot.TickerSymbol,
+            snapshot.Name,
+            snapshot.Quantity,
+            snapshot.InstitutionPrice,
+            snapshot.InstitutionPriceAsOf,
+            snapshot.InstitutionValue,
+            snapshot.CostBasis,
+            snapshot.CapturedAtUtc,
+            snapshot.ProviderRequestId);
+    }
+
+    internal static InvestmentAccountDto MapInvestmentAccount(InvestmentAccount account)
+    {
+        return new InvestmentAccountDto(
+            account.Id,
+            account.HouseholdId,
+            account.ItemId,
+            account.PlaidEnvironment,
+            account.PlaidAccountId,
+            account.Name,
+            account.OfficialName,
+            account.Mask,
+            account.AccountType,
+            account.AccountSubtype,
+            account.IsActive,
+            account.CreatedAtUtc,
+            account.LastSeenAtUtc,
+            account.LastProviderRequestId);
     }
 }

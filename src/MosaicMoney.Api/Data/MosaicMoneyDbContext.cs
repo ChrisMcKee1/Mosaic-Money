@@ -42,6 +42,12 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<LiabilitySnapshot> LiabilitySnapshots => Set<LiabilitySnapshot>();
 
+    public DbSet<InvestmentAccount> InvestmentAccounts => Set<InvestmentAccount>();
+
+    public DbSet<InvestmentHoldingSnapshot> InvestmentHoldingSnapshots => Set<InvestmentHoldingSnapshot>();
+
+    public DbSet<InvestmentTransaction> InvestmentTransactions => Set<InvestmentTransaction>();
+
     public DbSet<TransactionSplit> TransactionSplits => Set<TransactionSplit>();
 
     public DbSet<ReimbursementProposal> ReimbursementProposals => Set<ReimbursementProposal>();
@@ -337,6 +343,79 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasOne(x => x.LiabilityAccount)
             .WithMany(x => x.Snapshots)
             .HasForeignKey(x => x.LiabilityAccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InvestmentAccount>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_InvestmentAccount_ItemIdRequired",
+                    "LENGTH(TRIM(\"ItemId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_InvestmentAccount_PlaidAccountIdRequired",
+                    "LENGTH(TRIM(\"PlaidAccountId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_InvestmentAccount_NameRequired",
+                    "LENGTH(TRIM(\"Name\")) > 0");
+            });
+
+        modelBuilder.Entity<InvestmentAccount>()
+            .HasIndex(x => new { x.PlaidEnvironment, x.ItemId, x.PlaidAccountId })
+            .IsUnique();
+
+        modelBuilder.Entity<InvestmentAccount>()
+            .HasIndex(x => new { x.HouseholdId, x.IsActive, x.LastSeenAtUtc });
+
+        modelBuilder.Entity<InvestmentHoldingSnapshot>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_InvestmentHoldingSnapshot_PlaidSecurityIdRequired",
+                    "LENGTH(TRIM(\"PlaidSecurityId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_InvestmentHoldingSnapshot_SnapshotHashRequired",
+                    "LENGTH(TRIM(\"SnapshotHash\")) > 0");
+            });
+
+        modelBuilder.Entity<InvestmentHoldingSnapshot>()
+            .HasIndex(x => new { x.InvestmentAccountId, x.SnapshotHash })
+            .IsUnique();
+
+        modelBuilder.Entity<InvestmentHoldingSnapshot>()
+            .HasIndex(x => new { x.InvestmentAccountId, x.CapturedAtUtc });
+
+        modelBuilder.Entity<InvestmentHoldingSnapshot>()
+            .HasOne(x => x.InvestmentAccount)
+            .WithMany(x => x.Holdings)
+            .HasForeignKey(x => x.InvestmentAccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<InvestmentTransaction>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_InvestmentTransaction_PlaidInvestmentTransactionIdRequired",
+                    "LENGTH(TRIM(\"PlaidInvestmentTransactionId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_InvestmentTransaction_NameRequired",
+                    "LENGTH(TRIM(\"Name\")) > 0");
+            });
+
+        modelBuilder.Entity<InvestmentTransaction>()
+            .HasIndex(x => new { x.InvestmentAccountId, x.PlaidInvestmentTransactionId })
+            .IsUnique();
+
+        modelBuilder.Entity<InvestmentTransaction>()
+            .HasIndex(x => new { x.InvestmentAccountId, x.Date });
+
+        modelBuilder.Entity<InvestmentTransaction>()
+            .HasOne(x => x.InvestmentAccount)
+            .WithMany(x => x.Transactions)
+            .HasForeignKey(x => x.InvestmentAccountId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ReimbursementProposal>()

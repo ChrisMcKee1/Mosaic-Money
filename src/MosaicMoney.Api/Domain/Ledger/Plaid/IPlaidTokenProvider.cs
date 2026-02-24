@@ -107,6 +107,59 @@ public sealed record PlaidLiabilitiesGetResult(
     IReadOnlyList<PlaidLiabilityAccount> Accounts,
     IReadOnlyList<PlaidLiabilitySnapshot> Snapshots);
 
+public sealed record PlaidInvestmentsHoldingsGetRequest(
+    string AccessToken,
+    string Environment);
+
+public sealed record PlaidInvestmentAccount(
+    string PlaidAccountId,
+    string Name,
+    string? OfficialName,
+    string? Mask,
+    string? Type,
+    string? Subtype);
+
+public sealed record PlaidInvestmentHolding(
+    string PlaidAccountId,
+    string PlaidSecurityId,
+    decimal Quantity,
+    decimal InstitutionPrice,
+    DateOnly? InstitutionPriceAsOf,
+    decimal InstitutionValue,
+    decimal? CostBasis,
+    string RawHoldingJson);
+
+public sealed record PlaidInvestmentSecurity(
+    string PlaidSecurityId,
+    string? TickerSymbol,
+    string? Name);
+
+public sealed record PlaidInvestmentsHoldingsGetResult(
+    string RequestId,
+    IReadOnlyList<PlaidInvestmentAccount> Accounts,
+    IReadOnlyList<PlaidInvestmentHolding> Holdings,
+    IReadOnlyList<PlaidInvestmentSecurity> Securities);
+
+public sealed record PlaidTransactionsRecurringGetRequest(
+    string AccessToken,
+    string Environment);
+
+public sealed record PlaidRecurringStream(
+    string StreamId,
+    string PlaidAccountId,
+    string Description,
+    string MerchantName,
+    decimal? LastAmount,
+    DateOnly? LastDate,
+    string Frequency,
+    bool IsActive,
+    string RawStreamJson);
+
+public sealed record PlaidTransactionsRecurringGetResult(
+    string RequestId,
+    IReadOnlyList<PlaidRecurringStream> InflowStreams,
+    IReadOnlyList<PlaidRecurringStream> OutflowStreams);
+
 public interface IPlaidTokenProvider
 {
     Task<PlaidLinkTokenCreateResult> CreateLinkTokenAsync(
@@ -127,5 +180,13 @@ public interface IPlaidTokenProvider
 
     Task<PlaidLiabilitiesGetResult> GetLiabilitiesAsync(
         PlaidLiabilitiesGetRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaidInvestmentsHoldingsGetResult> GetInvestmentsHoldingsAsync(
+        PlaidInvestmentsHoldingsGetRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaidTransactionsRecurringGetResult> GetTransactionsRecurringAsync(
+        PlaidTransactionsRecurringGetRequest request,
         CancellationToken cancellationToken = default);
 }

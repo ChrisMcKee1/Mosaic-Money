@@ -232,6 +232,17 @@ public sealed class RecurringItem
     [MaxLength(240)]
     public string TieBreakPolicy { get; set; } = "due_date_distance_then_amount_delta_then_latest_observed";
 
+    [MaxLength(128)]
+    public string? PlaidRecurringStreamId { get; set; }
+
+    [MaxLength(64)]
+    public string? PlaidRecurringConfidence { get; set; }
+
+    public DateTime? PlaidRecurringLastSeenAtUtc { get; set; }
+
+    [MaxLength(32)]
+    public string RecurringSource { get; set; } = "deterministic";
+
     public bool IsActive { get; set; } = true;
 
     public string? UserNote { get; set; }
@@ -613,6 +624,133 @@ public sealed class LiabilitySnapshot
     public string? ProviderRequestId { get; set; }
 
     public LiabilityAccount LiabilityAccount { get; set; } = null!;
+}
+
+public sealed class InvestmentAccount
+{
+    public Guid Id { get; set; }
+
+    public Guid? HouseholdId { get; set; }
+
+    [MaxLength(128)]
+    public string ItemId { get; set; } = string.Empty;
+
+    [MaxLength(32)]
+    public string PlaidEnvironment { get; set; } = "sandbox";
+
+    [MaxLength(128)]
+    public string PlaidAccountId { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string? OfficialName { get; set; }
+
+    [MaxLength(32)]
+    public string? Mask { get; set; }
+
+    [MaxLength(64)]
+    public string? AccountType { get; set; }
+
+    [MaxLength(64)]
+    public string? AccountSubtype { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastSeenAtUtc { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(120)]
+    public string? LastProviderRequestId { get; set; }
+
+    public ICollection<InvestmentHoldingSnapshot> Holdings { get; set; } = new List<InvestmentHoldingSnapshot>();
+    public ICollection<InvestmentTransaction> Transactions { get; set; } = new List<InvestmentTransaction>();
+}
+
+public sealed class InvestmentHoldingSnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid InvestmentAccountId { get; set; }
+
+    [MaxLength(128)]
+    public string PlaidSecurityId { get; set; } = string.Empty;
+
+    [MaxLength(120)]
+    public string? TickerSymbol { get; set; }
+
+    [MaxLength(200)]
+    public string? Name { get; set; }
+
+    [Precision(18, 4)]
+    public decimal Quantity { get; set; }
+
+    [Precision(18, 4)]
+    public decimal InstitutionPrice { get; set; }
+
+    public DateOnly? InstitutionPriceAsOf { get; set; }
+
+    [Precision(18, 2)]
+    public decimal InstitutionValue { get; set; }
+
+    [Precision(18, 4)]
+    public decimal? CostBasis { get; set; }
+
+    [MaxLength(64)]
+    public string SnapshotHash { get; set; } = string.Empty;
+
+    public string RawHoldingJson { get; set; } = string.Empty;
+
+    public DateTime CapturedAtUtc { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(120)]
+    public string? ProviderRequestId { get; set; }
+
+    public InvestmentAccount InvestmentAccount { get; set; } = null!;
+}
+
+public sealed class InvestmentTransaction
+{
+    public Guid Id { get; set; }
+
+    public Guid InvestmentAccountId { get; set; }
+
+    [MaxLength(128)]
+    public string PlaidInvestmentTransactionId { get; set; } = string.Empty;
+
+    [MaxLength(128)]
+    public string? PlaidSecurityId { get; set; }
+
+    public DateOnly Date { get; set; }
+
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [Precision(18, 4)]
+    public decimal Quantity { get; set; }
+
+    [Precision(18, 4)]
+    public decimal Price { get; set; }
+
+    [Precision(18, 2)]
+    public decimal Amount { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? Fees { get; set; }
+
+    [MaxLength(64)]
+    public string Type { get; set; } = string.Empty;
+
+    [MaxLength(64)]
+    public string Subtype { get; set; } = string.Empty;
+
+    public string RawTransactionJson { get; set; } = string.Empty;
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public InvestmentAccount InvestmentAccount { get; set; } = null!;
 }
 
 public sealed class TransactionSplit

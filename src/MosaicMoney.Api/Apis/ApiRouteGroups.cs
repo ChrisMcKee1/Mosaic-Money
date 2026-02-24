@@ -19,6 +19,8 @@ public static class ApiRouteGroups
         v1.MapRecurringEndpoints();
         v1.MapReviewActionEndpoints();
         v1.MapReimbursementEndpoints();
+        v1.MapPlaidInvestmentsEndpoints();
+        v1.MapNetWorthHistoryEndpoints();
 
         return app;
     }
