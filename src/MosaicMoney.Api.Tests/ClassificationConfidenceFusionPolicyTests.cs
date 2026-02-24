@@ -186,6 +186,69 @@ public sealed class ClassificationConfidenceFusionPolicyTests
         Assert.True(result.EscalatedToNextStage);
     }
 
+    [Fact]
+    public void Evaluate_SemanticResultUnavailable_PreservesFailClosedNeedsReviewDecision()
+    {
+        var deterministicResult = BuildDeterministicStageResult(
+            proposedSubcategoryId: null,
+            confidence: 0m,
+            rationaleCode: DeterministicClassificationReasonCodes.NoRuleMatch,
+            hasConflict: false);
+        var ambiguityDecision = BuildAmbiguityDecision(
+            decision: ClassificationDecision.NeedsReview,
+            reviewStatus: TransactionReviewStatus.NeedsReview,
+            finalConfidence: 0m,
+            reasonCode: ClassificationAmbiguityReasonCodes.NoDeterministicMatch);
+
+        var result = _policy.Evaluate(
+            TransactionReviewStatus.None,
+            deterministicResult,
+            ambiguityDecision,
+            semanticResult: null);
+
+        Assert.Equal(ClassificationDecision.NeedsReview, result.Decision);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, result.ReviewStatus);
+        Assert.Equal(ClassificationAmbiguityReasonCodes.NoDeterministicMatch, result.DecisionReasonCode);
+        Assert.True(result.EscalatedToNextStage);
+    }
+
+    [Fact]
+    public void Evaluate_HighConfidenceSemanticCandidate_WithNonNoMatchAmbiguityReason_RemainsNeedsReview()
+    {
+        var deterministicResult = BuildDeterministicStageResult(
+            proposedSubcategoryId: null,
+            confidence: 0.6200m,
+            rationaleCode: DeterministicClassificationReasonCodes.NoRuleMatch,
+            hasConflict: false);
+        var ambiguityDecision = BuildAmbiguityDecision(
+            decision: ClassificationDecision.NeedsReview,
+            reviewStatus: TransactionReviewStatus.NeedsReview,
+            finalConfidence: 0.6200m,
+            reasonCode: ClassificationAmbiguityReasonCodes.LowConfidence);
+        var threshold = ClassificationConfidenceFusionPolicy.MinimumSemanticConfidenceForAutoCategorization;
+        var gap = ClassificationConfidenceFusionPolicy.MinimumSemanticTopGapForAutoCategorization;
+        var semanticResult = new SemanticRetrievalResult(
+            Succeeded: true,
+            StatusCode: SemanticRetrievalStatusCodes.Ok,
+            StatusMessage: "Semantic candidates resolved successfully.",
+            Candidates:
+            [
+                BuildSemanticCandidate(Guid.NewGuid(), threshold + 0.0100m),
+                BuildSemanticCandidate(Guid.NewGuid(), threshold + 0.0100m - gap),
+            ]);
+
+        var result = _policy.Evaluate(
+            TransactionReviewStatus.None,
+            deterministicResult,
+            ambiguityDecision,
+            semanticResult);
+
+        Assert.Equal(ClassificationDecision.NeedsReview, result.Decision);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, result.ReviewStatus);
+        Assert.Equal(ClassificationAmbiguityReasonCodes.LowConfidence, result.DecisionReasonCode);
+        Assert.True(result.EscalatedToNextStage);
+    }
+
     private static DeterministicClassificationStageResult BuildDeterministicStageResult(
         Guid? proposedSubcategoryId,
         decimal confidence,

@@ -10,9 +10,21 @@ public sealed class PlaidOptions
 
     public string Secret { get; init; } = string.Empty;
 
+    public string ClientName { get; init; } = "Mosaic Money";
+
+    public string Language { get; init; } = "en";
+
     public IReadOnlyList<string> Products { get; init; } = ["transactions"];
 
     public string? RedirectUri { get; init; }
 
+    public string? WebhookUrl { get; init; }
+
     public IReadOnlyList<string> CountryCodes { get; init; } = ["US"];
+
+    public string TransactionsSyncBootstrapCursor { get; init; } = "now";
+
+    public int TransactionsSyncBootstrapCount { get; init; } = 1;
+
+    public bool UseDeterministicProvider { get; init; }
 }

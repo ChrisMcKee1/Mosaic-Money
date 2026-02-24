@@ -36,6 +36,8 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<PlaidItemCredential> PlaidItemCredentials => Set<PlaidItemCredential>();
 
+    public DbSet<PlaidItemSyncState> PlaidItemSyncStates => Set<PlaidItemSyncState>();
+
     public DbSet<TransactionSplit> TransactionSplits => Set<TransactionSplit>();
 
     public DbSet<ReimbursementProposal> ReimbursementProposals => Set<ReimbursementProposal>();
@@ -253,6 +255,33 @@ public sealed class MosaicMoneyDbContext : DbContext
 
         modelBuilder.Entity<PlaidItemCredential>()
             .HasIndex(x => new { x.HouseholdId, x.Status, x.LastRotatedAtUtc });
+
+        modelBuilder.Entity<PlaidItemSyncState>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_PlaidItemSyncState_ItemIdRequired",
+                    "LENGTH(TRIM(\"ItemId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidItemSyncState_CursorRequired",
+                    "LENGTH(TRIM(\"Cursor\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidItemSyncState_PendingWebhookCountRange",
+                    "\"PendingWebhookCount\" >= 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidItemSyncState_LastSyncErrorAudit",
+                    "(\"LastSyncErrorCode\" IS NULL AND \"LastSyncErrorAtUtc\" IS NULL) OR (\"LastSyncErrorCode\" IS NOT NULL AND LENGTH(TRIM(\"LastSyncErrorCode\")) > 0 AND \"LastSyncErrorAtUtc\" IS NOT NULL)");
+            });
+
+        modelBuilder.Entity<PlaidItemSyncState>()
+            .HasIndex(x => new { x.PlaidEnvironment, x.ItemId })
+            .IsUnique();
+
+        modelBuilder.Entity<PlaidItemSyncState>()
+            .HasIndex(x => new { x.SyncStatus, x.LastWebhookAtUtc, x.LastSyncedAtUtc });
 
         modelBuilder.Entity<ReimbursementProposal>()
             .ToTable(t => t.HasCheckConstraint(

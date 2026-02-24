@@ -86,6 +86,13 @@ public enum PlaidItemCredentialStatus
     NeedsReview = 5,
 }
 
+public enum PlaidItemSyncStatus
+{
+    Idle = 1,
+    Pending = 2,
+    Processing = 3,
+}
+
 public sealed class Household
 {
     public Guid Id { get; set; }
@@ -486,6 +493,41 @@ public sealed class PlaidItemCredential
     public string? RecoveryReasonCode { get; set; }
 
     public DateTime? RecoverySignaledAtUtc { get; set; }
+}
+
+public sealed class PlaidItemSyncState
+{
+    public Guid Id { get; set; }
+
+    [MaxLength(128)]
+    public string ItemId { get; set; } = string.Empty;
+
+    [MaxLength(32)]
+    public string PlaidEnvironment { get; set; } = "sandbox";
+
+    [MaxLength(500)]
+    public string Cursor { get; set; } = string.Empty;
+
+    public bool InitialUpdateComplete { get; set; }
+
+    public bool HistoricalUpdateComplete { get; set; }
+
+    public DateTime? LastSyncedAtUtc { get; set; }
+
+    public DateTime? LastWebhookAtUtc { get; set; }
+
+    [MaxLength(120)]
+    public string? LastProviderRequestId { get; set; }
+
+    [MaxLength(120)]
+    public string? LastSyncErrorCode { get; set; }
+
+    public DateTime? LastSyncErrorAtUtc { get; set; }
+
+    public PlaidItemSyncStatus SyncStatus { get; set; } = PlaidItemSyncStatus.Idle;
+
+    [Range(0, int.MaxValue)]
+    public int PendingWebhookCount { get; set; }
 }
 
 public sealed class TransactionSplit

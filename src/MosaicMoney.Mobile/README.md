@@ -46,6 +46,7 @@ Recommended commands:
 cd src/MosaicMoney.Mobile
 npm install
 npm run typecheck
+npm run test:sync-recovery
 npm run start:lan
 ```
 
@@ -61,6 +62,7 @@ npm run start:tunnel
 cd src/MosaicMoney.Mobile
 npm install
 npm run typecheck
+npm run test:sync-recovery
 npm run start
 ```
 

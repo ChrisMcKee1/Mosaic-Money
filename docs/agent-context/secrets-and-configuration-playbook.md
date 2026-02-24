@@ -105,6 +105,12 @@ Optional non-secret keys:
 
 1. `Plaid:RedirectUri` (OAuth redirect URI used for Link token issuance)
 2. `Plaid:CountryCodes` (for example `US`)
+3. `Plaid:ClientName` (Link display name, max 30 chars)
+4. `Plaid:Language` (Link locale, for example `en`)
+5. `Plaid:WebhookUrl` (server endpoint for Plaid webhook delivery)
+6. `Plaid:TransactionsSyncBootstrapCursor` (default bootstrap cursor, `now` by default)
+7. `Plaid:TransactionsSyncBootstrapCount` (initial `/transactions/sync` page size, range `1..500`)
+8. `Plaid:UseDeterministicProvider` (local-only override for deterministic simulation; keep `false` for sandbox/provider validation)
 
 File-based AppHost commands:
 

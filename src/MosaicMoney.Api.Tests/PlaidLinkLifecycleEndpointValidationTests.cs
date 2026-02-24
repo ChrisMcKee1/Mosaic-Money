@@ -7,7 +7,7 @@ namespace MosaicMoney.Api.Tests;
 public sealed class PlaidLinkLifecycleEndpointValidationTests
 {
     [Fact]
-    public void ValidateCreateLinkTokenRequest_RejectsNonHttpsRedirectUri()
+    public void ValidateCreateLinkTokenRequest_RejectsNonLoopbackHttpRedirectUri()
     {
         var request = new CreatePlaidLinkTokenRequest
         {
@@ -18,6 +18,23 @@ public sealed class PlaidLinkLifecycleEndpointValidationTests
         var errors = PlaidLinkLifecycleEndpoints.ValidateCreateLinkTokenRequest(request);
 
         Assert.Contains(errors, x => x.Field == nameof(CreatePlaidLinkTokenRequest.RedirectUri));
+    }
+
+    [Theory]
+    [InlineData("http://localhost:53832/onboarding/plaid")]
+    [InlineData("http://127.0.0.1:53832/onboarding/plaid")]
+    [InlineData("http://[::1]:53832/onboarding/plaid")]
+    public void ValidateCreateLinkTokenRequest_AcceptsLoopbackHttpRedirectUri(string redirectUri)
+    {
+        var request = new CreatePlaidLinkTokenRequest
+        {
+            ClientUserId = "user-1",
+            RedirectUri = redirectUri,
+        };
+
+        var errors = PlaidLinkLifecycleEndpoints.ValidateCreateLinkTokenRequest(request);
+
+        Assert.DoesNotContain(errors, x => x.Field == nameof(CreatePlaidLinkTokenRequest.RedirectUri));
     }
 
     [Fact]
@@ -85,5 +102,42 @@ public sealed class PlaidLinkLifecycleEndpointValidationTests
         Assert.Contains(errors, x => x.Field == nameof(PlaidItemRecoveryWebhookRequest.WebhookType));
         Assert.Contains(errors, x => x.Field == nameof(PlaidItemRecoveryWebhookRequest.WebhookCode));
         Assert.Contains(errors, x => x.Field == nameof(PlaidItemRecoveryWebhookRequest.MetadataJson));
+    }
+
+    [Fact]
+    public void ValidatePlaidTransactionsWebhookRequest_AcceptsSyncUpdatesAvailablePayload()
+    {
+        var request = new PlaidTransactionsWebhookRequest
+        {
+            WebhookType = "TRANSACTIONS",
+            WebhookCode = "SYNC_UPDATES_AVAILABLE",
+            ItemId = "item-123",
+            Environment = "sandbox",
+            Cursor = "cursor-123",
+            ProviderRequestId = "req-123",
+            InitialUpdateComplete = true,
+            HistoricalUpdateComplete = false,
+        };
+
+        var errors = PlaidLinkLifecycleEndpoints.ValidatePlaidTransactionsWebhookRequest(request);
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidatePlaidTransactionsWebhookRequest_RejectsUnsupportedTypeAndWebhookCode()
+    {
+        var request = new PlaidTransactionsWebhookRequest
+        {
+            WebhookType = "ITEM",
+            WebhookCode = "INITIAL_UPDATE",
+            ItemId = "item-123",
+            Environment = "sandbox",
+        };
+
+        var errors = PlaidLinkLifecycleEndpoints.ValidatePlaidTransactionsWebhookRequest(request);
+
+        Assert.Contains(errors, x => x.Field == nameof(PlaidTransactionsWebhookRequest.WebhookType));
+        Assert.Contains(errors, x => x.Field == nameof(PlaidTransactionsWebhookRequest.WebhookCode));
     }
 }

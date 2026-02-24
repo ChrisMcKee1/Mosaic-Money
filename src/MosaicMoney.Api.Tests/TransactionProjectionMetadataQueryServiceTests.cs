@@ -238,6 +238,111 @@ public sealed class TransactionProjectionMetadataQueryServiceTests
         Assert.Equal(6, persistedSplit.AmortizationMonths);
     }
 
+    [Fact]
+    public async Task QueryAsync_AppliesNeedsReviewDateFilters_AndPaginatesInDeterministicOrder()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var householdId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
+
+        dbContext.Households.Add(new Household
+        {
+            Id = householdId,
+            Name = "Filter Household",
+        });
+
+        dbContext.Accounts.Add(new Account
+        {
+            Id = accountId,
+            HouseholdId = householdId,
+            Name = "Filter Account",
+            ExternalAccountKey = "filter-account",
+        });
+
+        var txOutsideRange = new EnrichedTransaction
+        {
+            Id = Guid.NewGuid(),
+            AccountId = accountId,
+            Description = "outside-range",
+            Amount = -11.00m,
+            TransactionDate = new DateOnly(2026, 1, 31),
+            ReviewStatus = TransactionReviewStatus.NeedsReview,
+            CreatedAtUtc = new DateTime(2026, 1, 31, 9, 0, 0, DateTimeKind.Utc),
+            LastModifiedAtUtc = new DateTime(2026, 1, 31, 9, 1, 0, DateTimeKind.Utc),
+        };
+
+        var txInRangeNeedsReview = new EnrichedTransaction
+        {
+            Id = Guid.NewGuid(),
+            AccountId = accountId,
+            Description = "in-range-needs-review",
+            Amount = -22.00m,
+            TransactionDate = new DateOnly(2026, 2, 15),
+            ReviewStatus = TransactionReviewStatus.NeedsReview,
+            CreatedAtUtc = new DateTime(2026, 2, 15, 10, 0, 0, DateTimeKind.Utc),
+            LastModifiedAtUtc = new DateTime(2026, 2, 15, 10, 1, 0, DateTimeKind.Utc),
+        };
+
+        var txInRangeReviewed = new EnrichedTransaction
+        {
+            Id = Guid.NewGuid(),
+            AccountId = accountId,
+            Description = "in-range-reviewed",
+            Amount = -33.00m,
+            TransactionDate = new DateOnly(2026, 2, 16),
+            ReviewStatus = TransactionReviewStatus.Reviewed,
+            CreatedAtUtc = new DateTime(2026, 2, 16, 11, 0, 0, DateTimeKind.Utc),
+            LastModifiedAtUtc = new DateTime(2026, 2, 16, 11, 1, 0, DateTimeKind.Utc),
+        };
+
+        dbContext.EnrichedTransactions.AddRange(txOutsideRange, txInRangeNeedsReview, txInRangeReviewed);
+        await dbContext.SaveChangesAsync();
+
+        var service = new TransactionProjectionMetadataQueryService(dbContext);
+
+        var filtered = await service.QueryAsync(
+            accountId: accountId,
+            fromDate: new DateOnly(2026, 2, 1),
+            toDate: new DateOnly(2026, 2, 28),
+            reviewStatus: null,
+            needsReviewOnly: true,
+            page: 1,
+            pageSize: 10,
+            cancellationToken: default);
+
+        var filteredResult = Assert.Single(filtered);
+        Assert.Equal(txInRangeNeedsReview.Id, filteredResult.Id);
+        Assert.Equal(TransactionReviewStatus.NeedsReview.ToString(), filteredResult.ReviewStatus);
+
+        var page1 = await service.QueryAsync(
+            accountId: accountId,
+            fromDate: null,
+            toDate: null,
+            reviewStatus: null,
+            needsReviewOnly: false,
+            page: 1,
+            pageSize: 2,
+            cancellationToken: default);
+
+        Assert.Equal(2, page1.Count);
+        Assert.Equal(txInRangeReviewed.Id, page1[0].Id);
+        Assert.Equal(txInRangeNeedsReview.Id, page1[1].Id);
+
+        var page2 = await service.QueryAsync(
+            accountId: accountId,
+            fromDate: null,
+            toDate: null,
+            reviewStatus: null,
+            needsReviewOnly: false,
+            page: 2,
+            pageSize: 2,
+            cancellationToken: default);
+
+        var page2Result = Assert.Single(page2);
+        Assert.Equal(txOutsideRange.Id, page2Result.Id);
+    }
+
     private static MosaicMoneyDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<MosaicMoneyDbContext>()

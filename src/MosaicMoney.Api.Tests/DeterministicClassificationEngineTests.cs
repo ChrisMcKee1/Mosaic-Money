@@ -8,6 +8,24 @@ public sealed class DeterministicClassificationEngineTests
     private readonly DeterministicClassificationEngine _engine = new();
 
     [Fact]
+    public void Execute_MissingDescription_ReturnsMissingDescriptionFailClosedResult()
+    {
+        var request = new DeterministicClassificationRequest(
+            Guid.NewGuid(),
+            "   ",
+            -28.40m,
+            new DateOnly(2026, 2, 23),
+            [new DeterministicClassificationSubcategory(Guid.NewGuid(), "Utilities")]);
+
+        var result = _engine.Execute(request);
+
+        Assert.Equal(DeterministicClassificationReasonCodes.MissingDescription, result.RationaleCode);
+        Assert.Null(result.ProposedSubcategoryId);
+        Assert.False(result.HasConflict);
+        Assert.Equal(0m, result.Confidence);
+    }
+
+    [Fact]
     public void Execute_ClearlyMatchedExpense_ReturnsCategorizationCandidate()
     {
         var request = new DeterministicClassificationRequest(
@@ -65,5 +83,26 @@ public sealed class DeterministicClassificationEngineTests
         Assert.Equal(DeterministicClassificationReasonCodes.NonExpenseAmount, result.RationaleCode);
         Assert.Null(result.ProposedSubcategoryId);
         Assert.False(result.HasConflict);
+    }
+
+    [Fact]
+    public void Execute_NoRuleMatch_ReturnsNoRuleMatchWithoutConflict()
+    {
+        var request = new DeterministicClassificationRequest(
+            Guid.NewGuid(),
+            "airport parking charge",
+            -54.11m,
+            new DateOnly(2026, 2, 23),
+            [
+                new DeterministicClassificationSubcategory(Guid.NewGuid(), "Groceries"),
+                new DeterministicClassificationSubcategory(Guid.NewGuid(), "Electricity"),
+            ]);
+
+        var result = _engine.Execute(request);
+
+        Assert.Equal(DeterministicClassificationReasonCodes.NoRuleMatch, result.RationaleCode);
+        Assert.Null(result.ProposedSubcategoryId);
+        Assert.False(result.HasConflict);
+        Assert.Empty(result.Candidates);
     }
 }

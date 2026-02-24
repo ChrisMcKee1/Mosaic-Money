@@ -88,3 +88,6 @@ secrets.json
 *.key
 *.crt
 *.cer
+
+# Sample Design and Mock ups of dashboard and mobile app
+.img/

@@ -36,20 +36,21 @@ $issues = @(
     @{ num=13; nid="I_kwDORVI-G87tOiQo"; status="Done" }        # MM-FE-03
     @{ num=14; nid="I_kwDORVI-G87tOiST"; status="Done" }        # MM-MOB-01
 
-    # --- M2: Ledger Truth & Review Core (all Done) ---
+    # --- M2: Ledger Truth & Review Core ---
     @{ num=15; nid="I_kwDORVI-G87tOi3C"; status="Done" }        # MM-BE-05
     @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="Done" }        # MM-BE-06
-    @{ num=17; nid="I_kwDORVI-G87tOi8h"; status="Done" }        # MM-BE-12
-    @{ num=18; nid="I_kwDORVI-G87tOi-v"; status="Done" }        # MM-BE-13
-    @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="Done" }        # MM-BE-14
+    @{ num=17; nid="I_kwDORVI-G87tOi8h"; status="In Progress" } # MM-BE-12
+    @{ num=18; nid="I_kwDORVI-G87tOi-v"; status="In Progress" } # MM-BE-13
+    @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="In Progress" } # MM-BE-14
     @{ num=20; nid="I_kwDORVI-G87tOjF8"; status="Done" }        # MM-FE-04
     @{ num=21; nid="I_kwDORVI-G87tOjHr"; status="Done" }        # MM-FE-05
-    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="Done" }        # MM-FE-09
+    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="In Progress" } # MM-FE-09
     @{ num=23; nid="I_kwDORVI-G87tOjN9"; status="Done" }        # MM-MOB-02
     @{ num=24; nid="I_kwDORVI-G87tOjRE"; status="Done" }        # MM-MOB-03
     @{ num=25; nid="I_kwDORVI-G87tOjTk"; status="Done" }        # MM-MOB-04
     @{ num=26; nid="I_kwDORVI-G87tOjWi"; status="Done" }        # MM-MOB-05
-    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="Done" }        # MM-MOB-08
+    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="Parked" }      # MM-MOB-08
+    @{ num=64; nid="I_kwDORVI-G87tRGKo"; status="Done" }        # MM-BE-15
 
     # --- M3: Ingestion, Recurring, Reimbursements & Projections (all Done) ---
     @{ num=28; nid="I_kwDORVI-G87tOkds"; status="Done" }        # MM-BE-07A

@@ -7,7 +7,10 @@
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgres = builder.AddPostgres("postgres");
+var postgres = builder
+	.AddPostgres("postgres")
+	.WithImage("pgvector/pgvector")
+	.WithImageTag("pg17");
 var ledgerDb = postgres.AddDatabase("mosaicmoneydb");
 var plaidClientId = builder.AddParameter("plaid-client-id", secret: true);
 var plaidSecret = builder.AddParameter("plaid-secret", secret: true);
@@ -30,8 +33,7 @@ builder
 
 builder
 	.AddJavaScriptApp("web", "./MosaicMoney.Web")
-	.WithHttpEndpoint(env: "PORT")
-	.WithExternalHttpEndpoints()
+	.WithHttpEndpoint(port: 53832, env: "PORT", isProxied: false)
 	.WithReference(api)
 	.WaitFor(api);
 

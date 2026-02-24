@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace MosaicMoney.Api.Contracts.V1;
 
@@ -174,6 +175,19 @@ public sealed record PlaidItemRecoveryWebhookProcessedDto(
     string RecoveryAction,
     string RecoveryReasonCode,
     DateTime ProcessedAtUtc);
+
+public sealed record PlaidTransactionsWebhookProcessedDto(
+    Guid SyncStateId,
+    string ItemId,
+    string Environment,
+    string Cursor,
+    string SyncStatus,
+    int PendingWebhookCount,
+    bool InitialUpdateComplete,
+    bool HistoricalUpdateComplete,
+    DateTime ProcessedAtUtc,
+    DateTime? LastWebhookAtUtc,
+    string? LastProviderRequestId);
 
 public sealed record ClassificationStageOutputDto(
     Guid Id,
@@ -465,6 +479,43 @@ public sealed class PlaidItemRecoveryWebhookRequest
 
     [MaxLength(4000)]
     public string? MetadataJson { get; init; }
+}
+
+public sealed class PlaidTransactionsWebhookRequest
+{
+    [Required]
+    [MaxLength(80)]
+    [JsonPropertyName("webhook_type")]
+    public string WebhookType { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(80)]
+    [JsonPropertyName("webhook_code")]
+    public string WebhookCode { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(128)]
+    [JsonPropertyName("item_id")]
+    public string ItemId { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(32)]
+    [JsonPropertyName("environment")]
+    public string Environment { get; init; } = string.Empty;
+
+    [MaxLength(500)]
+    [JsonPropertyName("cursor")]
+    public string? Cursor { get; init; }
+
+    [MaxLength(120)]
+    [JsonPropertyName("request_id")]
+    public string? ProviderRequestId { get; init; }
+
+    [JsonPropertyName("initial_update_complete")]
+    public bool? InitialUpdateComplete { get; init; }
+
+    [JsonPropertyName("historical_update_complete")]
+    public bool? HistoricalUpdateComplete { get; init; }
 }
 
 public sealed class CreateClassificationStageOutputRequest

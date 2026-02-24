@@ -16,6 +16,7 @@ Run this before troubleshooting or changing local workflow scripts.
 aspire --version
 aspire --help
 aspire agent --help
+aspire telemetry --help
 aspire docs --help
 aspire docs search "run detach isolated"
 aspire docs search "resources logs wait command"
@@ -72,23 +73,100 @@ aspire restart web --project src/apphost.cs
 
 Expected architecture in this workspace is `x64`.
 
-## Diagnostics workflow (API, Worker, Web)
+## Dashboard + MCP diagnostics workflow (MM-ASP-06)
 
-Use this standard sequence for local triage.
+Use this as the single diagnostics workflow for API, Worker, Web, and AI-related traces available in the current milestone.
+
+### 1) Establish reproducible runtime state
+
+```powershell
+dotnet build src/apphost.cs
+aspire run --project src/apphost.cs --detach --isolated
+aspire wait api --project src/apphost.cs --status healthy --timeout 180
+aspire wait worker --project src/apphost.cs --status up --timeout 180
+aspire wait web --project src/apphost.cs --status up --timeout 180
+aspire resources --project src/apphost.cs
+```
+
+### 2) Dashboard-first triage
+
+1. Open the dashboard URL emitted by `aspire run`.
+2. Check `Resources` for unhealthy states and endpoint exposure.
+3. Drill into each resource (`api`, `worker`, `web`) via `Structured logs` and `Traces`.
+4. Use `Restart` from the resource actions menu only after root cause is identified.
+
+### 3) CLI diagnostics snapshot (deterministic capture)
 
 ```powershell
 aspire resources --project src/apphost.cs
-aspire logs --project src/apphost.cs --tail 100
 aspire logs api --project src/apphost.cs --tail 100
 aspire logs worker --project src/apphost.cs --tail 100
 aspire logs web --project src/apphost.cs --tail 100
+aspire telemetry logs api --project src/apphost.cs --limit 100
+aspire telemetry logs worker --project src/apphost.cs --limit 100
+aspire telemetry logs web --project src/apphost.cs --limit 100
+aspire telemetry traces api --project src/apphost.cs --limit 50
+aspire telemetry traces worker --project src/apphost.cs --limit 50
+aspire telemetry traces web --project src/apphost.cs --limit 50
 ```
 
-For a live stream on one resource:
+For error-focused trace triage:
 
 ```powershell
-aspire logs api --project src/apphost.cs --follow
+aspire telemetry traces api --project src/apphost.cs --limit 50 --has-error
+aspire telemetry traces worker --project src/apphost.cs --limit 50 --has-error
+aspire telemetry traces web --project src/apphost.cs --limit 50 --has-error
 ```
+
+### 4) MCP diagnostics flow (agentic)
+
+Prefer this tool order:
+1. `list_apphosts`
+2. `select_apphost` (only if multiple apphosts are running)
+3. `list_resources`
+4. `list_console_logs` for failing resource
+5. `list_structured_logs` for correlated structured events
+6. `list_traces` and `list_trace_structured_logs`
+7. `execute_resource_command` for restart/start only after investigation
+
+Current Aspire CLI in this workspace (`13.3.0-preview`) prefers `aspire agent init` and `aspire agent mcp`.
+If docs output still shows legacy `aspire mcp init` / `aspire mcp start`, treat those as deprecated aliases and use `aspire agent ...` in new scripts and runbooks.
+
+### 5) AI workflow traces at current milestone boundary
+
+`MM-AI-10` is not complete, so expect AI telemetry to appear within `api` and `worker` traces/logs rather than a dedicated AI resource.
+
+Use this bounded capture:
+
+```powershell
+aspire telemetry traces api --project src/apphost.cs --limit 100
+aspire telemetry traces worker --project src/apphost.cs --limit 100
+aspire telemetry logs api --project src/apphost.cs --limit 200 --severity Information
+aspire telemetry logs worker --project src/apphost.cs --limit 200 --severity Information
+```
+
+When `MM-AI-10` introduces additional workflow resources/spans, extend this section with explicit resource-level commands.
+
+### 6) VS Code task shortcuts
+
+Use these task labels for consistent execution from VS Code:
+- `Aspire: Build AppHost`
+- `Aspire: Run Detached Isolated`
+- `Aspire: Wait For API Healthy`
+- `Aspire: Wait For Worker Up`
+- `Aspire: Wait For Web Up`
+- `Aspire: Show Resources`
+- `Aspire: Logs Tail 100 (API)`
+- `Aspire: Logs Tail 100 (Worker)`
+- `Aspire: Logs Tail 100 (Web)`
+- `Aspire: Telemetry Logs 100 (API)`
+- `Aspire: Telemetry Logs 100 (Worker)`
+- `Aspire: Telemetry Logs 100 (Web)`
+- `Aspire: Telemetry Traces 50 (API)`
+- `Aspire: Telemetry Traces 50 (Worker)`
+- `Aspire: Telemetry Traces 50 (Web)`
+- `Aspire: Diagnostics Snapshot (API/Worker/Web)`
+- `Aspire: Recover Stack`
 
 ## MCP workflow (daily command surface)
 

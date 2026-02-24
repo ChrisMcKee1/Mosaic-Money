@@ -105,6 +105,64 @@ public sealed class ReimbursementConflictRoutingPolicyTests
         Assert.Contains("stale", outcome.Rationale, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void Evaluate_ExactAllocationBoundary_DoesNotRouteToNeedsReview()
+    {
+        var incomingTransactionId = Guid.NewGuid();
+        var existing = CreateProposal(
+            incomingTransactionId,
+            relatedTransactionId: Guid.NewGuid(),
+            relatedTransactionSplitId: null,
+            proposedAmount: 80m,
+            status: ReimbursementProposalStatus.Approved,
+            lifecycleOrdinal: 1);
+
+        var outcome = ReimbursementConflictRoutingPolicy.Evaluate(new ReimbursementConflictRoutingInput(
+            incomingTransactionId,
+            IncomingTransactionAmount: 100m,
+            RelatedTransactionId: Guid.NewGuid(),
+            RelatedTransactionSplitId: null,
+            ProposedAmount: 20m,
+            LifecycleGroupId: Guid.NewGuid(),
+            LifecycleOrdinal: 1,
+            SupersedesProposalId: null,
+            SupersededProposal: null,
+            ExistingProposals: [existing]));
+
+        Assert.False(outcome.RouteToNeedsReview);
+        Assert.Null(outcome.ReasonCode);
+        Assert.Null(outcome.Rationale);
+    }
+
+    [Fact]
+    public void Evaluate_SupersedeAgainstFinalizedProposal_RoutesToNeedsReviewAsStaleConflict()
+    {
+        var incomingTransactionId = Guid.NewGuid();
+        var finalizedProposal = CreateProposal(
+            incomingTransactionId,
+            relatedTransactionId: Guid.NewGuid(),
+            relatedTransactionSplitId: null,
+            proposedAmount: 30m,
+            status: ReimbursementProposalStatus.Approved,
+            lifecycleOrdinal: 1,
+            lifecycleGroupId: Guid.NewGuid());
+
+        var outcome = ReimbursementConflictRoutingPolicy.Evaluate(new ReimbursementConflictRoutingInput(
+            incomingTransactionId,
+            IncomingTransactionAmount: 100m,
+            RelatedTransactionId: Guid.NewGuid(),
+            RelatedTransactionSplitId: null,
+            ProposedAmount: 20m,
+            LifecycleGroupId: finalizedProposal.LifecycleGroupId,
+            LifecycleOrdinal: 2,
+            SupersedesProposalId: finalizedProposal.Id,
+            SupersededProposal: finalizedProposal,
+            ExistingProposals: [finalizedProposal]));
+
+        Assert.True(outcome.RouteToNeedsReview);
+        Assert.Equal(ReimbursementConflictRoutingPolicy.StaleConflictReasonCode, outcome.ReasonCode);
+    }
+
     private static ReimbursementProposal CreateProposal(
         Guid incomingTransactionId,
         Guid? relatedTransactionId,

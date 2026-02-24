@@ -33,6 +33,14 @@ These instructions are always on for this repository.
 - Treat `NEXT_PUBLIC_*` variables as public and never place sensitive values in them.
 - Redact secret values from logs, docs, screenshots, and sample command output.
 
+## Plaid Sandbox And Product Mapping
+- Use Plaid Sandbox as the default non-production data source for local and CI validation; do not require real user banking credentials for development workflows.
+- Local redirect URIs may use localhost HTTP in sandbox mode (for example `http://localhost:<port>/onboarding/plaid`), but production redirect URIs must be registered HTTPS URLs.
+- Build and validate ingestion through standard API/worker pipelines and persisted contracts; avoid one-off scripts as the primary path for data population.
+- Use sandbox-simulated financial scenarios to validate database schemas, ingestion contracts, and downstream agent workflows end-to-end before production integrations.
+- Before implementing a Plaid product beyond `transactions`, complete a source-linked capability mapping from PRD requirements to Plaid products/endpoints/webhooks and document schema + contract impact.
+- Explicitly classify each candidate Plaid product as `Adopt Now`, `Adopt Later`, or `Out of Scope` with rationale, sandbox coverage notes, and human-review implications.
+
 ## Task Lifecycle And GitHub Projects
 - Task status lives in two places and must stay synchronized: spec markdown tables and the GitHub Projects board.
 - The master task breakdown is `project-plan/specs/001-mvp-foundation-task-breakdown.md`; milestone-specific specs are `002`–`006`.

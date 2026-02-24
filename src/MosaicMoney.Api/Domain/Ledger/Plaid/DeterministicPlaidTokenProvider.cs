@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace MosaicMoney.Api.Domain.Ledger.Plaid;
 
-// Deterministic provider for MM-BE-12/13 slice. Swap with a real Plaid SDK-backed provider in production.
+// Deterministic fallback for local-only/test workflows when explicitly enabled.
 public sealed class DeterministicPlaidTokenProvider(IOptions<PlaidOptions> plaidOptions) : IPlaidTokenProvider
 {
     public Task<PlaidLinkTokenCreateResult> CreateLinkTokenAsync(
@@ -47,6 +47,23 @@ public sealed class DeterministicPlaidTokenProvider(IOptions<PlaidOptions> plaid
             request.Environment,
             request.InstitutionId,
             requestId));
+    }
+
+    public Task<PlaidTransactionsSyncBootstrapResult> BootstrapTransactionsSyncAsync(
+        PlaidTransactionsSyncBootstrapRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureConfiguration();
+
+        var normalizedCursor = string.IsNullOrWhiteSpace(request.Cursor)
+            ? "now"
+            : request.Cursor.Trim();
+        var hash = ComputeSha256($"{request.Environment}|{request.AccessToken}|{normalizedCursor}|{request.Count}");
+
+        return Task.FromResult(new PlaidTransactionsSyncBootstrapResult(
+            $"cursor-sim-{hash[..24]}",
+            HasMore: false,
+            RequestId: $"req-sim-{Guid.NewGuid():N}"));
     }
 
     private void EnsureConfiguration()

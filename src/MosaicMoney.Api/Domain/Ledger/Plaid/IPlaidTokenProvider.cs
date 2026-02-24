@@ -32,6 +32,17 @@ public sealed record PlaidPublicTokenExchangeResult(
     string? InstitutionId,
     string RequestId);
 
+public sealed record PlaidTransactionsSyncBootstrapRequest(
+    string AccessToken,
+    string Environment,
+    string Cursor,
+    int Count);
+
+public sealed record PlaidTransactionsSyncBootstrapResult(
+    string NextCursor,
+    bool HasMore,
+    string RequestId);
+
 public interface IPlaidTokenProvider
 {
     Task<PlaidLinkTokenCreateResult> CreateLinkTokenAsync(
@@ -40,5 +51,9 @@ public interface IPlaidTokenProvider
 
     Task<PlaidPublicTokenExchangeResult> ExchangePublicTokenAsync(
         PlaidPublicTokenExchangeRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaidTransactionsSyncBootstrapResult> BootstrapTransactionsSyncAsync(
+        PlaidTransactionsSyncBootstrapRequest request,
         CancellationToken cancellationToken = default);
 }

@@ -53,6 +53,21 @@ public sealed class ClassificationAmbiguityPolicyGateTests
         Assert.Equal(ClassificationAmbiguityReasonCodes.ConflictingDeterministicRules, decision.DecisionReasonCode);
     }
 
+    [Fact]
+    public void Evaluate_NoDeterministicMatch_RoutesToNeedsReview()
+    {
+        var deterministic = BuildStageResult(
+            proposedSubcategoryId: null,
+            confidence: 0m,
+            hasConflict: false);
+
+        var decision = _gate.Evaluate(TransactionReviewStatus.None, deterministic);
+
+        Assert.Equal(ClassificationDecision.NeedsReview, decision.Decision);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, decision.ReviewStatus);
+        Assert.Equal(ClassificationAmbiguityReasonCodes.NoDeterministicMatch, decision.DecisionReasonCode);
+    }
+
     [Theory]
     [InlineData(TransactionReviewStatus.None, TransactionReviewStatus.None)]
     [InlineData(TransactionReviewStatus.Reviewed, TransactionReviewStatus.Reviewed)]

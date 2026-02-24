@@ -25,6 +25,11 @@ public static class PlaidLinkLifecycleEndpoints
         "USER_PERMISSION_REVOKED",
     ];
 
+    private static readonly HashSet<string> AllowedTransactionsWebhookCodes =
+    [
+        "SYNC_UPDATES_AVAILABLE",
+    ];
+
     public static RouteGroupBuilder MapPlaidLinkLifecycleEndpoints(this RouteGroupBuilder group)
     {
         group.MapPost("/plaid/link-tokens", async (
@@ -243,6 +248,54 @@ public static class PlaidLinkLifecycleEndpoints
                     result.ProcessedAtUtc));
         });
 
+        group.MapPost("/plaid/webhooks/transactions", async (
+            HttpContext httpContext,
+            PlaidItemSyncStateService syncStateService,
+            PlaidTransactionsWebhookRequest request,
+            CancellationToken cancellationToken) =>
+        {
+            var errors = ValidatePlaidTransactionsWebhookRequest(request).ToList();
+            if (errors.Count > 0)
+            {
+                return ApiValidation.ToValidationResult(httpContext, errors);
+            }
+
+            var result = await syncStateService.ProcessSyncUpdatesAvailableWebhookAsync(
+                new ProcessPlaidTransactionsSyncWebhookCommand(
+                    request.WebhookType,
+                    request.WebhookCode,
+                    request.ItemId,
+                    request.Environment,
+                    request.Cursor,
+                    request.ProviderRequestId,
+                    request.InitialUpdateComplete,
+                    request.HistoricalUpdateComplete),
+                cancellationToken);
+
+            if (result is null)
+            {
+                return ApiValidation.ToNotFoundResult(
+                    httpContext,
+                    "plaid_item_credential_not_found",
+                    "No Plaid item credential exists for the supplied item and environment.");
+            }
+
+            return Results.Accepted(
+                $"/api/v1/plaid/items/{result.ItemId}/sync-state",
+                new PlaidTransactionsWebhookProcessedDto(
+                    result.SyncStateId,
+                    result.ItemId,
+                    result.Environment,
+                    result.Cursor,
+                    result.SyncStatus.ToString(),
+                    result.PendingWebhookCount,
+                    result.InitialUpdateComplete,
+                    result.HistoricalUpdateComplete,
+                    result.ProcessedAtUtc,
+                    result.LastWebhookAtUtc,
+                    result.LastProviderRequestId));
+        });
+
         return group;
     }
 
@@ -274,9 +327,11 @@ public static class PlaidLinkLifecycleEndpoints
 
         if (!string.IsNullOrWhiteSpace(request.RedirectUri)
             && (!Uri.TryCreate(request.RedirectUri, UriKind.Absolute, out var redirectUri)
-                || !string.Equals(redirectUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+                || !IsAllowedRedirectUri(redirectUri)))
         {
-            errors.Add(new ApiValidationError(nameof(request.RedirectUri), "RedirectUri must be a valid absolute HTTPS URI when provided."));
+            errors.Add(new ApiValidationError(
+                nameof(request.RedirectUri),
+                "RedirectUri must be a valid absolute HTTPS URI, or an HTTP loopback URI (localhost/127.0.0.1/[::1]) for local sandbox flows."));
         }
 
         if (request.Products is { Count: > 0 })
@@ -363,5 +418,55 @@ public static class PlaidLinkLifecycleEndpoints
 
         AddJsonValidationError(errors, nameof(request.MetadataJson), request.MetadataJson);
         return errors;
+    }
+
+    internal static IReadOnlyList<ApiValidationError> ValidatePlaidTransactionsWebhookRequest(PlaidTransactionsWebhookRequest request)
+    {
+        var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
+
+        if (string.IsNullOrWhiteSpace(request.WebhookType))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookType), "WebhookType is required."));
+        }
+        else if (!string.Equals(request.WebhookType.Trim(), "TRANSACTIONS", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookType), "WebhookType must be TRANSACTIONS for transaction sync webhook processing."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.WebhookCode))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookCode), "WebhookCode is required."));
+        }
+        else if (!AllowedTransactionsWebhookCodes.Contains(request.WebhookCode.Trim().ToUpperInvariant()))
+        {
+            errors.Add(new ApiValidationError(nameof(request.WebhookCode), "WebhookCode must be SYNC_UPDATES_AVAILABLE for transaction sync webhook processing."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ItemId))
+        {
+            errors.Add(new ApiValidationError(nameof(request.ItemId), "ItemId is required."));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Environment))
+        {
+            errors.Add(new ApiValidationError(nameof(request.Environment), "Environment is required."));
+        }
+
+        return errors;
+    }
+
+    private static bool IsAllowedRedirectUri(Uri redirectUri)
+    {
+        if (string.Equals(redirectUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.Equals(redirectUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return redirectUri.IsLoopback;
     }
 }

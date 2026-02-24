@@ -75,6 +75,8 @@ public sealed class PlaidLinkLifecycleService(
     PlaidAccessTokenProtector tokenProtector,
     IOptions<PlaidOptions> options)
 {
+    private const string DefaultSyncBootstrapCursor = "now";
+
     private static readonly HashSet<string> RequiresRelinkErrorCodes =
     [
         "USER_PERMISSION_REVOKED",
@@ -259,6 +261,51 @@ public sealed class PlaidLinkLifecycleService(
             credential.LastClientMetadataJson = command.ClientMetadataJson;
         }
 
+        var bootstrapCursor = ResolveSyncBootstrapCursor();
+        var bootstrapCount = ResolveSyncBootstrapCount();
+        var syncBootstrapResult = await tokenProvider.BootstrapTransactionsSyncAsync(
+            new PlaidTransactionsSyncBootstrapRequest(
+                providerResult.AccessToken,
+                providerResult.Environment,
+                bootstrapCursor,
+                bootstrapCount),
+            cancellationToken);
+
+        var syncState = await dbContext.PlaidItemSyncStates
+            .FirstOrDefaultAsync(
+                x => x.PlaidEnvironment == providerResult.Environment && x.ItemId == providerResult.ItemId,
+                cancellationToken);
+
+        var resolvedCursor = ResolveSyncCursor(syncBootstrapResult.NextCursor, bootstrapCursor);
+        if (syncState is null)
+        {
+            syncState = new PlaidItemSyncState
+            {
+                Id = Guid.NewGuid(),
+                ItemId = providerResult.ItemId,
+                PlaidEnvironment = providerResult.Environment,
+                Cursor = resolvedCursor,
+                LastWebhookAtUtc = now,
+                LastProviderRequestId = syncBootstrapResult.RequestId,
+                SyncStatus = PlaidItemSyncStatus.Pending,
+                PendingWebhookCount = 1,
+            };
+
+            dbContext.PlaidItemSyncStates.Add(syncState);
+        }
+        else
+        {
+            syncState.Cursor = resolvedCursor;
+            syncState.LastWebhookAtUtc = now;
+            syncState.LastProviderRequestId = syncBootstrapResult.RequestId;
+            syncState.PendingWebhookCount = Math.Max(1, syncState.PendingWebhookCount + 1);
+
+            if (syncState.SyncStatus != PlaidItemSyncStatus.Processing)
+            {
+                syncState.SyncStatus = PlaidItemSyncStatus.Pending;
+            }
+        }
+
         if (session is not null)
         {
             session.Status = PlaidLinkSessionStatus.Exchanged;
@@ -421,6 +468,34 @@ public sealed class PlaidLinkLifecycleService(
         }
 
         return configuredUri;
+    }
+
+    private string ResolveSyncBootstrapCursor()
+    {
+        var cursor = options.Value.TransactionsSyncBootstrapCursor;
+        return string.IsNullOrWhiteSpace(cursor)
+            ? DefaultSyncBootstrapCursor
+            : cursor.Trim();
+    }
+
+    private int ResolveSyncBootstrapCount()
+    {
+        var count = options.Value.TransactionsSyncBootstrapCount;
+        return count is < 1 or > 500
+            ? 1
+            : count;
+    }
+
+    private static string ResolveSyncCursor(string? nextCursor, string fallbackCursor)
+    {
+        if (!string.IsNullOrWhiteSpace(nextCursor))
+        {
+            return nextCursor.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(fallbackCursor)
+            ? DefaultSyncBootstrapCursor
+            : fallbackCursor.Trim();
     }
 
     private static string? NormalizeOptional(string? value)

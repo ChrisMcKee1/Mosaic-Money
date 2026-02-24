@@ -22,6 +22,12 @@ Mosaic Money is a cloud-first, single-entry personal finance application tailore
 3. Chat with the Copilot UI about an unrecognized charge. The AI figures out it was for Cybertruck maintenance, categorizes it, and appends the conversation summary as an `AgentNote`.
 4. Review the "Upcoming Bills" dashboard to see how the impending property tax and monthly software subscriptions impact the "Safe to Spend" calculation.
 
+## 2.1 Execution Alignment Addendum (2026-02-23)
+- Local Plaid Sandbox redirect URI is pinned to `http://localhost:53832/onboarding/plaid` in AppHost for deterministic local validation.
+- Local PostgreSQL runtime uses a `pgvector`-capable image so migrations and vector-backed schema paths can start successfully.
+- M2 Plaid onboarding acceptance is not complete until real Plaid Sandbox provider wiring is active (not deterministic token simulation) and end-to-end sync proves persisted records in `PlaidItemCredentials`, `PlaidItemSyncStates`, `RawTransactionIngestionRecords`, and `EnrichedTransactions`.
+- The deterministic token provider remains acceptable only as a local fallback/test harness and not as evidence to close Plaid onboarding acceptance gates.
+
 ---
 
 ## 3. Feature Specifications, Boundaries & Trade-offs

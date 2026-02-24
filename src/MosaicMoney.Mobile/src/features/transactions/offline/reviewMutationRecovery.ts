@@ -369,11 +369,12 @@ export function replayQueuedReviewMutations(): Promise<ReviewMutationRecoveryRes
   }
 
   const replayPromise = replayReadyReviewMutations();
-  activeRecoveryRun = replayPromise.finally(() => {
-    if (activeRecoveryRun === replayPromise) {
+  const trackedReplayPromise = replayPromise.finally(() => {
+    if (activeRecoveryRun === trackedReplayPromise) {
       activeRecoveryRun = null;
     }
   });
+  activeRecoveryRun = trackedReplayPromise;
 
   return activeRecoveryRun;
 }

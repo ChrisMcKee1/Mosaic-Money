@@ -17,11 +17,12 @@ export function useReviewMutationRecovery(options?: {
     }
 
     const runPromise = replayQueuedReviewMutations();
-    localRunRef.current = runPromise.finally(() => {
-      if (localRunRef.current === runPromise) {
+    const trackedRunPromise = runPromise.finally(() => {
+      if (localRunRef.current === trackedRunPromise) {
         localRunRef.current = null;
       }
     });
+    localRunRef.current = trackedRunPromise;
 
     return localRunRef.current;
   }, []);

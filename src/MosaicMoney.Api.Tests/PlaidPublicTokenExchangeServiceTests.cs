@@ -72,6 +72,7 @@ public sealed class PlaidPublicTokenExchangeServiceTests
 
         var persistedCredential = await dbContext.PlaidItemCredentials.SingleAsync(x => x.Id == exchange.CredentialId);
         var session = await dbContext.PlaidLinkSessions.SingleAsync(x => x.Id == issued.LinkSessionId);
+        var syncState = await dbContext.PlaidItemSyncStates.SingleAsync(x => x.ItemId == exchange.ItemId);
 
         var providerResult = await provider.ExchangePublicTokenAsync(new PlaidPublicTokenExchangeRequest(
             "public-sandbox-123",
@@ -82,6 +83,9 @@ public sealed class PlaidPublicTokenExchangeServiceTests
         Assert.NotEqual(providerResult.AccessToken, persistedCredential.AccessTokenCiphertext);
         Assert.Equal(64, persistedCredential.AccessTokenFingerprint.Length);
         Assert.Equal(PlaidLinkSessionStatus.Exchanged, session.Status);
+        Assert.Equal(PlaidItemSyncStatus.Pending, syncState.SyncStatus);
+        Assert.True(syncState.PendingWebhookCount >= 1);
+        Assert.False(string.IsNullOrWhiteSpace(syncState.Cursor));
 
         var responseDto = new PlaidPublicTokenExchangeResultDto(
             exchange.CredentialId,

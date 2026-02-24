@@ -43,6 +43,38 @@
       "problemMatcher": []
     },
     {
+      "label": "Aspire: Wait For Worker Up",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "wait",
+        "worker",
+        "--project",
+        "src/apphost.cs",
+        "--status",
+        "up",
+        "--timeout",
+        "180"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Wait For Web Up",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "wait",
+        "web",
+        "--project",
+        "src/apphost.cs",
+        "--status",
+        "up",
+        "--timeout",
+        "180"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "Aspire: Show Resources",
       "type": "shell",
       "command": "aspire",
@@ -109,9 +141,105 @@
       "problemMatcher": []
     },
     {
+      "label": "Aspire: Telemetry Logs 100 (API)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "telemetry",
+        "logs",
+        "api",
+        "--project",
+        "src/apphost.cs",
+        "--limit",
+        "100"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Telemetry Logs 100 (Worker)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "telemetry",
+        "logs",
+        "worker",
+        "--project",
+        "src/apphost.cs",
+        "--limit",
+        "100"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Telemetry Logs 100 (Web)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "telemetry",
+        "logs",
+        "web",
+        "--project",
+        "src/apphost.cs",
+        "--limit",
+        "100"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Telemetry Traces 50 (API)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "telemetry",
+        "traces",
+        "api",
+        "--project",
+        "src/apphost.cs",
+        "--limit",
+        "50"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Telemetry Traces 50 (Worker)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "telemetry",
+        "traces",
+        "worker",
+        "--project",
+        "src/apphost.cs",
+        "--limit",
+        "50"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Telemetry Traces 50 (Web)",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "telemetry",
+        "traces",
+        "web",
+        "--project",
+        "src/apphost.cs",
+        "--limit",
+        "50"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Diagnostics Snapshot (API/Worker/Web)",
+      "type": "shell",
+      "command": "aspire resources --project src/apphost.cs; aspire logs api --project src/apphost.cs --tail 100; aspire logs worker --project src/apphost.cs --tail 100; aspire logs web --project src/apphost.cs --tail 100; aspire telemetry traces api --project src/apphost.cs --limit 50; aspire telemetry traces worker --project src/apphost.cs --limit 50; aspire telemetry traces web --project src/apphost.cs --limit 50",
+      "problemMatcher": []
+    },
+    {
       "label": "Aspire: Recover Stack",
       "type": "shell",
-      "command": "aspire stop --project src/apphost.cs; dotnet build src/apphost.cs; aspire run --project src/apphost.cs --detach --isolated; aspire wait api --project src/apphost.cs --status healthy --timeout 180; aspire resources --project src/apphost.cs",
+      "command": "aspire stop --project src/apphost.cs; dotnet build src/apphost.cs; aspire run --project src/apphost.cs --detach --isolated; aspire wait api --project src/apphost.cs --status healthy --timeout 180; aspire wait worker --project src/apphost.cs --status up --timeout 180; aspire wait web --project src/apphost.cs --status up --timeout 180; aspire resources --project src/apphost.cs",
       "problemMatcher": []
     }
   ]
