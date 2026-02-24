@@ -76,6 +76,37 @@ public sealed record PlaidTransactionsSyncPullResult(
     IReadOnlyList<PlaidTransactionsSyncDeltaTransaction> Modified,
     IReadOnlyList<string> RemovedTransactionIds);
 
+public sealed record PlaidLiabilitiesGetRequest(
+    string AccessToken,
+    string Environment);
+
+public sealed record PlaidLiabilityAccount(
+    string PlaidAccountId,
+    string Name,
+    string? OfficialName,
+    string? Mask,
+    string? Type,
+    string? Subtype,
+    decimal? CurrentBalance);
+
+public sealed record PlaidLiabilitySnapshot(
+    string PlaidAccountId,
+    string LiabilityType,
+    DateOnly? AsOfDate,
+    decimal? CurrentBalance,
+    decimal? LastStatementBalance,
+    decimal? MinimumPayment,
+    decimal? LastPaymentAmount,
+    DateOnly? LastPaymentDate,
+    DateOnly? NextPaymentDueDate,
+    decimal? Apr,
+    string RawLiabilityJson);
+
+public sealed record PlaidLiabilitiesGetResult(
+    string RequestId,
+    IReadOnlyList<PlaidLiabilityAccount> Accounts,
+    IReadOnlyList<PlaidLiabilitySnapshot> Snapshots);
+
 public interface IPlaidTokenProvider
 {
     Task<PlaidLinkTokenCreateResult> CreateLinkTokenAsync(
@@ -92,5 +123,9 @@ public interface IPlaidTokenProvider
 
     Task<PlaidTransactionsSyncPullResult> PullTransactionsSyncAsync(
         PlaidTransactionsSyncPullRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaidLiabilitiesGetResult> GetLiabilitiesAsync(
+        PlaidLiabilitiesGetRequest request,
         CancellationToken cancellationToken = default);
 }

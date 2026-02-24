@@ -154,4 +154,45 @@ internal static class ApiEndpointHelpers
                 x.ReviewStatus.ToString(),
                 x.ReviewReason)).ToList());
     }
+
+    internal static LiabilitySnapshotDto MapLiabilitySnapshot(LiabilitySnapshot snapshot)
+    {
+        return new LiabilitySnapshotDto(
+            snapshot.Id,
+            snapshot.LiabilityType,
+            snapshot.AsOfDate,
+            snapshot.CurrentBalance,
+            snapshot.LastStatementBalance,
+            snapshot.MinimumPayment,
+            snapshot.LastPaymentAmount,
+            snapshot.LastPaymentDate,
+            snapshot.NextPaymentDueDate,
+            snapshot.Apr,
+            snapshot.CapturedAtUtc,
+            snapshot.ProviderRequestId);
+    }
+
+    internal static LiabilityAccountDto MapLiabilityAccount(LiabilityAccount account, int snapshotLimit = 5)
+    {
+        return new LiabilityAccountDto(
+            account.Id,
+            account.HouseholdId,
+            account.ItemId,
+            account.PlaidEnvironment,
+            account.PlaidAccountId,
+            account.Name,
+            account.OfficialName,
+            account.Mask,
+            account.AccountType,
+            account.AccountSubtype,
+            account.IsActive,
+            account.CreatedAtUtc,
+            account.LastSeenAtUtc,
+            account.LastProviderRequestId,
+            account.Snapshots
+                .OrderByDescending(x => x.CapturedAtUtc)
+                .Take(Math.Max(1, snapshotLimit))
+                .Select(MapLiabilitySnapshot)
+                .ToList());
+    }
 }

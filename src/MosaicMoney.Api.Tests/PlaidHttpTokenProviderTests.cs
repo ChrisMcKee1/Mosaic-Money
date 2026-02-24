@@ -177,6 +177,66 @@ public sealed class PlaidHttpTokenProviderTests
         Assert.Equal(500, payload.RootElement.GetProperty("count").GetInt32());
     }
 
+    [Fact]
+    public async Task GetLiabilitiesAsync_ParsesAccountsAndSnapshots()
+    {
+        var handler = new StubHttpMessageHandler();
+        handler.EnqueueResponse(HttpStatusCode.OK, @"{
+    ""accounts"": [
+        {
+            ""account_id"": ""plaid-account-liability-1"",
+            ""name"": ""Plaid Credit Card"",
+            ""official_name"": ""Plaid Platinum Card"",
+            ""mask"": ""1234"",
+            ""type"": ""credit"",
+            ""subtype"": ""credit card"",
+            ""balances"": { ""current"": 1250.43 }
+        }
+    ],
+    ""liabilities"": {
+        ""credit"": [
+            {
+                ""account_id"": ""plaid-account-liability-1"",
+                ""last_statement_balance"": 1175.20,
+                ""minimum_payment_amount"": 45.00,
+                ""last_payment_amount"": 80.00,
+                ""last_payment_date"": ""2026-02-10"",
+                ""next_payment_due_date"": ""2026-03-05"",
+                ""interest_rate_percentage"": 24.99,
+                ""last_statement_issue_date"": ""2026-02-01""
+            }
+        ]
+    },
+    ""request_id"": ""req-liability-1""
+}");
+
+        var provider = CreateProvider(handler, CreateOptions());
+        var result = await provider.GetLiabilitiesAsync(new PlaidLiabilitiesGetRequest(
+            AccessToken: "access-sandbox-liability-1",
+            Environment: "sandbox"));
+
+        Assert.Equal("req-liability-1", result.RequestId);
+
+        var account = Assert.Single(result.Accounts);
+        Assert.Equal("plaid-account-liability-1", account.PlaidAccountId);
+        Assert.Equal(1250.43m, account.CurrentBalance);
+
+        var snapshot = Assert.Single(result.Snapshots);
+        Assert.Equal("plaid-account-liability-1", snapshot.PlaidAccountId);
+        Assert.Equal("credit", snapshot.LiabilityType);
+        Assert.Equal(new DateOnly(2026, 2, 1), snapshot.AsOfDate);
+        Assert.Equal(1250.43m, snapshot.CurrentBalance);
+        Assert.Equal(1175.20m, snapshot.LastStatementBalance);
+        Assert.Equal(45.00m, snapshot.MinimumPayment);
+        Assert.Equal(24.99m, snapshot.Apr);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal("https://sandbox.plaid.com/liabilities/get", request.Uri);
+
+        using var payload = JsonDocument.Parse(request.Body);
+        Assert.Equal("access-sandbox-liability-1", payload.RootElement.GetProperty("access_token").GetString());
+    }
+
     private static PlaidHttpTokenProvider CreateProvider(StubHttpMessageHandler handler, PlaidOptions options)
     {
         return new PlaidHttpTokenProvider(

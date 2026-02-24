@@ -32,6 +32,7 @@ builder.Services.AddScoped<PlaidAccessTokenProtector>();
 builder.Services.AddScoped<PlaidLinkLifecycleService>();
 builder.Services.AddScoped<PlaidItemSyncStateService>();
 builder.Services.AddScoped<PlaidTransactionsSyncProcessor>();
+builder.Services.AddScoped<PlaidLiabilitiesIngestionService>();
 builder.Services.AddScoped<TransactionProjectionMetadataQueryService>();
 builder.Services.AddScoped<IDeterministicClassificationEngine, DeterministicClassificationEngine>();
 builder.Services.AddScoped<IClassificationAmbiguityPolicyGate, ClassificationAmbiguityPolicyGate>();

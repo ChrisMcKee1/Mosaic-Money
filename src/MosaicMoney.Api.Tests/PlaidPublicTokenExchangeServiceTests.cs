@@ -235,5 +235,12 @@ public sealed class PlaidPublicTokenExchangeServiceTests
         {
             throw new NotSupportedException();
         }
+
+        public Task<PlaidLiabilitiesGetResult> GetLiabilitiesAsync(
+            PlaidLiabilitiesGetRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

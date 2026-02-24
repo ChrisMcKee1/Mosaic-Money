@@ -37,13 +37,13 @@ Deliver the first complete human-reviewed ledger loop: Plaid account-link onboar
 |---|---|---|---|---|
 | MM-BE-05 | NeedsReview state machine and transitions | MM-BE-04, MM-AI-01 | Explicit transition rules with fail-closed behavior for ambiguity. | Done |
 | MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | Done |
-| MM-BE-12 | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configs and records link session metadata for diagnostics/support. | In Progress |
-| MM-BE-13 | Public token exchange and Item credential storage | MM-BE-12 | Backend exchanges `public_token` to `access_token` + `item_id` and stores credentials in secure backend storage paths only. | In Progress |
-| MM-BE-14 | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook errors (including OAuth expiry/revocation) produce explicit relink/update-mode actions and review-safe routing. | In Progress |
+| MM-BE-12 | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configs and records link session metadata for diagnostics/support. | Done |
+| MM-BE-13 | Public token exchange and Item credential storage | MM-BE-12 | Backend exchanges `public_token` to `access_token` + `item_id` and stores credentials in secure backend storage paths only. | Done |
+| MM-BE-14 | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook errors (including OAuth expiry/revocation) produce explicit relink/update-mode actions and review-safe routing. | Done |
 | MM-BE-15 | Plaid product capability mapping research | MM-BE-12, MM-BE-13, MM-BE-14 | Cross-reference PRD capabilities to Plaid products/endpoints/webhooks, validate sandbox simulation coverage, and publish MVP product decisions with schema + ingestion implications. | Done |
 | MM-FE-04 | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Web list view with separated dual notes and no ledger mutation controls. | Done |
 | MM-FE-05 | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify user actions integrated with backend review endpoints. | Done |
-| MM-FE-09 | Plaid Link onboarding flow (web) | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued token and posts `public_token` + metadata to backend exchange endpoint. | In Progress |
+| MM-FE-09 | Plaid Link onboarding flow (web) | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued token and posts `public_token` + metadata to backend exchange endpoint. | Parked |
 | MM-MOB-02 | Offline-safe state/caching foundation | MM-MOB-01 | Queue-friendly offline cache and sync baseline. | Done |
 | MM-MOB-03 | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile review inbox with clear pending statuses. | Done |
 | MM-MOB-04 | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Clear distinction of `UserNote` and `AgentNote` in mobile detail view. | Done |
@@ -63,6 +63,10 @@ Update note (2026-02-23): Runtime validation confirmed local Plaid onboarding in
 Update note (2026-02-23): Plaid backend now defaults to real provider wiring for `/link/token/create` and `/item/public_token/exchange`, with `/transactions/sync` bootstrap executed during exchange to initialize per-item durable cursor state. Deterministic simulation remains an explicit local/test fallback behind `Plaid:UseDeterministicProvider=true`.
 
 Update note (2026-02-23): Delegated execution checkpoint validated the new hosted Plaid sync processor path (paged `/transactions/sync` pull from stored credentials into ingestion + embedding pipelines) and captured non-empty persistence/API retrieval evidence for local sandbox validation. A follow-on fail-closed guard now blocks silent success when no local account mapping exists for incoming Plaid deltas. `MM-BE-12/13/14` remain `In Progress` until the full sandbox webhook-to-ingestion loop is rerun as the primary automated path without manual fallback steps.
+
+Update note (2026-02-24): Planner reran sandbox happy-path validation end-to-end using real Plaid provider wiring and verified non-empty persistence through the primary pipeline (`PlaidItemCredentials`, `PlaidItemSyncStates`, `RawTransactionIngestionRecords`, `EnrichedTransactions`) plus API retrieval via `GET /api/v1/transactions`. With this runtime proof gate satisfied, `MM-BE-12`, `MM-BE-13`, and `MM-BE-14` are promoted to `Done`.
+
+Update note (2026-02-24): Frontend execution is intentionally paused due frontend-agent model unavailability; `MM-FE-09` is moved to `Parked` pending frontend capacity restoration.
 
 ## Plaid Product Capability Research Gate (`MM-BE-15`)
 Complete this gate before implementing non-`transactions` product ingestion lanes.

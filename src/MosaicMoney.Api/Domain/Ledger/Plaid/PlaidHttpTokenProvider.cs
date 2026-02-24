@@ -169,6 +169,34 @@ public sealed class PlaidHttpTokenProvider(
             ParseRemovedTransactionIds(responseRoot));
     }
 
+    public async Task<PlaidLiabilitiesGetResult> GetLiabilitiesAsync(
+        PlaidLiabilitiesGetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var options = plaidOptions.Value;
+        EnsureConfiguration(options);
+
+        var payload = new
+        {
+            access_token = request.AccessToken,
+        };
+
+        using var response = await SendRequestAsync(
+            path: "/liabilities/get",
+            environment: request.Environment,
+            payload,
+            cancellationToken);
+
+        var responseRoot = await ReadResponseJsonAsync(response, "/liabilities/get", cancellationToken);
+        var accounts = ParseLiabilityAccounts(responseRoot);
+        var snapshots = ParseLiabilitySnapshots(responseRoot, accounts);
+
+        return new PlaidLiabilitiesGetResult(
+            GetRequiredString(responseRoot, "request_id"),
+            accounts,
+            snapshots);
+    }
+
     private async Task<HttpResponseMessage> SendRequestAsync(
         string path,
         string environment,
@@ -332,6 +360,101 @@ public sealed class PlaidHttpTokenProvider(
         return removed;
     }
 
+    private static IReadOnlyList<PlaidLiabilityAccount> ParseLiabilityAccounts(JsonElement root)
+    {
+        if (!root.TryGetProperty("accounts", out var accountsElement) || accountsElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var accounts = new List<PlaidLiabilityAccount>();
+        foreach (var accountElement in accountsElement.EnumerateArray())
+        {
+            var accountId = GetOptionalString(accountElement, "account_id");
+            if (string.IsNullOrWhiteSpace(accountId))
+            {
+                continue;
+            }
+
+            decimal? currentBalance = null;
+            if (accountElement.TryGetProperty("balances", out var balancesElement)
+                && balancesElement.ValueKind == JsonValueKind.Object)
+            {
+                if (balancesElement.TryGetProperty("current", out var currentElement)
+                    && currentElement.ValueKind == JsonValueKind.Number)
+                {
+                    currentBalance = currentElement.GetDecimal();
+                }
+            }
+
+            accounts.Add(new PlaidLiabilityAccount(
+                accountId.Trim(),
+                GetOptionalString(accountElement, "name")?.Trim() ?? string.Empty,
+                ResolveOptional(GetOptionalString(accountElement, "official_name")),
+                ResolveOptional(GetOptionalString(accountElement, "mask")),
+                ResolveOptional(GetOptionalString(accountElement, "type")),
+                ResolveOptional(GetOptionalString(accountElement, "subtype")),
+                currentBalance));
+        }
+
+        return accounts;
+    }
+
+    private static IReadOnlyList<PlaidLiabilitySnapshot> ParseLiabilitySnapshots(
+        JsonElement root,
+        IReadOnlyList<PlaidLiabilityAccount> accounts)
+    {
+        if (!root.TryGetProperty("liabilities", out var liabilitiesElement)
+            || liabilitiesElement.ValueKind != JsonValueKind.Object)
+        {
+            return [];
+        }
+
+        var currentBalanceByPlaidAccountId = accounts.ToDictionary(
+            x => x.PlaidAccountId,
+            x => x.CurrentBalance,
+            StringComparer.Ordinal);
+
+        var snapshots = new List<PlaidLiabilitySnapshot>();
+        foreach (var liabilitiesByType in liabilitiesElement.EnumerateObject())
+        {
+            if (liabilitiesByType.Value.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            var liabilityType = liabilitiesByType.Name.Trim().ToLowerInvariant();
+            foreach (var liabilityElement in liabilitiesByType.Value.EnumerateArray())
+            {
+                var accountId = GetOptionalString(liabilityElement, "account_id");
+                if (string.IsNullOrWhiteSpace(accountId))
+                {
+                    continue;
+                }
+
+                currentBalanceByPlaidAccountId.TryGetValue(accountId.Trim(), out var currentBalance);
+
+                var apr = GetOptionalDecimalNullable(liabilityElement, "interest_rate_percentage")
+                    ?? GetOptionalNestedDecimal(liabilityElement, "interest_rate", "percentage");
+
+                snapshots.Add(new PlaidLiabilitySnapshot(
+                    accountId.Trim(),
+                    liabilityType,
+                    GetOptionalDateOnly(liabilityElement, "last_statement_issue_date"),
+                    currentBalance,
+                    GetOptionalDecimalNullable(liabilityElement, "last_statement_balance"),
+                    GetOptionalDecimalNullable(liabilityElement, "minimum_payment_amount"),
+                    GetOptionalDecimalNullable(liabilityElement, "last_payment_amount"),
+                    GetOptionalDateOnly(liabilityElement, "last_payment_date"),
+                    GetOptionalDateOnly(liabilityElement, "next_payment_due_date"),
+                    apr,
+                    liabilityElement.GetRawText()));
+            }
+        }
+
+        return snapshots;
+    }
+
     private static string BuildEndpointUri(string environment, string path)
     {
         var normalizedEnvironment = string.IsNullOrWhiteSpace(environment)
@@ -419,6 +542,32 @@ public sealed class PlaidHttpTokenProvider(
         }
 
         return property.GetDecimal();
+    }
+
+    private static decimal? GetOptionalDecimalNullable(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.Number)
+        {
+            return null;
+        }
+
+        return property.GetDecimal();
+    }
+
+    private static decimal? GetOptionalNestedDecimal(JsonElement root, string propertyName, string nestedPropertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        if (!property.TryGetProperty(nestedPropertyName, out var nestedProperty)
+            || nestedProperty.ValueKind != JsonValueKind.Number)
+        {
+            return null;
+        }
+
+        return nestedProperty.GetDecimal();
     }
 
     private static DateOnly? GetOptionalDateOnly(JsonElement root, string propertyName)

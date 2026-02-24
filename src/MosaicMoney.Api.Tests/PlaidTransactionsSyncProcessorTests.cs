@@ -356,6 +356,13 @@ public sealed class PlaidTransactionsSyncProcessorTests
 
             return Task.FromResult(results.Dequeue());
         }
+
+        public Task<PlaidLiabilitiesGetResult> GetLiabilitiesAsync(
+            PlaidLiabilitiesGetRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     private sealed class StubEmbeddingQueueService : ITransactionEmbeddingQueueService

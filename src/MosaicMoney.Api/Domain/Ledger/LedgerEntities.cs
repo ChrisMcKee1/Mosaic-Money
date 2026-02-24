@@ -530,6 +530,91 @@ public sealed class PlaidItemSyncState
     public int PendingWebhookCount { get; set; }
 }
 
+public sealed class LiabilityAccount
+{
+    public Guid Id { get; set; }
+
+    public Guid? HouseholdId { get; set; }
+
+    [MaxLength(128)]
+    public string ItemId { get; set; } = string.Empty;
+
+    [MaxLength(32)]
+    public string PlaidEnvironment { get; set; } = "sandbox";
+
+    [MaxLength(128)]
+    public string PlaidAccountId { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string? OfficialName { get; set; }
+
+    [MaxLength(32)]
+    public string? Mask { get; set; }
+
+    [MaxLength(64)]
+    public string? AccountType { get; set; }
+
+    [MaxLength(64)]
+    public string? AccountSubtype { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastSeenAtUtc { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(120)]
+    public string? LastProviderRequestId { get; set; }
+
+    public ICollection<LiabilitySnapshot> Snapshots { get; set; } = new List<LiabilitySnapshot>();
+}
+
+public sealed class LiabilitySnapshot
+{
+    public Guid Id { get; set; }
+
+    public Guid LiabilityAccountId { get; set; }
+
+    [MaxLength(64)]
+    public string LiabilityType { get; set; } = string.Empty;
+
+    public DateOnly? AsOfDate { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? CurrentBalance { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? LastStatementBalance { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? MinimumPayment { get; set; }
+
+    [Precision(18, 2)]
+    public decimal? LastPaymentAmount { get; set; }
+
+    public DateOnly? LastPaymentDate { get; set; }
+
+    public DateOnly? NextPaymentDueDate { get; set; }
+
+    [Precision(7, 4)]
+    public decimal? Apr { get; set; }
+
+    [MaxLength(64)]
+    public string SnapshotHash { get; set; } = string.Empty;
+
+    public string RawLiabilityJson { get; set; } = string.Empty;
+
+    public DateTime CapturedAtUtc { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(120)]
+    public string? ProviderRequestId { get; set; }
+
+    public LiabilityAccount LiabilityAccount { get; set; } = null!;
+}
+
 public sealed class TransactionSplit
 {
     public Guid Id { get; set; }

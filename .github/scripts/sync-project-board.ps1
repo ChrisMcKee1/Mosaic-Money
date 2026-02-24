@@ -39,12 +39,12 @@ $issues = @(
     # --- M2: Ledger Truth & Review Core ---
     @{ num=15; nid="I_kwDORVI-G87tOi3C"; status="Done" }        # MM-BE-05
     @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="Done" }        # MM-BE-06
-    @{ num=17; nid="I_kwDORVI-G87tOi8h"; status="In Progress" } # MM-BE-12
-    @{ num=18; nid="I_kwDORVI-G87tOi-v"; status="In Progress" } # MM-BE-13
-    @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="In Progress" } # MM-BE-14
+    @{ num=17; nid="I_kwDORVI-G87tOi8h"; status="Done" }        # MM-BE-12
+    @{ num=18; nid="I_kwDORVI-G87tOi-v"; status="Done" }        # MM-BE-13
+    @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="Done" }        # MM-BE-14
     @{ num=20; nid="I_kwDORVI-G87tOjF8"; status="Done" }        # MM-FE-04
     @{ num=21; nid="I_kwDORVI-G87tOjHr"; status="Done" }        # MM-FE-05
-    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="In Progress" } # MM-FE-09
+    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="Parked" }      # MM-FE-09
     @{ num=23; nid="I_kwDORVI-G87tOjN9"; status="Done" }        # MM-MOB-02
     @{ num=24; nid="I_kwDORVI-G87tOjRE"; status="Done" }        # MM-MOB-03
     @{ num=25; nid="I_kwDORVI-G87tOjTk"; status="Done" }        # MM-MOB-04
@@ -75,7 +75,7 @@ $issues = @(
     @{ num=45; nid="I_kwDORVI-G87tOlcC"; status="Done" }        # MM-BE-10
     @{ num=46; nid="I_kwDORVI-G87tOleY"; status="Done" }        # MM-AI-05
     @{ num=47; nid="I_kwDORVI-G87tOljK"; status="Done" }        # MM-AI-06
-    @{ num=48; nid="I_kwDORVI-G87tOloV"; status="In Review" }   # MM-AI-07
+    @{ num=48; nid="I_kwDORVI-G87tOloV"; status="Done" }        # MM-AI-07
     @{ num=49; nid="I_kwDORVI-G87tOlqE"; status="In Progress" } # MM-AI-08
     @{ num=50; nid="I_kwDORVI-G87tOlr1"; status="In Progress" } # MM-AI-09
     @{ num=51; nid="I_kwDORVI-G87tOltb"; status="Not Started" } # MM-AI-10
@@ -84,7 +84,7 @@ $issues = @(
     @{ num=52; nid="I_kwDORVI-G87tOmSr"; status="Done" }        # MM-ASP-05
     @{ num=53; nid="I_kwDORVI-G87tOmXP"; status="In Progress" } # MM-ASP-06
     @{ num=54; nid="I_kwDORVI-G87tOmY-"; status="Not Started" } # MM-ASP-07
-    @{ num=55; nid="I_kwDORVI-G87tOmat"; status="Not Started" } # MM-BE-11
+    @{ num=55; nid="I_kwDORVI-G87tOmat"; status="In Review" }   # MM-BE-11
     @{ num=56; nid="I_kwDORVI-G87tOmey"; status="Not Started" } # MM-AI-11
     @{ num=57; nid="I_kwDORVI-G87tOmgs"; status="Done" }        # MM-FE-08
     @{ num=58; nid="I_kwDORVI-G87tOmjY"; status="Done" }        # MM-MOB-07.1

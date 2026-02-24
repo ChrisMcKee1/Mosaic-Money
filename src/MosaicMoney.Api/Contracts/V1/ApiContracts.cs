@@ -189,6 +189,46 @@ public sealed record PlaidTransactionsWebhookProcessedDto(
     DateTime? LastWebhookAtUtc,
     string? LastProviderRequestId);
 
+public sealed record LiabilitySnapshotDto(
+    Guid Id,
+    string LiabilityType,
+    DateOnly? AsOfDate,
+    decimal? CurrentBalance,
+    decimal? LastStatementBalance,
+    decimal? MinimumPayment,
+    decimal? LastPaymentAmount,
+    DateOnly? LastPaymentDate,
+    DateOnly? NextPaymentDueDate,
+    decimal? Apr,
+    DateTime CapturedAtUtc,
+    string? ProviderRequestId);
+
+public sealed record LiabilityAccountDto(
+    Guid Id,
+    Guid? HouseholdId,
+    string ItemId,
+    string Environment,
+    string PlaidAccountId,
+    string Name,
+    string? OfficialName,
+    string? Mask,
+    string? AccountType,
+    string? AccountSubtype,
+    bool IsActive,
+    DateTime CreatedAtUtc,
+    DateTime LastSeenAtUtc,
+    string? LastProviderRequestId,
+    IReadOnlyList<LiabilitySnapshotDto> Snapshots);
+
+public sealed record PlaidLiabilitiesWebhookProcessedDto(
+    Guid CredentialId,
+    string ItemId,
+    string Environment,
+    int AccountsUpsertedCount,
+    int SnapshotsInsertedCount,
+    DateTime ProcessedAtUtc,
+    string? LastProviderRequestId);
+
 public sealed record ClassificationStageOutputDto(
     Guid Id,
     string Stage,
@@ -516,6 +556,33 @@ public sealed class PlaidTransactionsWebhookRequest
 
     [JsonPropertyName("historical_update_complete")]
     public bool? HistoricalUpdateComplete { get; init; }
+}
+
+public sealed class PlaidLiabilitiesWebhookRequest
+{
+    [Required]
+    [MaxLength(80)]
+    [JsonPropertyName("webhook_type")]
+    public string WebhookType { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(80)]
+    [JsonPropertyName("webhook_code")]
+    public string WebhookCode { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(128)]
+    [JsonPropertyName("item_id")]
+    public string ItemId { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(32)]
+    [JsonPropertyName("environment")]
+    public string Environment { get; init; } = string.Empty;
+
+    [MaxLength(120)]
+    [JsonPropertyName("request_id")]
+    public string? ProviderRequestId { get; init; }
 }
 
 public sealed class CreateClassificationStageOutputRequest

@@ -86,6 +86,18 @@ public sealed class DeterministicPlaidTokenProvider(IOptions<PlaidOptions> plaid
             RemovedTransactionIds: []));
     }
 
+    public Task<PlaidLiabilitiesGetResult> GetLiabilitiesAsync(
+        PlaidLiabilitiesGetRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureConfiguration();
+
+        return Task.FromResult(new PlaidLiabilitiesGetResult(
+            RequestId: $"req-sim-{Guid.NewGuid():N}",
+            Accounts: [],
+            Snapshots: []));
+    }
+
     private void EnsureConfiguration()
     {
         var options = plaidOptions.Value;

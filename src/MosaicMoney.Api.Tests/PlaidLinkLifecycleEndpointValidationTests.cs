@@ -140,4 +140,38 @@ public sealed class PlaidLinkLifecycleEndpointValidationTests
         Assert.Contains(errors, x => x.Field == nameof(PlaidTransactionsWebhookRequest.WebhookType));
         Assert.Contains(errors, x => x.Field == nameof(PlaidTransactionsWebhookRequest.WebhookCode));
     }
+
+    [Fact]
+    public void ValidatePlaidLiabilitiesWebhookRequest_AcceptsDefaultUpdatePayload()
+    {
+        var request = new PlaidLiabilitiesWebhookRequest
+        {
+            WebhookType = "LIABILITIES",
+            WebhookCode = "DEFAULT_UPDATE",
+            ItemId = "item-123",
+            Environment = "sandbox",
+            ProviderRequestId = "req-123",
+        };
+
+        var errors = PlaidLiabilitiesEndpoints.ValidatePlaidLiabilitiesWebhookRequest(request);
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidatePlaidLiabilitiesWebhookRequest_RejectsUnsupportedTypeAndWebhookCode()
+    {
+        var request = new PlaidLiabilitiesWebhookRequest
+        {
+            WebhookType = "TRANSACTIONS",
+            WebhookCode = "SYNC_UPDATES_AVAILABLE",
+            ItemId = "item-123",
+            Environment = "sandbox",
+        };
+
+        var errors = PlaidLiabilitiesEndpoints.ValidatePlaidLiabilitiesWebhookRequest(request);
+
+        Assert.Contains(errors, x => x.Field == nameof(PlaidLiabilitiesWebhookRequest.WebhookType));
+        Assert.Contains(errors, x => x.Field == nameof(PlaidLiabilitiesWebhookRequest.WebhookCode));
+    }
 }

@@ -38,6 +38,10 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<PlaidItemSyncState> PlaidItemSyncStates => Set<PlaidItemSyncState>();
 
+    public DbSet<LiabilityAccount> LiabilityAccounts => Set<LiabilityAccount>();
+
+    public DbSet<LiabilitySnapshot> LiabilitySnapshots => Set<LiabilitySnapshot>();
+
     public DbSet<TransactionSplit> TransactionSplits => Set<TransactionSplit>();
 
     public DbSet<ReimbursementProposal> ReimbursementProposals => Set<ReimbursementProposal>();
@@ -282,6 +286,58 @@ public sealed class MosaicMoneyDbContext : DbContext
 
         modelBuilder.Entity<PlaidItemSyncState>()
             .HasIndex(x => new { x.SyncStatus, x.LastWebhookAtUtc, x.LastSyncedAtUtc });
+
+        modelBuilder.Entity<LiabilityAccount>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_LiabilityAccount_ItemIdRequired",
+                    "LENGTH(TRIM(\"ItemId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_LiabilityAccount_PlaidAccountIdRequired",
+                    "LENGTH(TRIM(\"PlaidAccountId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_LiabilityAccount_NameRequired",
+                    "LENGTH(TRIM(\"Name\")) > 0");
+            });
+
+        modelBuilder.Entity<LiabilityAccount>()
+            .HasIndex(x => new { x.PlaidEnvironment, x.ItemId, x.PlaidAccountId })
+            .IsUnique();
+
+        modelBuilder.Entity<LiabilityAccount>()
+            .HasIndex(x => new { x.HouseholdId, x.IsActive, x.LastSeenAtUtc });
+
+        modelBuilder.Entity<LiabilitySnapshot>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_LiabilitySnapshot_LiabilityTypeRequired",
+                    "LENGTH(TRIM(\"LiabilityType\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_LiabilitySnapshot_SnapshotHashRequired",
+                    "LENGTH(TRIM(\"SnapshotHash\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_LiabilitySnapshot_AprRange",
+                    "\"Apr\" IS NULL OR (\"Apr\" >= 0 AND \"Apr\" <= 100)");
+            });
+
+        modelBuilder.Entity<LiabilitySnapshot>()
+            .HasIndex(x => new { x.LiabilityAccountId, x.SnapshotHash })
+            .IsUnique();
+
+        modelBuilder.Entity<LiabilitySnapshot>()
+            .HasIndex(x => new { x.LiabilityAccountId, x.CapturedAtUtc });
+
+        modelBuilder.Entity<LiabilitySnapshot>()
+            .HasOne(x => x.LiabilityAccount)
+            .WithMany(x => x.Snapshots)
+            .HasForeignKey(x => x.LiabilityAccountId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<ReimbursementProposal>()
             .ToTable(t => t.HasCheckConstraint(
