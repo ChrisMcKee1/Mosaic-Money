@@ -700,3 +700,11 @@ public sealed class ReimbursementDecisionRequest
 
     public string? AgentNote { get; init; }
 }
+
+public sealed class CreateHouseholdRequest
+{
+    [Required, MaxLength(200)]
+    public string Name { get; init; } = string.Empty;
+}
+
+public sealed record HouseholdDto(Guid Id, string Name, DateTime CreatedAtUtc);
