@@ -136,6 +136,17 @@ Update note (2026-02-23): Delegated backend/devops execution checkpoint complete
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. | Done |
 | MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | Parked |
 
+### M6 UI Redesign and Theming
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-FE-10 | Web | Global Layout & Theming | MM-FE-01 | Dark/Light mode toggle, CSS variable color system, distinctive typography, and main application shell implemented. | In Progress |
+| MM-FE-11 | Web | Dashboard Overview Screen | MM-FE-10 | Monthly spending chart, Net worth chart, Transactions to review, Top categories, and Next two weeks widgets implemented. | In Progress |
+| MM-FE-12 | Web | Accounts Screen | MM-FE-10 | Assets/Debts summary chart, grouped account lists with sparklines, and right detail panel implemented. | In Progress |
+| MM-FE-13 | Web | Transactions Screen | MM-FE-10 | Grouped transaction list with category tags and amounts, and right detail panel implemented. | In Progress |
+| MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | In Progress |
+| MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | In Progress |
+| MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | In Progress |
+
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:
 1. `MM-ASP-01` -> `MM-ASP-04`

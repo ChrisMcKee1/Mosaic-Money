@@ -18,6 +18,7 @@ Primary skills to load before implementation:
 - `.github/skills/playwright-cli/SKILL.md`
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
+- `.github/skills/frontend-design/SKILL.md`
 - `microsoft-docs`
 
 Skill-first workflow:

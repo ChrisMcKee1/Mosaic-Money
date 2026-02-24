@@ -46,6 +46,9 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 - `.github/skills/github-projects/SKILL.md`
   - GitHub Projects V2 board management for Mosaic Money.
   - Contains project IDs, field IDs, status option IDs, and GraphQL mutation templates for board sync.
+- `.github/skills/frontend-design/SKILL.md`
+  - Frontend design aesthetics and UI implementation guidelines.
+  - Ensures distinctive, production-grade interfaces avoiding generic AI aesthetics.
 
 ## External skills to use by name when available
 - `aspire`
@@ -62,7 +65,7 @@ This document maps externally researched skills to the Mosaic Money Dream Team a
 ## Agent-to-skill mapping
 - Planner: `prd`, `agent-governance`, `aspire`, `aspire-mosaic-money`, `agentic-eval`, `github-projects`, `microsoft-docs`.
 - Backend: `aspire`, `aspire-mosaic-money`, `nuget-manager`, `agent-governance`, `agentic-eval`, `microsoft-code-reference`.
-- Frontend: `aspire`, `aspire-mosaic-money`, `webapp-testing`, `playwright-cli`, `agent-governance`, `agentic-eval`.
+- Frontend: `aspire`, `aspire-mosaic-money`, `webapp-testing`, `playwright-cli`, `agent-governance`, `agentic-eval`, `frontend-design`.
 - Mobile: `agent-governance`, `agentic-eval`, `prd`.
 - AI: `agent-governance`, `agentic-eval`, `aspire`, `aspire-mosaic-money`, `microsoft-docs`.
 - DevOps: `aspire`, `aspire-mosaic-money`, `agent-governance`, `webapp-testing`, `nuget-manager`, `gh-cli`, `github-projects`, `microsoft-docs`.
