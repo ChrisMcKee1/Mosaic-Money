@@ -18,6 +18,16 @@ public sealed class PlaidAccessTokenProtector(IDataProtectionProvider dataProtec
         return protector.Protect(accessToken.Trim());
     }
 
+    public string Unprotect(string protectedAccessToken)
+    {
+        if (string.IsNullOrWhiteSpace(protectedAccessToken))
+        {
+            throw new ArgumentException("Protected access token is required.", nameof(protectedAccessToken));
+        }
+
+        return protector.Unprotect(protectedAccessToken.Trim());
+    }
+
     public static string ComputeFingerprint(string value)
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(value.Trim()));

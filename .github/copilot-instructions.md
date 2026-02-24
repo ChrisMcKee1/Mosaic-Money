@@ -41,6 +41,21 @@ These instructions are always on for this repository.
 - Before implementing a Plaid product beyond `transactions`, complete a source-linked capability mapping from PRD requirements to Plaid products/endpoints/webhooks and document schema + contract impact.
 - Explicitly classify each candidate Plaid product as `Adopt Now`, `Adopt Later`, or `Out of Scope` with rationale, sandbox coverage notes, and human-review implications.
 
+## Subagent Delegation And Local Postgres Validation
+- When delegating Plaid ingestion or retrieval tasks, include explicit Docker/Postgres connection instructions in the handoff prompt.
+- Prefer AppHost `WithReference(...)` runtime wiring for services; only use direct `psql` Docker checks for operator validation and troubleshooting.
+- Never hardcode database credentials in code, specs, or logs. Read container credentials from runtime environment variables.
+- For local Docker validation, require this credential-discovery flow:
+	- Identify the Postgres container: `docker ps --format "{{.ID}} {{.Image}} {{.Names}}"`
+	- Read username/password from container env: `docker exec <container> printenv POSTGRES_USER` and `docker exec <container> printenv POSTGRES_PASSWORD`
+	- Run SQL with env-based password (PowerShell): `$env:PGPASSWORD = (docker exec <container> printenv POSTGRES_PASSWORD).Trim(); psql -h localhost -p <mapped-port> -U <postgres-user> -d <database> -c "SELECT now();"`
+	- Clear the local shell password variable after validation: `Remove-Item Env:PGPASSWORD`
+- For Plaid evidence gates, require subagents to return command + output for:
+	- `SELECT extname FROM pg_extension WHERE extname IN ('vector','azure_ai');`
+	- Row counts for `PlaidItemCredentials`, `PlaidItemSyncStates`, `RawTransactionIngestionRecords`, and `EnrichedTransactions`.
+	- API retrieval proof via `GET /api/v1/transactions` showing ingested rows are queryable.
+- If a subagent needs another domain change (for example AppHost port/secret wiring, backend contract updates, frontend onboarding adjustments), they must report the exact file-level change request and acceptance criteria back to the planner for scoped re-delegation.
+
 ## Task Lifecycle And GitHub Projects
 - Task status lives in two places and must stay synchronized: spec markdown tables and the GitHub Projects board.
 - The master task breakdown is `project-plan/specs/001-mvp-foundation-task-breakdown.md`; milestone-specific specs are `002`–`006`.

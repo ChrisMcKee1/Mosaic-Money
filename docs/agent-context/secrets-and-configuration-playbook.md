@@ -55,6 +55,53 @@ dotnet user-secrets set "ConnectionStrings:PostgresDB" "<value>" --file apphost.
 dotnet user-secrets list --file apphost.cs
 ```
 
+Azure PostgreSQL AppHost admin credentials (file-based AppHost):
+
+```bash
+dotnet user-secrets set "Parameters:mosaic-postgres-admin-username" "<admin-user>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:mosaic-postgres-admin-password" "<admin-password>" --file src/apphost.cs
+dotnet user-secrets list --file src/apphost.cs
+```
+
+DB-only AppHost deployment variant:
+
+```bash
+dotnet user-secrets set "Parameters:mosaic-postgres-admin-username" "<admin-user>" --file src/apphost.database/apphost.cs
+dotnet user-secrets set "Parameters:mosaic-postgres-admin-password" "<admin-password>" --file src/apphost.database/apphost.cs
+dotnet user-secrets list --file src/apphost.database/apphost.cs
+```
+
+Azure PostgreSQL authentication and RBAC bootstrap (developer mode):
+
+```bash
+# Enable dual auth during migration/dev verification
+az postgres flexible-server update \
+  --resource-group mosaic-money-db-centralus \
+  --name <server-name> \
+  --microsoft-entra-auth Enabled \
+  --password-auth Enabled
+
+# Set current Entra user as server admin
+az postgres flexible-server microsoft-entra-admin create \
+  --resource-group mosaic-money-db-centralus \
+  --server-name <server-name> \
+  --display-name <user-upn> \
+  --object-id <user-object-id> \
+  --type User
+
+# Broad developer RBAC (temporary; tighten before production)
+az role assignment create --assignee-object-id <user-object-id> --role "Contributor" --scope "/subscriptions/<sub>/resourceGroups/mosaic-money-db-centralus"
+az role assignment create --assignee-object-id <user-object-id> --role "User Access Administrator" --scope "/subscriptions/<sub>/resourceGroups/mosaic-money-db-centralus"
+az role assignment create --assignee-object-id <user-object-id> --role "Key Vault Administrator" --scope "/subscriptions/<sub>/resourceGroups/mosaic-money-db-centralus/providers/Microsoft.KeyVault/vaults/<vault-name>"
+```
+
+Verification commands:
+
+```bash
+az postgres flexible-server microsoft-entra-admin list --resource-group mosaic-money-db-centralus --server-name <server-name>
+az role assignment list --assignee-object-id <user-object-id> --all
+```
+
 ## Contract examples
 
 Backend `appsettings.json` example (placeholders only):
@@ -125,3 +172,44 @@ Notes:
 - Never commit Plaid `client_id`, `secret`, `access_token`, or `public_token` values.
 - Plaid Link `public_token` is ephemeral and must be exchanged server-side.
 - Persist `access_token` and `item_id` only in backend secure storage paths.
+
+## Azure AI Foundry and Azure OpenAI local setup contract
+
+Mosaic Money keeps AI model routing keys in AppHost user-secrets and injects them into API/worker through `WithEnvironment(...)`.
+
+Required keys:
+
+1. `Parameters:azure-openai-endpoint` (private endpoint URI; can be a Foundry/OpenAI endpoint)
+2. `Parameters:azure-openai-api-key` (secret)
+3. `Parameters:azure-openai-embedding-deployment` (non-secret deployment/model name)
+4. `Parameters:azure-openai-chat-deployment` (non-secret deployment/model name)
+
+API contract placeholders:
+
+1. `AiWorkflow:Embeddings:Provider` (`deterministic` or `azure-openai`)
+2. `AiWorkflow:Embeddings:AzureOpenAI:Endpoint`
+3. `AiWorkflow:Embeddings:AzureOpenAI:ApiKey`
+4. `AiWorkflow:Embeddings:AzureOpenAI:Deployment`
+5. `AiWorkflow:Embeddings:AzureOpenAI:ApiVersion`
+6. `AiWorkflow:Chat:AzureOpenAI:Endpoint`
+7. `AiWorkflow:Chat:AzureOpenAI:ApiKey`
+8. `AiWorkflow:Chat:AzureOpenAI:Deployment`
+
+File-based AppHost commands:
+
+```bash
+dotnet user-secrets set "Parameters:azure-openai-endpoint" "https://<resource>.openai.azure.com/" --file src/apphost.cs
+dotnet user-secrets set "Parameters:azure-openai-api-key" "<azure-openai-api-key>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:azure-openai-embedding-deployment" "text-embedding-3-small" --file src/apphost.cs
+dotnet user-secrets set "Parameters:azure-openai-chat-deployment" "gpt-4.1-mini" --file src/apphost.cs
+dotnet user-secrets list --file src/apphost.cs
+
+# Enable Azure embeddings in API runtime (project-based user-secrets)
+dotnet user-secrets set "AiWorkflow:Embeddings:Provider" "azure-openai" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets list --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+```
+
+Notes:
+
+- Keep `AiWorkflow:Embeddings:Provider=deterministic` until endpoint/key/deployment values are set.
+- Do not commit endpoint keys, API keys, or project-specific identifiers in `appsettings*.json`.

@@ -61,13 +61,14 @@ public sealed class PlaidHttpTokenProviderTests
 
         var provider = CreateProvider(handler, CreateOptions());
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => provider.ExchangePublicTokenAsync(
+        var exception = await Assert.ThrowsAsync<PlaidApiException>(() => provider.ExchangePublicTokenAsync(
             new PlaidPublicTokenExchangeRequest(
                 PublicToken: "public-sandbox-bad",
                 Environment: "sandbox",
                 InstitutionId: null,
                 ClientMetadataJson: null)));
 
+        Assert.Equal("INVALID_PUBLIC_TOKEN", exception.ErrorCode);
         Assert.Contains("/item/public_token/exchange", exception.Message, StringComparison.Ordinal);
         Assert.Contains("req-error-123", exception.Message, StringComparison.Ordinal);
         Assert.Contains("INVALID_PUBLIC_TOKEN", exception.Message, StringComparison.Ordinal);
@@ -104,6 +105,76 @@ public sealed class PlaidHttpTokenProviderTests
         using var payload = JsonDocument.Parse(request.Body);
         Assert.Equal("access-sandbox-123", payload.RootElement.GetProperty("access_token").GetString());
         Assert.Equal(1, payload.RootElement.GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task PullTransactionsSyncAsync_ParsesAccountsAndDeltaTransactions()
+    {
+        var handler = new StubHttpMessageHandler();
+        handler.EnqueueResponse(HttpStatusCode.OK, @"{
+    ""accounts"": [
+        {
+            ""account_id"": ""plaid-account-1"",
+            ""name"": ""Plaid Checking"",
+            ""official_name"": ""Plaid Gold Checking"",
+            ""mask"": ""0000"",
+            ""type"": ""depository"",
+            ""subtype"": ""checking""
+        }
+    ],
+    ""added"": [
+        {
+            ""transaction_id"": ""tx-added-1"",
+            ""account_id"": ""plaid-account-1"",
+            ""name"": ""PLAID STORE"",
+            ""merchant_name"": ""Plaid Store"",
+            ""amount"": -18.75,
+            ""date"": ""2026-02-23"",
+            ""pending"": false
+        }
+    ],
+    ""modified"": [],
+    ""removed"": [
+        {
+            ""transaction_id"": ""tx-removed-1"",
+            ""account_id"": ""plaid-account-1""
+        }
+    ],
+    ""next_cursor"": ""cursor-next-2"",
+    ""has_more"": false,
+    ""request_id"": ""req-sync-2""
+}");
+
+        var provider = CreateProvider(handler, CreateOptions());
+
+        var result = await provider.PullTransactionsSyncAsync(new PlaidTransactionsSyncPullRequest(
+            AccessToken: "access-sandbox-123",
+            Environment: "sandbox",
+            Cursor: "cursor-1",
+            Count: 500));
+
+        Assert.Equal("cursor-next-2", result.NextCursor);
+        Assert.False(result.HasMore);
+        Assert.Equal("req-sync-2", result.RequestId);
+
+        var account = Assert.Single(result.Accounts);
+        Assert.Equal("plaid-account-1", account.PlaidAccountId);
+
+        var added = Assert.Single(result.Added);
+        Assert.Equal("tx-added-1", added.PlaidTransactionId);
+        Assert.Equal(new DateOnly(2026, 2, 23), added.TransactionDate);
+        Assert.Equal(-18.75m, added.Amount);
+
+        var removed = Assert.Single(result.RemovedTransactionIds);
+        Assert.Equal("tx-removed-1", removed);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal("https://sandbox.plaid.com/transactions/sync", request.Uri);
+
+        using var payload = JsonDocument.Parse(request.Body);
+        Assert.Equal("access-sandbox-123", payload.RootElement.GetProperty("access_token").GetString());
+        Assert.Equal("cursor-1", payload.RootElement.GetProperty("cursor").GetString());
+        Assert.Equal(500, payload.RootElement.GetProperty("count").GetInt32());
     }
 
     private static PlaidHttpTokenProvider CreateProvider(StubHttpMessageHandler handler, PlaidOptions options)

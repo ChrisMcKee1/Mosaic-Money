@@ -76,6 +76,7 @@ public sealed class PlaidLinkLifecycleService(
     IOptions<PlaidOptions> options)
 {
     private const string DefaultSyncBootstrapCursor = "now";
+    private const string HistoricalSyncBootstrapCursorMode = "start";
 
     private static readonly HashSet<string> RequiresRelinkErrorCodes =
     [
@@ -473,9 +474,19 @@ public sealed class PlaidLinkLifecycleService(
     private string ResolveSyncBootstrapCursor()
     {
         var cursor = options.Value.TransactionsSyncBootstrapCursor;
-        return string.IsNullOrWhiteSpace(cursor)
-            ? DefaultSyncBootstrapCursor
-            : cursor.Trim();
+        if (string.IsNullOrWhiteSpace(cursor))
+        {
+            return DefaultSyncBootstrapCursor;
+        }
+
+        var normalizedCursor = cursor.Trim();
+        if (string.Equals(normalizedCursor, HistoricalSyncBootstrapCursorMode, StringComparison.OrdinalIgnoreCase))
+        {
+            // Plaid interprets an empty cursor as "start from the beginning" for initial sync bootstrap.
+            return string.Empty;
+        }
+
+        return normalizedCursor;
     }
 
     private int ResolveSyncBootstrapCount()

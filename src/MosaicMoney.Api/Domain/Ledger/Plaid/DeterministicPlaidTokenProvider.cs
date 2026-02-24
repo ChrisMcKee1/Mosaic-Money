@@ -66,6 +66,26 @@ public sealed class DeterministicPlaidTokenProvider(IOptions<PlaidOptions> plaid
             RequestId: $"req-sim-{Guid.NewGuid():N}"));
     }
 
+    public Task<PlaidTransactionsSyncPullResult> PullTransactionsSyncAsync(
+        PlaidTransactionsSyncPullRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsureConfiguration();
+
+        var normalizedCursor = string.IsNullOrWhiteSpace(request.Cursor)
+            ? "now"
+            : request.Cursor.Trim();
+
+        return Task.FromResult(new PlaidTransactionsSyncPullResult(
+            normalizedCursor,
+            HasMore: false,
+            RequestId: $"req-sim-{Guid.NewGuid():N}",
+            Accounts: [],
+            Added: [],
+            Modified: [],
+            RemovedTransactionIds: []));
+    }
+
     private void EnsureConfiguration()
     {
         var options = plaidOptions.Value;

@@ -150,8 +150,10 @@ When `MM-AI-10` introduces additional workflow resources/spans, extend this sect
 ### 6) VS Code task shortcuts
 
 Use these task labels for consistent execution from VS Code:
+- `Aspire: Stop AppHost`
 - `Aspire: Build AppHost`
 - `Aspire: Run Detached Isolated`
+- `Aspire: Start Stack`
 - `Aspire: Wait For API Healthy`
 - `Aspire: Wait For Worker Up`
 - `Aspire: Wait For Web Up`
@@ -258,6 +260,57 @@ File-based AppHost flow (`src/apphost.cs`):
 dotnet user-secrets set "<Key>" "<Value>" --file src/apphost.cs
 dotnet user-secrets list --file src/apphost.cs
 ```
+
+## Docker Postgres validation workflow (Plaid proof gate)
+
+Use this only for local operator validation and troubleshooting. Runtime service connectivity must still rely on AppHost `WithReference(...)` wiring.
+
+### 1) Discover container identity and credentials
+
+```powershell
+docker ps --format "{{.ID}} {{.Image}} {{.Names}}"
+docker exec <container> printenv POSTGRES_USER
+docker exec <container> printenv POSTGRES_PASSWORD
+```
+
+### 2) Connect with env-derived password (PowerShell)
+
+```powershell
+$env:PGPASSWORD = (docker exec <container> printenv POSTGRES_PASSWORD).Trim()
+psql -h localhost -p <mapped-port> -U <postgres-user> -d <database> -c "SELECT now();"
+```
+
+Always clear the password variable after checks:
+
+```powershell
+Remove-Item Env:PGPASSWORD
+```
+
+### 3) Required Plaid data evidence SQL
+
+```sql
+SELECT extname FROM pg_extension WHERE extname IN ('vector','azure_ai');
+```
+
+```sql
+SELECT 'PlaidItemCredentials' AS table_name, COUNT(*) AS row_count FROM "PlaidItemCredentials"
+UNION ALL
+SELECT 'PlaidItemSyncStates', COUNT(*) FROM "PlaidItemSyncStates"
+UNION ALL
+SELECT 'RawTransactionIngestionRecords', COUNT(*) FROM "RawTransactionIngestionRecords"
+UNION ALL
+SELECT 'EnrichedTransactions', COUNT(*) FROM "EnrichedTransactions";
+```
+
+### 4) Required API retrieval proof
+
+After ingest/sync runs, validate queryability through API:
+
+```powershell
+Invoke-RestMethod -Method Get -Uri "http://localhost:5000/api/v1/transactions?page=1&pageSize=20"
+```
+
+Use the actual API host/port surfaced by Aspire if it differs.
 
 ## FE-08 Playwright regression path (backend-independent)
 

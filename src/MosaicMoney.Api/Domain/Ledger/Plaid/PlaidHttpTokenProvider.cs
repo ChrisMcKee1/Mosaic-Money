@@ -130,6 +130,45 @@ public sealed class PlaidHttpTokenProvider(
             GetRequiredString(responseRoot, "request_id"));
     }
 
+    public async Task<PlaidTransactionsSyncPullResult> PullTransactionsSyncAsync(
+        PlaidTransactionsSyncPullRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var options = plaidOptions.Value;
+        EnsureConfiguration(options);
+
+        var normalizedCursor = string.IsNullOrWhiteSpace(request.Cursor)
+            ? string.Empty
+            : request.Cursor.Trim();
+        var normalizedCount = Math.Clamp(request.Count, 1, 500);
+
+        var payload = new
+        {
+            access_token = request.AccessToken,
+            cursor = normalizedCursor,
+            count = normalizedCount,
+        };
+
+        using var response = await SendRequestAsync(
+            path: "/transactions/sync",
+            environment: request.Environment,
+            payload,
+            cancellationToken);
+
+        var responseRoot = await ReadResponseJsonAsync(response, "/transactions/sync", cancellationToken);
+        var nextCursor = GetOptionalString(responseRoot, "next_cursor") ?? normalizedCursor;
+        var hasMore = GetOptionalBool(responseRoot, "has_more");
+
+        return new PlaidTransactionsSyncPullResult(
+            nextCursor,
+            hasMore,
+            GetRequiredString(responseRoot, "request_id"),
+            ParseAccounts(responseRoot),
+            ParseDeltaTransactions(responseRoot, "added"),
+            ParseDeltaTransactions(responseRoot, "modified"),
+            ParseRemovedTransactionIds(responseRoot));
+    }
+
     private async Task<HttpResponseMessage> SendRequestAsync(
         string path,
         string environment,
@@ -171,7 +210,7 @@ public sealed class PlaidHttpTokenProvider(
         }
     }
 
-    private InvalidOperationException CreatePlaidException(string endpoint, HttpStatusCode statusCode, string body)
+    private PlaidApiException CreatePlaidException(string endpoint, HttpStatusCode statusCode, string body)
     {
         string? requestId = null;
         string? errorCode = null;
@@ -197,8 +236,100 @@ public sealed class PlaidHttpTokenProvider(
             requestId ?? "n/a",
             errorCode ?? "n/a");
 
-        return new InvalidOperationException(
+        return new PlaidApiException(
+            endpoint,
+            statusCode,
+            requestId,
+            errorCode,
             $"Plaid request failed for {endpoint} with HTTP {(int)statusCode}. RequestId={requestId ?? "n/a"}, ErrorCode={errorCode ?? "n/a"}.");
+    }
+
+    private static IReadOnlyList<PlaidTransactionsSyncAccount> ParseAccounts(JsonElement root)
+    {
+        if (!root.TryGetProperty("accounts", out var accountsElement) || accountsElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var accounts = new List<PlaidTransactionsSyncAccount>();
+
+        foreach (var accountElement in accountsElement.EnumerateArray())
+        {
+            var accountId = GetOptionalString(accountElement, "account_id");
+            if (string.IsNullOrWhiteSpace(accountId))
+            {
+                continue;
+            }
+
+            accounts.Add(new PlaidTransactionsSyncAccount(
+                accountId.Trim(),
+                GetOptionalString(accountElement, "name")?.Trim() ?? string.Empty,
+                ResolveOptional(GetOptionalString(accountElement, "official_name")),
+                ResolveOptional(GetOptionalString(accountElement, "mask")),
+                ResolveOptional(GetOptionalString(accountElement, "type")),
+                ResolveOptional(GetOptionalString(accountElement, "subtype"))));
+        }
+
+        return accounts;
+    }
+
+    private static IReadOnlyList<PlaidTransactionsSyncDeltaTransaction> ParseDeltaTransactions(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var transactionsElement)
+            || transactionsElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var transactions = new List<PlaidTransactionsSyncDeltaTransaction>();
+
+        foreach (var transactionElement in transactionsElement.EnumerateArray())
+        {
+            var transactionId = GetOptionalString(transactionElement, "transaction_id");
+            var accountId = GetOptionalString(transactionElement, "account_id");
+            if (string.IsNullOrWhiteSpace(transactionId) || string.IsNullOrWhiteSpace(accountId))
+            {
+                continue;
+            }
+
+            var description = GetOptionalString(transactionElement, "name")?.Trim() ?? string.Empty;
+            var merchantName = ResolveOptional(GetOptionalString(transactionElement, "merchant_name"));
+            var amount = GetOptionalDecimal(transactionElement, "amount");
+            var transactionDate = GetOptionalDateOnly(transactionElement, "date");
+            var pending = GetOptionalBool(transactionElement, "pending");
+
+            transactions.Add(new PlaidTransactionsSyncDeltaTransaction(
+                transactionId.Trim(),
+                accountId.Trim(),
+                description,
+                merchantName,
+                amount,
+                transactionDate,
+                transactionElement.GetRawText(),
+                pending));
+        }
+
+        return transactions;
+    }
+
+    private static IReadOnlyList<string> ParseRemovedTransactionIds(JsonElement root)
+    {
+        if (!root.TryGetProperty("removed", out var removedElement) || removedElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var removed = new List<string>();
+        foreach (var removedTransaction in removedElement.EnumerateArray())
+        {
+            var transactionId = GetOptionalString(removedTransaction, "transaction_id");
+            if (!string.IsNullOrWhiteSpace(transactionId))
+            {
+                removed.Add(transactionId.Trim());
+            }
+        }
+
+        return removed;
     }
 
     private static string BuildEndpointUri(string environment, string path)
@@ -278,5 +409,28 @@ public sealed class PlaidHttpTokenProvider(
         }
 
         return property.GetBoolean();
+    }
+
+    private static decimal GetOptionalDecimal(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var property) || property.ValueKind != JsonValueKind.Number)
+        {
+            return 0m;
+        }
+
+        return property.GetDecimal();
+    }
+
+    private static DateOnly? GetOptionalDateOnly(JsonElement root, string propertyName)
+    {
+        var value = GetOptionalString(root, propertyName);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)
+            ? parsed
+            : null;
     }
 }

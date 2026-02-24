@@ -17,12 +17,14 @@ This policy applies to any C#/.NET service that runs under Mosaic Money Aspire o
 - AppHost orchestration packages: use `Aspire.Hosting.*` packages.
 - Service client packages: use `Aspire.*` integration packages before direct provider packages.
 - PostgreSQL + EF Core standard:
-  - AppHost: `Aspire.Hosting.PostgreSQL`
+  - AppHost (local container): `Aspire.Hosting.PostgreSQL`
+  - AppHost (Azure Flexible Server): `Aspire.Hosting.Azure.PostgreSQL`
   - Service (EF): `Aspire.Npgsql.EntityFrameworkCore.PostgreSQL`
   - Service (raw data source): `Aspire.Npgsql`
 
 ## Required registration strategy
 - In AppHost, define resources and pass them with `WithReference(...)`.
+- For Azure PostgreSQL resources, use `AddAzurePostgresFlexibleServer(...).AddDatabase(...)`; use a dedicated DB-only AppHost when deployment scope must be database-only.
 - For EF Core services, use `builder.AddNpgsqlDbContext<TDbContext>(connectionName: "...")`.
 - For non-EF data access, use `builder.AddNpgsqlDataSource(connectionName: "...")`.
 - Connection names must match the AppHost resource names.

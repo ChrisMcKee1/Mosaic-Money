@@ -13,8 +13,8 @@ using Pgvector;
 namespace MosaicMoney.Api.Migrations
 {
     [DbContext(typeof(MosaicMoneyDbContext))]
-    [Migration("20260223160026_MmBe14PlaidItemRecoveryWebhookStates")]
-    partial class MmBe14PlaidItemRecoveryWebhookStates
+    [Migration("20260224040422_InitialBaseline")]
+    partial class InitialBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -166,6 +166,10 @@ namespace MosaicMoney.Api.Migrations
                     b.Property<Vector>("DescriptionEmbedding")
                         .HasColumnType("vector(1536)");
 
+                    b.Property<string>("DescriptionEmbeddingHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.Property<bool>("ExcludeFromBudget")
                         .HasColumnType("boolean");
 
@@ -210,6 +214,8 @@ namespace MosaicMoney.Api.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("DescriptionEmbedding"), "hnsw");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("DescriptionEmbedding"), new[] { "vector_cosine_ops" });
+
+                    b.HasIndex("DescriptionEmbeddingHash");
 
                     b.HasIndex("NeedsReviewByUserId");
 
@@ -350,6 +356,75 @@ namespace MosaicMoney.Api.Migrations
                             t.HasCheckConstraint("CK_PlaidItemCredential_RecoveryActionAllowed", "\"RecoveryAction\" IS NULL OR \"RecoveryAction\" IN ('none', 'requires_relink', 'requires_update_mode', 'needs_review')");
 
                             t.HasCheckConstraint("CK_PlaidItemCredential_RecoveryAudit", "\"RecoveryAction\" IS NULL OR (\"RecoveryReasonCode\" IS NOT NULL AND LENGTH(TRIM(\"RecoveryReasonCode\")) > 0 AND \"RecoverySignaledAtUtc\" IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.PlaidItemSyncState", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Cursor")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("HistoricalUpdateComplete")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("InitialUpdateComplete")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("LastProviderRequestId")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime?>("LastSyncErrorAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastSyncErrorCode")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime?>("LastSyncedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastWebhookAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PendingWebhookCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PlaidEnvironment")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("SyncStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlaidEnvironment", "ItemId")
+                        .IsUnique();
+
+                    b.HasIndex("SyncStatus", "LastWebhookAtUtc", "LastSyncedAtUtc");
+
+                    b.ToTable("PlaidItemSyncStates", t =>
+                        {
+                            t.HasCheckConstraint("CK_PlaidItemSyncState_CursorRequired", "LENGTH(TRIM(\"Cursor\")) > 0");
+
+                            t.HasCheckConstraint("CK_PlaidItemSyncState_ItemIdRequired", "LENGTH(TRIM(\"ItemId\")) > 0");
+
+                            t.HasCheckConstraint("CK_PlaidItemSyncState_LastSyncErrorAudit", "(\"LastSyncErrorCode\" IS NULL AND \"LastSyncErrorAtUtc\" IS NULL) OR (\"LastSyncErrorCode\" IS NOT NULL AND LENGTH(TRIM(\"LastSyncErrorCode\")) > 0 AND \"LastSyncErrorAtUtc\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_PlaidItemSyncState_PendingWebhookCountRange", "\"PendingWebhookCount\" >= 0");
                         });
                 });
 
@@ -831,6 +906,65 @@ namespace MosaicMoney.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.TransactionEmbeddingQueueItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeadLetteredAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DescriptionHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("EnqueuedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LastAttemptedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int>("MaxAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransactionId", "DescriptionHash")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "NextAttemptAtUtc", "EnqueuedAtUtc");
+
+                    b.ToTable("TransactionEmbeddingQueueItems", t =>
+                        {
+                            t.HasCheckConstraint("CK_TransactionEmbeddingQueueItem_AttemptBoundedByMax", "\"AttemptCount\" <= \"MaxAttempts\"");
+
+                            t.HasCheckConstraint("CK_TransactionEmbeddingQueueItem_AttemptCountRange", "\"AttemptCount\" >= 0");
+
+                            t.HasCheckConstraint("CK_TransactionEmbeddingQueueItem_MaxAttemptsRange", "\"MaxAttempts\" >= 1");
+                        });
+                });
+
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.TransactionSplit", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1039,6 +1173,17 @@ namespace MosaicMoney.Api.Migrations
                     b.Navigation("Transaction");
                 });
 
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.TransactionEmbeddingQueueItem", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.EnrichedTransaction", "Transaction")
+                        .WithMany("EmbeddingQueueItems")
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Transaction");
+                });
+
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.TransactionSplit", b =>
                 {
                     b.HasOne("MosaicMoney.Api.Domain.Ledger.EnrichedTransaction", "ParentTransaction")
@@ -1070,6 +1215,8 @@ namespace MosaicMoney.Api.Migrations
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.EnrichedTransaction", b =>
                 {
                     b.Navigation("ClassificationOutcomes");
+
+                    b.Navigation("EmbeddingQueueItems");
 
                     b.Navigation("RawIngestionRecords");
 

@@ -43,6 +43,39 @@ public sealed record PlaidTransactionsSyncBootstrapResult(
     bool HasMore,
     string RequestId);
 
+public sealed record PlaidTransactionsSyncPullRequest(
+    string AccessToken,
+    string Environment,
+    string Cursor,
+    int Count);
+
+public sealed record PlaidTransactionsSyncAccount(
+    string PlaidAccountId,
+    string Name,
+    string? OfficialName,
+    string? Mask,
+    string? Type,
+    string? Subtype);
+
+public sealed record PlaidTransactionsSyncDeltaTransaction(
+    string PlaidTransactionId,
+    string PlaidAccountId,
+    string Description,
+    string? MerchantName,
+    decimal Amount,
+    DateOnly? TransactionDate,
+    string RawPayloadJson,
+    bool Pending);
+
+public sealed record PlaidTransactionsSyncPullResult(
+    string NextCursor,
+    bool HasMore,
+    string RequestId,
+    IReadOnlyList<PlaidTransactionsSyncAccount> Accounts,
+    IReadOnlyList<PlaidTransactionsSyncDeltaTransaction> Added,
+    IReadOnlyList<PlaidTransactionsSyncDeltaTransaction> Modified,
+    IReadOnlyList<string> RemovedTransactionIds);
+
 public interface IPlaidTokenProvider
 {
     Task<PlaidLinkTokenCreateResult> CreateLinkTokenAsync(
@@ -55,5 +88,9 @@ public interface IPlaidTokenProvider
 
     Task<PlaidTransactionsSyncBootstrapResult> BootstrapTransactionsSyncAsync(
         PlaidTransactionsSyncBootstrapRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<PlaidTransactionsSyncPullResult> PullTransactionsSyncAsync(
+        PlaidTransactionsSyncPullRequest request,
         CancellationToken cancellationToken = default);
 }

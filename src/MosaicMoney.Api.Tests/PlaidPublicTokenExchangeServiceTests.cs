@@ -101,6 +101,39 @@ public sealed class PlaidPublicTokenExchangeServiceTests
         Assert.DoesNotContain("access_token", json, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task ExchangePublicToken_WhenBootstrapCursorModeIsStart_UsesEmptyCursorForHistoricalSyncBootstrap()
+    {
+        await using var dbContext = CreateDbContext();
+        var householdId = await SeedHouseholdAsync(dbContext);
+
+        var options = new PlaidOptions
+        {
+            Environment = "sandbox",
+            ClientId = "test-client-id",
+            Secret = "test-secret",
+            Products = ["transactions"],
+            CountryCodes = ["US"],
+            TransactionsSyncBootstrapCursor = "start",
+            TransactionsSyncBootstrapCount = 250,
+        };
+
+        var provider = new CaptureBootstrapCursorPlaidTokenProvider();
+        var lifecycleService = CreateLifecycleService(dbContext, provider, options);
+
+        var exchange = await lifecycleService.ExchangePublicTokenAsync(new ExchangePlaidPublicTokenCommand(
+            householdId,
+            LinkSessionId: null,
+            PublicToken: "public-sandbox-start-mode",
+            InstitutionId: "ins_109508",
+            ClientMetadataJson: null));
+
+        Assert.NotEqual(Guid.Empty, exchange.CredentialId);
+        Assert.NotNull(provider.LastBootstrapRequest);
+        Assert.Equal(string.Empty, provider.LastBootstrapRequest!.Cursor);
+        Assert.Equal(250, provider.LastBootstrapRequest.Count);
+    }
+
     private static PlaidLinkLifecycleService CreateLifecycleService(
         MosaicMoneyDbContext dbContext,
         IPlaidTokenProvider? provider = null,
@@ -159,5 +192,48 @@ public sealed class PlaidPublicTokenExchangeServiceTests
         await dbContext.SaveChangesAsync();
 
         return household.Id;
+    }
+
+    private sealed class CaptureBootstrapCursorPlaidTokenProvider : IPlaidTokenProvider
+    {
+        public PlaidTransactionsSyncBootstrapRequest? LastBootstrapRequest { get; private set; }
+
+        public Task<PlaidLinkTokenCreateResult> CreateLinkTokenAsync(
+            PlaidLinkTokenCreateRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<PlaidPublicTokenExchangeResult> ExchangePublicTokenAsync(
+            PlaidPublicTokenExchangeRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new PlaidPublicTokenExchangeResult(
+                ItemId: "item-start-mode-001",
+                AccessToken: "access-start-mode-001",
+                Environment: "sandbox",
+                InstitutionId: request.InstitutionId,
+                RequestId: "req-start-mode-001"));
+        }
+
+        public Task<PlaidTransactionsSyncBootstrapResult> BootstrapTransactionsSyncAsync(
+            PlaidTransactionsSyncBootstrapRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastBootstrapRequest = request;
+
+            return Task.FromResult(new PlaidTransactionsSyncBootstrapResult(
+                NextCursor: "cursor-after-bootstrap",
+                HasMore: false,
+                RequestId: "req-bootstrap-start-mode"));
+        }
+
+        public Task<PlaidTransactionsSyncPullResult> PullTransactionsSyncAsync(
+            PlaidTransactionsSyncPullRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
     }
 }

@@ -2,6 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Aspire: Stop AppHost",
+      "type": "shell",
+      "command": "aspire",
+      "args": [
+        "stop",
+        "--project",
+        "src/apphost.cs"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "Aspire: Build AppHost",
       "type": "shell",
       "command": "dotnet",
@@ -71,6 +82,19 @@
         "up",
         "--timeout",
         "180"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Aspire: Start Stack",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Aspire: Build AppHost",
+        "Aspire: Run Detached Isolated",
+        "Aspire: Wait For API Healthy",
+        "Aspire: Wait For Worker Up",
+        "Aspire: Wait For Web Up",
+        "Aspire: Show Resources"
       ],
       "problemMatcher": []
     },
@@ -232,14 +256,25 @@
     },
     {
       "label": "Aspire: Diagnostics Snapshot (API/Worker/Web)",
-      "type": "shell",
-      "command": "aspire resources --project src/apphost.cs; aspire logs api --project src/apphost.cs --tail 100; aspire logs worker --project src/apphost.cs --tail 100; aspire logs web --project src/apphost.cs --tail 100; aspire telemetry traces api --project src/apphost.cs --limit 50; aspire telemetry traces worker --project src/apphost.cs --limit 50; aspire telemetry traces web --project src/apphost.cs --limit 50",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Aspire: Show Resources",
+        "Aspire: Logs Tail 100 (API)",
+        "Aspire: Logs Tail 100 (Worker)",
+        "Aspire: Logs Tail 100 (Web)",
+        "Aspire: Telemetry Traces 50 (API)",
+        "Aspire: Telemetry Traces 50 (Worker)",
+        "Aspire: Telemetry Traces 50 (Web)"
+      ],
       "problemMatcher": []
     },
     {
       "label": "Aspire: Recover Stack",
-      "type": "shell",
-      "command": "aspire stop --project src/apphost.cs; dotnet build src/apphost.cs; aspire run --project src/apphost.cs --detach --isolated; aspire wait api --project src/apphost.cs --status healthy --timeout 180; aspire wait worker --project src/apphost.cs --status up --timeout 180; aspire wait web --project src/apphost.cs --status up --timeout 180; aspire resources --project src/apphost.cs",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Aspire: Stop AppHost",
+        "Aspire: Start Stack"
+      ],
       "problemMatcher": []
     }
   ]

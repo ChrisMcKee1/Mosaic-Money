@@ -1,31 +1,63 @@
 ﻿#:sdk Aspire.AppHost.Sdk@13.3.0-preview.1.26121.1
 #:property UserSecretsId=270f7f5f-f938-4fde-be8f-247819628151
 #:package Aspire.Hosting.JavaScript@13.3.0-preview.1.26121.1
-#:package Aspire.Hosting.PostgreSQL@13.3.0-preview.1.26121.1
+#:package Aspire.Hosting.Azure.PostgreSQL@13.3.0-preview.1.26123.9
 #:project ./MosaicMoney.Api/MosaicMoney.Api.csproj
 #:project ./MosaicMoney.Worker/MosaicMoney.Worker.csproj
 
+using Aspire.Hosting.ApplicationModel;
+using Microsoft.Extensions.Configuration;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgres = builder
-	.AddPostgres("postgres")
-	.WithImage("pgvector/pgvector")
-	.WithImageTag("pg17");
-var ledgerDb = postgres.AddDatabase("mosaicmoneydb");
+IResourceBuilder<IResourceWithConnectionString> ledgerDb;
+var externalLedgerConnection = builder.Configuration.GetConnectionString("mosaicmoneydb");
+if (!string.IsNullOrWhiteSpace(externalLedgerConnection))
+{
+	// Use pre-provisioned Azure PostgreSQL when an explicit connection string is provided.
+	ledgerDb = builder.AddConnectionString("mosaicmoneydb");
+}
+else
+{
+	var postgresAdminUsername = builder.AddParameter("mosaic-postgres-admin-username", secret: true);
+	var postgresAdminPassword = builder.AddParameter("mosaic-postgres-admin-password", secret: true);
+	var postgres = builder
+		.AddAzurePostgresFlexibleServer("mosaic-postgres")
+		.WithPasswordAuthentication(postgresAdminUsername, postgresAdminPassword)
+		.RunAsContainer();
+
+	ledgerDb = postgres.AddDatabase("mosaicmoneydb");
+}
 var plaidClientId = builder.AddParameter("plaid-client-id", secret: true);
 var plaidSecret = builder.AddParameter("plaid-secret", secret: true);
+var azureOpenAiEndpoint = builder.AddParameter("azure-openai-endpoint");
+var azureOpenAiApiKey = builder.AddParameter("azure-openai-api-key", secret: true);
+var azureOpenAiEmbeddingDeployment = builder.AddParameter("azure-openai-embedding-deployment");
+var azureOpenAiChatDeployment = builder.AddParameter("azure-openai-chat-deployment");
 
 var api = builder
 	.AddProject<Projects.MosaicMoney_Api>("api")
 	.WithEnvironment("Plaid__ClientId", plaidClientId)
 	.WithEnvironment("Plaid__Secret", plaidSecret)
+	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
+	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__ApiKey", azureOpenAiApiKey)
+	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Deployment", azureOpenAiEmbeddingDeployment)
+	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
+	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
+	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
 	.WithReference(ledgerDb)
 	.WaitFor(ledgerDb);
 
-builder
+var worker = builder
 	.AddProject<Projects.MosaicMoney_Worker>("worker")
 	.WithEnvironment("Plaid__ClientId", plaidClientId)
 	.WithEnvironment("Plaid__Secret", plaidSecret)
+	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
+	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__ApiKey", azureOpenAiApiKey)
+	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Deployment", azureOpenAiEmbeddingDeployment)
+	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
+	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
+	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
 	.WithReference(ledgerDb)
 	.WithReference(api)
 	.WaitFor(ledgerDb)

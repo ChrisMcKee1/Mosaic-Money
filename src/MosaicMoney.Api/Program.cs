@@ -7,6 +7,7 @@ using MosaicMoney.Api.Domain.Ledger.Classification;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
 using MosaicMoney.Api.Domain.Ledger.Plaid;
+using Npgsql;
 using Pgvector.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,7 @@ builder.Services.AddScoped<IPlaidTokenProvider>(serviceProvider =>
 builder.Services.AddScoped<PlaidAccessTokenProtector>();
 builder.Services.AddScoped<PlaidLinkLifecycleService>();
 builder.Services.AddScoped<PlaidItemSyncStateService>();
+builder.Services.AddScoped<PlaidTransactionsSyncProcessor>();
 builder.Services.AddScoped<TransactionProjectionMetadataQueryService>();
 builder.Services.AddScoped<IDeterministicClassificationEngine, DeterministicClassificationEngine>();
 builder.Services.AddScoped<IClassificationAmbiguityPolicyGate, ClassificationAmbiguityPolicyGate>();
@@ -41,10 +43,24 @@ builder.Services.AddScoped<IMafFallbackEligibilityGate, MafFallbackEligibilityGa
 builder.Services.AddSingleton<IMafFallbackGraphExecutor, NoOpMafFallbackGraphExecutor>();
 builder.Services.AddScoped<IMafFallbackGraphService, MafFallbackGraphService>();
 builder.Services.AddScoped<IDeterministicClassificationOrchestrator, DeterministicClassificationOrchestrator>();
-builder.Services.AddScoped<ITransactionEmbeddingGenerator, DeterministicTransactionEmbeddingGenerator>();
+builder.Services.Configure<TransactionEmbeddingProviderOptions>(
+    builder.Configuration.GetSection(TransactionEmbeddingProviderOptions.SectionName));
+builder.Services.AddHttpClient<AzureOpenAiTransactionEmbeddingGenerator>();
+builder.Services.AddScoped<DeterministicTransactionEmbeddingGenerator>();
+builder.Services.AddScoped<ITransactionEmbeddingGenerator>(serviceProvider =>
+{
+    var options = serviceProvider
+        .GetRequiredService<IOptions<TransactionEmbeddingProviderOptions>>()
+        .Value;
+
+    return options.ShouldUseAzureOpenAi()
+        ? serviceProvider.GetRequiredService<AzureOpenAiTransactionEmbeddingGenerator>()
+        : serviceProvider.GetRequiredService<DeterministicTransactionEmbeddingGenerator>();
+});
 builder.Services.AddScoped<ITransactionEmbeddingQueueService, TransactionEmbeddingQueueService>();
 builder.Services.AddScoped<ITransactionEmbeddingQueueProcessor, TransactionEmbeddingQueueProcessor>();
 builder.Services.AddHostedService<TransactionEmbeddingQueueBackgroundService>();
+builder.Services.AddHostedService<PlaidTransactionsSyncBackgroundService>();
 
 var app = builder.Build();
 
@@ -59,7 +75,31 @@ static async Task ApplyMigrationsAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<MosaicMoneyDbContext>();
+
+    var logger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("StartupMigrations");
+
+    var rawConnectionString = dbContext.Database.GetConnectionString() ?? string.Empty;
+    var connection = new NpgsqlConnectionStringBuilder(rawConnectionString);
+    logger.LogInformation(
+        "Applying migrations against host '{Host}', database '{Database}', user '{User}'.",
+        connection.Host,
+        connection.Database,
+        connection.Username);
+
+    var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+    var appliedMigrations = await dbContext.Database.GetAppliedMigrationsAsync();
+
+    logger.LogInformation(
+        "Migration state before apply: {AppliedCount} applied, {PendingCount} pending.",
+        appliedMigrations.Count(),
+        pendingMigrations.Count());
+
     await dbContext.Database.MigrateAsync();
+
+    var appliedAfter = await dbContext.Database.GetAppliedMigrationsAsync();
+    logger.LogInformation("Migration state after apply: {AppliedCount} applied.", appliedAfter.Count());
 }
 
 public partial class Program;
