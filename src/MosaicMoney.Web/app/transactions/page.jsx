@@ -3,12 +3,27 @@ import { TransactionsClient } from "./TransactionsClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function TransactionsPage() {
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+
+  return parsed;
+}
+
+export default async function TransactionsPage({ searchParams }) {
+  const params = await searchParams;
+  const page = parsePositiveInt(params?.page, 1);
+  const pageSize = Math.min(parsePositiveInt(params?.pageSize, 100), 200);
+
   let transactions = [];
   let error = null;
 
   try {
-    transactions = await fetchApi("/api/v1/transactions/projection-metadata?pageSize=200");
+    transactions = await fetchApi(
+      `/api/v1/transactions/projection-metadata?page=${page}&pageSize=${pageSize}`,
+    );
   } catch (e) {
     error = e.message;
   }
@@ -23,5 +38,13 @@ export default async function TransactionsPage() {
     );
   }
 
-  return <TransactionsClient initialTransactions={transactions} />;
+  return (
+    <TransactionsClient
+      initialTransactions={transactions}
+      page={page}
+      pageSize={pageSize}
+      hasPreviousPage={page > 1}
+      hasNextPage={transactions.length === pageSize}
+    />
+  );
 }

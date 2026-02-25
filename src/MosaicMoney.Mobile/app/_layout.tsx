@@ -35,6 +35,41 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="transactions/index"
+          options={{
+            title: "Transactions",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
+          name="accounts"
+          options={{
+            title: "Accounts",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
+          name="categories"
+          options={{
+            title: "Categories",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
+          name="investments"
+          options={{
+            title: "Investments",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
+          name="recurrings"
+          options={{
+            title: "Recurrings",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
           name="transactions/[transactionId]"
           options={{
             title: "Transaction Detail",

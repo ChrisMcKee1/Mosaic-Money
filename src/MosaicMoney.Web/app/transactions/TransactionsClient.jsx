@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PageLayout } from "../../components/layout/PageLayout";
 import { Search, Filter, ArrowDownRight, ArrowUpRight, Tag, Calendar, FileText, MessageSquare } from "lucide-react";
 import { clsx } from "clsx";
@@ -12,17 +13,67 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export function TransactionsClient({ initialTransactions }) {
+export function TransactionsClient({
+  initialTransactions,
+  page,
+  pageSize,
+  hasPreviousPage,
+  hasNextPage,
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const currentSearchParams = useSearchParams();
+
   const [selectedTx, setSelectedTx] = useState(initialTransactions[0] || null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Group transactions by date
-  const groupedTransactions = initialTransactions.reduce((acc, tx) => {
+  const filteredTransactions = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return initialTransactions;
+    }
+
+    return initialTransactions.filter((tx) => {
+      const description = tx.description?.toLowerCase() ?? "";
+      const category = (tx.category || "").toLowerCase();
+      const date = (tx.rawTransactionDate || "").toLowerCase();
+
+      return (
+        description.includes(normalizedQuery) ||
+        category.includes(normalizedQuery) ||
+        date.includes(normalizedQuery)
+      );
+    });
+  }, [initialTransactions, searchQuery]);
+
+  const groupedTransactions = useMemo(() => filteredTransactions.reduce((acc, tx) => {
     const date = tx.rawTransactionDate || "Unknown Date";
     if (!acc[date]) acc[date] = [];
     acc[date].push(tx);
     return acc;
-  }, {});
+  }, {}), [filteredTransactions]);
+
+  useEffect(() => {
+    setSelectedTx(initialTransactions[0] || null);
+  }, [initialTransactions]);
+
+  useEffect(() => {
+    if (!selectedTx) {
+      return;
+    }
+
+    const stillVisible = filteredTransactions.some((tx) => tx.id === selectedTx.id);
+    if (!stillVisible) {
+      setSelectedTx(filteredTransactions[0] || null);
+    }
+  }, [filteredTransactions, selectedTx]);
+
+  const navigateToPage = (nextPage) => {
+    const params = new URLSearchParams(currentSearchParams?.toString() || "");
+    params.set("page", String(nextPage));
+    params.set("pageSize", String(pageSize));
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const rightPanel = selectedTx ? (
     <div className="space-y-6">
@@ -48,7 +99,7 @@ export function TransactionsClient({ initialTransactions }) {
               {selectedTx.category || "Uncategorized"}
             </span>
             {selectedTx.excludeFromBudget && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-sm font-medium bg-[var(--color-warning-bg)] text-[var(--color-warning)] border border-[var(--color-warning)]/20">
                 Business
               </span>
             )}
@@ -124,8 +175,42 @@ export function TransactionsClient({ initialTransactions }) {
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-sm font-medium text-white hover:bg-[var(--color-surface-hover)] transition-colors">
           <Filter className="w-4 h-4" />
-          Filter
+          Filter (coming soon)
         </button>
+      </div>
+
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <p className="text-xs text-[var(--color-text-muted)]">
+          Showing up to {pageSize} transactions for page {page}
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigateToPage(page - 1)}
+            disabled={!hasPreviousPage}
+            className={cn(
+              "rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors",
+              hasPreviousPage
+                ? "border-[var(--color-border)] text-white hover:bg-[var(--color-surface-hover)]"
+                : "border-[var(--color-border)] text-[var(--color-text-subtle)] cursor-not-allowed",
+            )}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateToPage(page + 1)}
+            disabled={!hasNextPage}
+            className={cn(
+              "rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors",
+              hasNextPage
+                ? "border-[var(--color-border)] text-white hover:bg-[var(--color-surface-hover)]"
+                : "border-[var(--color-border)] text-[var(--color-text-subtle)] cursor-not-allowed",
+            )}
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {/* Transactions List */}
@@ -142,7 +227,7 @@ export function TransactionsClient({ initialTransactions }) {
                     key={tx.id}
                     onClick={() => setSelectedTx(tx)}
                     className={cn(
-                      "w-full p-4 flex items-center justify-between hover:bg-[var(--color-surface-hover)] transition-colors text-left",
+                      "w-full p-4 flex items-center justify-between hover:bg-[var(--color-surface-hover)] transition-colors text-left border-l-2 border-l-transparent",
                       selectedTx?.id === tx.id && "bg-[var(--color-surface-hover)] border-l-2 border-l-[var(--color-primary)]"
                     )}
                   >
@@ -160,7 +245,7 @@ export function TransactionsClient({ initialTransactions }) {
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-[var(--color-text-muted)]">{tx.category || "Uncategorized"}</span>
                           {tx.excludeFromBudget && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-warning-bg)] text-[var(--color-warning)] border border-[var(--color-warning)]/20">
                               Business
                             </span>
                           )}
@@ -185,7 +270,9 @@ export function TransactionsClient({ initialTransactions }) {
         ))}
         {Object.keys(groupedTransactions).length === 0 && (
           <div className="text-center py-12 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
-            <p className="text-[var(--color-text-muted)]">No transactions found.</p>
+            <p className="text-[var(--color-text-muted)]">
+              {searchQuery.trim() ? "No transactions matched your search on this page." : "No transactions found."}
+            </p>
           </div>
         )}
       </div>

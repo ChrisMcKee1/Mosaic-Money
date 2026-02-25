@@ -100,6 +100,32 @@ The correlated findings were handed to `mosaic-money-mobile` for UI parity align
 - `cd src/MosaicMoney.Mobile; npm run test:sync-recovery` -> pass (4/4)
 - `cd src/MosaicMoney.Mobile; npm run test:review-projection` -> pass (2/2)
 
+## Resolution Update (2026-02-24, parity execution)
+
+The following parity actions were completed after the initial audit:
+
+- Web mobile contextual detail parity fixed:
+  - `src/MosaicMoney.Web/components/layout/PageLayout.jsx`
+  - Mobile now receives the same detail/context content previously hidden behind desktop-only right panels.
+
+- Web transaction scalability improved with server-page controls:
+  - `src/MosaicMoney.Web/app/transactions/page.jsx`
+  - `src/MosaicMoney.Web/app/transactions/TransactionsClient.jsx`
+  - Added page/pageSize query handling and previous/next controls; preserved search and detail selection behavior.
+
+- Mobile surface parity expanded to mirror web primary sections:
+  - New routes: `Transactions`, `Accounts`, `Categories`, `Investments`, `Recurrings`.
+  - Shared navigation added across surfaces: `src/MosaicMoney.Mobile/src/shared/components/PrimarySurfaceNav.tsx`.
+  - New screens:
+    - `src/MosaicMoney.Mobile/src/features/parity/components/TransactionsOverviewScreen.tsx`
+    - `src/MosaicMoney.Mobile/src/features/parity/components/AccountsOverviewScreen.tsx`
+    - `src/MosaicMoney.Mobile/src/features/parity/components/CategoriesOverviewScreen.tsx`
+    - `src/MosaicMoney.Mobile/src/features/parity/components/InvestmentsOverviewScreen.tsx`
+    - `src/MosaicMoney.Mobile/src/features/parity/components/RecurringsOverviewScreen.tsx`
+
+### Additional Validation Evidence
+- `cd src/MosaicMoney.Web; npm run build` -> pass
+
 ## Remaining Gaps (Next Iteration)
 - Web mobile fallback for right-context panels remains unimplemented.
 - Web list virtualization/paging for very large transaction datasets remains unimplemented.

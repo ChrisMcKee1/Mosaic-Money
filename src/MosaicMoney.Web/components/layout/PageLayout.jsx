@@ -18,6 +18,18 @@ export function PageLayout({ children, rightPanel, title, subtitle }) {
             </div>
           )}
           {children}
+
+          {/* Mobile Context Panel Fallback */}
+          {rightPanel && (
+            <section className="mt-8 lg:hidden">
+              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
+                  Details
+                </p>
+                {rightPanel}
+              </div>
+            </section>
+          )}
         </div>
       </div>
 

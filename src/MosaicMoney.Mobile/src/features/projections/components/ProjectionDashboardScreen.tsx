@@ -15,6 +15,7 @@ import { StatePanel } from "../../transactions/components/StatePanel";
 import { formatUtcDateTime } from "../../transactions/utils/formatters";
 import { useProjectionMetadata } from "../hooks/useProjectionMetadata";
 import { useProjectionSummaryMetrics } from "../hooks/useProjectionSummaryMetrics";
+import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 
 export function ProjectionDashboardScreen() {
@@ -133,6 +134,7 @@ export function ProjectionDashboardScreen() {
           <Text style={styles.subheading}>
             Read-only projection summary built from backend metadata. Ledger source values remain unchanged.
           </Text>
+          <PrimarySurfaceNav />
           {lastUpdatedAt ? <Text style={styles.timestamp}>Metadata updated: {formatUtcDateTime(lastUpdatedAt)}</Text> : null}
           {lastSuccessfulLoadAtUtc ? (
             <Text style={styles.timestamp}>Last successful sync: {formatUtcDateTime(lastSuccessfulLoadAtUtc)}</Text>

@@ -15,6 +15,7 @@ import { useNeedsReviewQueue } from "../hooks/useNeedsReviewQueue";
 import { NeedsReviewQueueItem } from "./NeedsReviewQueueItem";
 import { StatePanel } from "./StatePanel";
 import { theme } from "../../../theme/tokens";
+import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 
 export function NeedsReviewQueueScreen() {
   const router = useRouter();
@@ -93,6 +94,7 @@ export function NeedsReviewQueueScreen() {
           <View style={styles.headerContainer}>
             <Text style={styles.heading}>NeedsReview Queue</Text>
             <Text style={styles.subheading}>Pending transactions waiting on explicit human decision.</Text>
+            <PrimarySurfaceNav />
             <Pressable
               accessibilityRole="button"
               onPress={openPlaidOnboarding}
