@@ -48,7 +48,7 @@ interface UseTransactionReviewActionsState {
   statusMessage: string | null;
   errorMessage: string | null;
   pendingSyncAction: PendingSyncReviewAction | null;
-  approve: () => Promise<void>;
+  approve: (subcategoryId?: string) => Promise<void>;
   reject: () => Promise<void>;
   retryPendingSync: () => Promise<void>;
 }
@@ -234,7 +234,7 @@ export function useTransactionReviewActions({
     [onActionSynced],
   );
 
-  const approve = useCallback(async () => {
+  const approve = useCallback(async (subcategoryId?: string) => {
     const confirmed = await requestConfirmation({
       title: "Approve transaction?",
       message:
@@ -249,6 +249,7 @@ export function useTransactionReviewActions({
     await submitAndSync("approve", {
       transactionId: transaction.id,
       action: "approve",
+      subcategoryId,
     });
   }, [submitAndSync, transaction.id]);
 

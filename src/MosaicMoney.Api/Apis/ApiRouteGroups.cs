@@ -21,6 +21,7 @@ public static class ApiRouteGroups
         v1.MapReimbursementEndpoints();
         v1.MapPlaidInvestmentsEndpoints();
         v1.MapNetWorthHistoryEndpoints();
+        v1.MapSearchEndpoints();
 
         return app;
     }

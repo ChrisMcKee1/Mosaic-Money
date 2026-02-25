@@ -122,6 +122,8 @@ Update note (2026-02-25): `MM-BE-06` implementation now wires explicit Plaid tra
 
 Update note (2026-02-25): New M7 identity/access milestone is added and documented in `project-plan/specs/008-m7-identity-household-access-and-account-ownership.md` to cover first-class app identity, household membership lifecycle, account-level ACL visibility (mine-only/spouse-only/joint/read-only), and migration edge cases. Tasks `MM-BE-19..24`, `MM-ASP-08..09`, `MM-FE-19..21`, and `MM-MOB-10..12` are now tracked as `Not Started` and synced to the GitHub Project board.
 
+Update note (2026-02-25): Planner kickoff delegated `MM-FE-18` (web semantic search/typeahead) and `MM-MOB-09` (mobile semantic search/pickers). After focused build/typecheck/test validation, both tasks are promoted to `In Review` pending final acceptance criteria check.
+
 ### M3 Ingestion, Recurring, Reimbursements, and Projection Metadata
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
@@ -171,8 +173,8 @@ Update note (2026-02-25): New M7 identity/access milestone is added and document
 | MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | In Review |
 | MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | In Review |
 | MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | In Review |
-| MM-FE-18 | Web | Semantic search and reranked dropdowns | MM-AI-05, MM-BE-10, MM-FE-17 | Search inputs and typeahead dropdowns use semantic retrieval + reranking so related intents (for example `utilities` and `water`) resolve together. | Not Started |
-| MM-MOB-09 | Mobile | Semantic search and reranked pickers | MM-AI-05, MM-BE-10, MM-MOB-07.3 | Mobile search and picker flows use semantic retrieval + reranking with parity to web behavior and confidence-safe fallbacks. | Not Started |
+| MM-FE-18 | Web | Semantic search and reranked dropdowns | MM-AI-05, MM-BE-10, MM-FE-17 | Search inputs and typeahead dropdowns use semantic retrieval + reranking so related intents (for example `utilities` and `water`) resolve together. | In Review |
+| MM-MOB-09 | Mobile | Semantic search and reranked pickers | MM-AI-05, MM-BE-10, MM-MOB-07.3 | Mobile search and picker flows use semantic retrieval + reranking with parity to web behavior and confidence-safe fallbacks. | In Review |
 
 ### M7 Identity, Household Access Control, and Account Ownership
 | ID | Domain | Task | Dependencies | Done Criteria | Status |

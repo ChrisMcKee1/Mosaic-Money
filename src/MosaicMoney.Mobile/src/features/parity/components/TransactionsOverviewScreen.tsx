@@ -1,18 +1,61 @@
-import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useMemo } from "react";
+import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View, TextInput } from "react-native";
+import { useMemo, useState, useEffect } from "react";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 import { useProjectionMetadata } from "../../projections/hooks/useProjectionMetadata";
 import { formatCurrency, formatLedgerDate } from "../../transactions/utils/formatters";
 import { StatePanel } from "../../transactions/components/StatePanel";
+import { searchTransactions } from "../../transactions/services/mobileTransactionsApi";
+import type { TransactionDto } from "../../transactions/contracts";
 
 export function TransactionsOverviewScreen() {
   const { items, isLoading, isRefreshing, isRetrying, error, refresh, retry } = useProjectionMetadata({ pageSize: 100 });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<TransactionDto[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const sortedItems = useMemo(
-    () => [...items].sort((a, b) => (a.rawTransactionDate < b.rawTransactionDate ? 1 : -1)),
-    [items],
-  );
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim();
+    if (!normalizedQuery) {
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const abortController = new AbortController();
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const data = await searchTransactions(normalizedQuery, 20, abortController.signal);
+        setSearchResults(data);
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return;
+        console.error("Transaction search failed", e);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timeoutId);
+      abortController.abort();
+    };
+  }, [searchQuery]);
+
+  const sortedItems = useMemo(() => {
+    if (searchResults !== null) {
+      return searchResults.map(tx => ({
+        id: tx.id,
+        description: tx.description,
+        rawAmount: tx.amount,
+        rawTransactionDate: tx.transactionDate,
+        reviewStatus: tx.reviewStatus,
+      }));
+    }
+    return [...items].sort((a, b) => (a.rawTransactionDate < b.rawTransactionDate ? 1 : -1));
+  }, [items, searchResults]);
 
   if (isLoading && items.length === 0) {
     return (
@@ -51,8 +94,21 @@ export function TransactionsOverviewScreen() {
         <Text style={styles.subheading}>Projection-backed transaction feed with mobile parity to web surface.</Text>
         <PrimarySurfaceNav />
 
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search transactions..."
+            placeholderTextColor={theme.colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {isSearching && (
+            <ActivityIndicator size="small" color={theme.colors.primary} style={styles.searchSpinner} />
+          )}
+        </View>
+
         {sortedItems.length === 0 ? (
-          <StatePanel title="No transactions" body="No projection transactions available yet." />
+          <StatePanel title="No transactions" body={searchResults !== null ? "No transactions match your search." : "No projection transactions available yet."} />
         ) : (
           sortedItems.map((item) => (
             <View key={item.id} style={styles.card}>
@@ -106,6 +162,28 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 14,
     marginTop: 6,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    marginTop: 16,
+    minHeight: 44,
+    position: "relative",
+  },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: theme.colors.textMain,
+    fontSize: 16,
+  },
+  searchSpinner: {
+    position: "absolute",
+    right: 12,
   },
   card: {
     backgroundColor: theme.colors.surface,

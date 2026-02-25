@@ -1,8 +1,10 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useState } from "react";
 import type { TransactionDto } from "../contracts";
 import { useTransactionReviewActions } from "../hooks/useTransactionReviewActions";
 import { formatUtcDateTime } from "../utils/formatters";
 import { theme } from "../../../theme/tokens";
+import { CategoryPicker } from "./CategoryPicker";
 
 interface ReviewActionPanelProps {
   transaction: TransactionDto;
@@ -13,6 +15,7 @@ export function ReviewActionPanel({
   transaction,
   onActionSynced,
 }: ReviewActionPanelProps) {
+  const [subcategoryId, setSubcategoryId] = useState<string | undefined>(transaction.subcategoryId);
   const {
     rejectReason,
     setRejectReason,
@@ -48,11 +51,18 @@ export function ReviewActionPanel({
 
       {reviewPending ? (
         <>
+          <Text style={styles.inputLabel}>Reclassify (Optional)</Text>
+          <CategoryPicker
+            value={subcategoryId}
+            onChange={setSubcategoryId}
+            placeholder="Search category..."
+          />
+
           <View style={styles.actionsRow}>
             <Pressable
               accessibilityRole="button"
               onPress={() => {
-                void approve();
+                void approve(subcategoryId);
               }}
               disabled={isSubmitting}
               style={({ pressed }) => [

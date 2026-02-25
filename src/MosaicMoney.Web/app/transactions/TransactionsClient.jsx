@@ -8,6 +8,7 @@ import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
+import { searchTransactions } from "../actions";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -26,25 +27,46 @@ export function TransactionsClient({
 
   const [selectedTx, setSelectedTx] = useState(initialTransactions[0] || null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const filteredTransactions = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+  useEffect(() => {
+    const normalizedQuery = searchQuery.trim();
     if (!normalizedQuery) {
-      return initialTransactions;
+      setSearchResults(null);
+      setIsSearching(false);
+      return;
     }
 
-    return initialTransactions.filter((tx) => {
-      const description = tx.description?.toLowerCase() ?? "";
-      const category = (tx.category || "").toLowerCase();
-      const date = (tx.rawTransactionDate || "").toLowerCase();
+    setIsSearching(true);
+    const timeoutId = setTimeout(async () => {
+      try {
+        const data = await searchTransactions(normalizedQuery, 20);
+        // Map TransactionDto to match TransactionProjectionMetadataDto format
+        const mappedData = data.map(tx => ({
+          ...tx,
+          rawAmount: tx.amount,
+          rawTransactionDate: tx.transactionDate,
+          category: tx.subcategoryId ? "Categorized" : "Uncategorized" // We don't have category name in TransactionDto
+        }));
+        setSearchResults(mappedData);
+      } catch (e) {
+        console.error("Search failed", e);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
 
-      return (
-        description.includes(normalizedQuery) ||
-        category.includes(normalizedQuery) ||
-        date.includes(normalizedQuery)
-      );
-    });
-  }, [initialTransactions, searchQuery]);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const filteredTransactions = useMemo(() => {
+    if (searchResults !== null) {
+      return searchResults;
+    }
+    return initialTransactions;
+  }, [initialTransactions, searchResults]);
 
   const groupedTransactions = useMemo(() => filteredTransactions.reduce((acc, tx) => {
     const date = tx.rawTransactionDate || "Unknown Date";
@@ -170,8 +192,11 @@ export function TransactionsClient({
             placeholder="Search transactions..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
+            className="w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg pl-10 pr-10 py-2 text-sm text-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)] transition-all"
           />
+          {isSearching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
+          )}
         </div>
         <button className="flex items-center gap-2 px-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-sm font-medium text-white hover:bg-[var(--color-surface-hover)] transition-colors">
           <Filter className="w-4 h-4" />

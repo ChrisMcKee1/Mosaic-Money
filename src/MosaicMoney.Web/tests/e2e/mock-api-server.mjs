@@ -217,6 +217,16 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname === "/api/v1/households") {
+    json(res, 200, [{ id: "11111111-1111-1111-1111-111111111111", name: "Test Household" }]);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/v1/dashboard/metrics") {
+    json(res, 200, {});
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/api/v1/transactions/projection-metadata") {
     if (state.flags.failProjectionMetadata) {
       json(res, 500, { error: "projection metadata unavailable" });

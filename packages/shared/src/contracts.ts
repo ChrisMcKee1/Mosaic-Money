@@ -88,6 +88,14 @@ export interface TransactionProjectionMetadataDto {
   lastModifiedAtUtc: string;
 }
 
+export interface CategorySearchResultDto {
+  id: string;
+  name: string;
+  categoryId: string;
+  categoryName: string;
+  isBusinessExpense: boolean;
+}
+
 export interface PlaidLinkTokenIssuedDto {
   linkSessionId: string;
   linkToken: string;

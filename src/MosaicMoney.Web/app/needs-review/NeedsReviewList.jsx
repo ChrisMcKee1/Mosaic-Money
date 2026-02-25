@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { reviewTransaction } from "./actions";
 import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
+import { CategoryTypeahead } from "../../components/ui/CategoryTypeahead";
 
 export default function NeedsReviewList({ transactions }) {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function NeedsReviewList({ transactions }) {
 
   const handleReclassify = async (id) => {
     if (!subcategoryId) {
-      setError("Subcategory ID is required for reclassification.");
+      setError("Category is required for reclassification.");
       return;
     }
     setLoadingId(id);
@@ -124,14 +125,13 @@ export default function NeedsReviewList({ transactions }) {
             <div className="flex flex-col space-y-2 items-end">
               {reclassifyId === tx.id ? (
                 <div className="flex flex-col space-y-2 items-end bg-[var(--color-surface-hover)] p-3 rounded-lg border border-[var(--color-border)]">
-                  <input
-                    data-testid={`needs-review-subcategory-${tx.id}`}
-                    type="text"
-                    placeholder="Subcategory ID (UUID)"
-                    className="text-sm bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] rounded-md shadow-sm focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] px-3 py-2"
-                    value={subcategoryId}
-                    onChange={(e) => setSubcategoryId(e.target.value)}
-                  />
+                    <div className="w-full" data-testid={`needs-review-subcategory-${tx.id}`}>
+                      <CategoryTypeahead
+                        value={subcategoryId}
+                        onChange={setSubcategoryId}
+                        placeholder="Search category..."
+                      />
+                    </div>
                   <input
                     data-testid={`needs-review-reclassify-reason-${tx.id}`}
                     type="text"
