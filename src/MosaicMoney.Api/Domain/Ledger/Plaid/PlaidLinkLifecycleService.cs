@@ -104,6 +104,7 @@ public sealed class PlaidLinkLifecycleService(
         var normalizedEnvironment = ResolveEnvironment();
         var normalizedProducts = ResolveProducts(command.Products);
         var redirectUri = ResolveRedirectUri(command.RedirectUri);
+        var resolvedTransactionsHistoryDaysRequested = ResolveTransactionsHistoryDaysRequested();
         var stateId = Guid.NewGuid().ToString("N");
 
         var providerResult = await tokenProvider.CreateLinkTokenAsync(
@@ -115,7 +116,8 @@ public sealed class PlaidLinkLifecycleService(
                 ResolveCountryCodes(),
                 OAuthEnabled: true,
                 stateId,
-                command.ClientMetadataJson),
+                command.ClientMetadataJson,
+                resolvedTransactionsHistoryDaysRequested),
             cancellationToken);
 
         var now = DateTime.UtcNow;
@@ -264,12 +266,14 @@ public sealed class PlaidLinkLifecycleService(
 
         var bootstrapCursor = ResolveSyncBootstrapCursor();
         var bootstrapCount = ResolveSyncBootstrapCount();
+        var resolvedTransactionsHistoryDaysRequested = ResolveTransactionsHistoryDaysRequested();
         var syncBootstrapResult = await tokenProvider.BootstrapTransactionsSyncAsync(
             new PlaidTransactionsSyncBootstrapRequest(
                 providerResult.AccessToken,
                 providerResult.Environment,
                 bootstrapCursor,
-                bootstrapCount),
+                bootstrapCount,
+                resolvedTransactionsHistoryDaysRequested),
             cancellationToken);
 
         var syncState = await dbContext.PlaidItemSyncStates
@@ -495,6 +499,14 @@ public sealed class PlaidLinkLifecycleService(
         return count is < 1 or > 500
             ? 1
             : count;
+    }
+
+    private int ResolveTransactionsHistoryDaysRequested()
+    {
+        return Math.Clamp(
+            options.Value.TransactionsHistoryDaysRequested,
+            PlaidOptions.TransactionsHistoryDaysRequestedMinimum,
+            PlaidOptions.TransactionsHistoryDaysRequestedMaximum);
     }
 
     private static string ResolveSyncCursor(string? nextCursor, string fallbackCursor)

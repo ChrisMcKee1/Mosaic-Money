@@ -23,6 +23,11 @@ public sealed class PlaidHttpTokenProvider(
         var options = plaidOptions.Value;
         EnsureConfiguration(options);
 
+        var normalizedTransactionsDaysRequested = NormalizeTransactionsDaysRequested(request.TransactionsDaysRequested);
+        var transactionsOptions = normalizedTransactionsDaysRequested.HasValue && ContainsProduct(request.Products, "transactions")
+            ? new { days_requested = normalizedTransactionsDaysRequested.Value }
+            : null;
+
         var payload = new
         {
             client_name = ResolveClientName(options),
@@ -35,6 +40,7 @@ public sealed class PlaidHttpTokenProvider(
             {
                 client_user_id = request.ClientUserId,
             },
+            transactions = transactionsOptions,
         };
 
         using var response = await SendRequestAsync(
@@ -106,12 +112,17 @@ public sealed class PlaidHttpTokenProvider(
             ? ""
             : request.Cursor.Trim();
         var normalizedCount = Math.Clamp(request.Count, 1, 500);
+        var normalizedDaysRequested = NormalizeTransactionsDaysRequested(request.DaysRequested);
+        var syncOptions = normalizedDaysRequested.HasValue
+            ? new { days_requested = normalizedDaysRequested.Value }
+            : null;
 
         var payload = new
         {
             access_token = request.AccessToken,
             cursor = normalizedCursor,
             count = normalizedCount,
+            options = syncOptions,
         };
 
         using var response = await SendRequestAsync(
@@ -671,6 +682,32 @@ public sealed class PlaidHttpTokenProvider(
         return string.IsNullOrWhiteSpace(options.Language)
             ? "en"
             : options.Language.Trim().ToLowerInvariant();
+    }
+
+    private static int? NormalizeTransactionsDaysRequested(int? daysRequested)
+    {
+        if (!daysRequested.HasValue)
+        {
+            return null;
+        }
+
+        return Math.Clamp(
+            daysRequested.Value,
+            PlaidOptions.TransactionsHistoryDaysRequestedMinimum,
+            PlaidOptions.TransactionsHistoryDaysRequestedMaximum);
+    }
+
+    private static bool ContainsProduct(IReadOnlyList<string> products, string product)
+    {
+        foreach (var configuredProduct in products)
+        {
+            if (string.Equals(configuredProduct, product, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string? ResolveOptional(string? value)

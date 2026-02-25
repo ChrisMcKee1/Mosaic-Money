@@ -3,6 +3,9 @@ namespace MosaicMoney.Api.Domain.Ledger.Plaid;
 public sealed class PlaidOptions
 {
     public const string SectionName = "Plaid";
+    public const int TransactionsHistoryDaysRequestedMinimum = 30;
+    public const int TransactionsHistoryDaysRequestedMaximum = 730;
+    public const int TransactionsHistoryDaysRequestedDefault = 730;
 
     public string Environment { get; init; } = "sandbox";
 
@@ -25,6 +28,8 @@ public sealed class PlaidOptions
     public string TransactionsSyncBootstrapCursor { get; init; } = "now";
 
     public int TransactionsSyncBootstrapCount { get; init; } = 1;
+
+    public int TransactionsHistoryDaysRequested { get; init; } = TransactionsHistoryDaysRequestedDefault;
 
     public bool UseDeterministicProvider { get; init; }
 }

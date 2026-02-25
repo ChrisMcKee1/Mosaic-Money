@@ -36,7 +36,7 @@ Deliver the first complete human-reviewed ledger loop: Plaid account-link onboar
 | ID | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|
 | MM-BE-05 | NeedsReview state machine and transitions | MM-BE-04, MM-AI-01 | Explicit transition rules with fail-closed behavior for ambiguity. | Done |
-| MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | Done |
+| MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | In Review |
 | MM-BE-12 | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configs and records link session metadata for diagnostics/support. | Done |
 | MM-BE-13 | Public token exchange and Item credential storage | MM-BE-12 | Backend exchanges `public_token` to `access_token` + `item_id` and stores credentials in secure backend storage paths only. | Done |
 | MM-BE-14 | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook errors (including OAuth expiry/revocation) produce explicit relink/update-mode actions and review-safe routing. | Done |
@@ -71,6 +71,10 @@ Update note (2026-02-24): Frontend execution is intentionally paused due fronten
 Update note (2026-02-24): Planner backlog sweep unparked `MM-FE-09` and `MM-MOB-08` to `Not Started` after backend Plaid readiness gates were closed and local execution capacity was re-verified.
 
 Update note (2026-02-25): Delegation attempts for `MM-FE-09` and `MM-MOB-08` are blocked by upstream specialist provider-capacity errors; tasks remain blocked pending frontend/mobile specialist availability or a manual planner fallback implementation.
+
+Update note (2026-02-25): `MM-BE-06` is reopened for a targeted Plaid transactions-history enhancement to request and ingest the maximum available historical range (up to 24 months) during onboarding/sync initialization while maintaining idempotent raw-to-enriched behavior.
+
+Update note (2026-02-25): `MM-BE-06` implementation now includes explicit `days_requested` request wiring for Plaid transactions initialization (`/link/token/create` and bootstrap `/transactions/sync` path), plus bounded configuration (`30..730`, default `730`) and passing focused backend tests. Status advanced to `In Review`.
 
 ## Plaid Product Capability Research Gate (`MM-BE-15`)
 Complete this gate before implementing non-`transactions` product ingestion lanes.

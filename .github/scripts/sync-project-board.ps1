@@ -38,7 +38,7 @@ $issues = @(
 
     # --- M2: Ledger Truth & Review Core ---
     @{ num=15; nid="I_kwDORVI-G87tOi3C"; status="Done" }        # MM-BE-05
-    @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="Done" }        # MM-BE-06
+    @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="In Review" }   # MM-BE-06
     @{ num=17; nid="I_kwDORVI-G87tOi8h"; status="Done" }        # MM-BE-12
     @{ num=18; nid="I_kwDORVI-G87tOi-v"; status="Done" }        # MM-BE-13
     @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="Done" }        # MM-BE-14

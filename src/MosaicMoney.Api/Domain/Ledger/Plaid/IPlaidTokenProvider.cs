@@ -8,7 +8,8 @@ public sealed record PlaidLinkTokenCreateRequest(
     IReadOnlyList<string> CountryCodes,
     bool OAuthEnabled,
     string OAuthStateId,
-    string? ClientMetadataJson);
+    string? ClientMetadataJson,
+    int? TransactionsDaysRequested);
 
 public sealed record PlaidLinkTokenCreateResult(
     string LinkToken,
@@ -36,7 +37,8 @@ public sealed record PlaidTransactionsSyncBootstrapRequest(
     string AccessToken,
     string Environment,
     string Cursor,
-    int Count);
+    int Count,
+    int? DaysRequested);
 
 public sealed record PlaidTransactionsSyncBootstrapResult(
     string NextCursor,

@@ -76,7 +76,7 @@ All task tables use a `Status` column with the following values:
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
 | MM-BE-05 | Backend | NeedsReview state machine + transitions | MM-BE-04, MM-AI-01 | Explicit allowed transitions; ambiguous outcomes fail closed into `NeedsReview`. | Done |
-| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | Done |
+| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | In Review |
 | MM-BE-12 | Backend | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configurations and captures Link session metadata for diagnostics. | Done |
 | MM-BE-13 | Backend | Public token exchange + secure Item storage | MM-BE-12 | `public_token` is exchanged server-side and resulting `access_token` + `item_id` are persisted in secure backend storage. | Done |
 | MM-BE-14 | Backend | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook error states (including OAuth expiry/revocation) route to explicit relink/update-mode flows with human review boundaries. | Done |
@@ -113,6 +113,10 @@ Update note (2026-02-25): Delegation attempts for `MM-FE-09` and `MM-MOB-08` to 
 Update note (2026-02-24): Planner review promoted `MM-AI-08` and `MM-AI-09` to `Done` after focused verification (`MafFallbackGraphServiceTests`, `AgentNoteSummaryPolicyTests`, and `AgenticEvalReleaseGateTests`). A follow-on backlog item (`MM-AI-12`) is added to integrate official `.NET` and Foundry evaluator stacks with a source-linked research replay pack for reproducible future reruns.
 
 Update note (2026-02-25): `MM-AI-12` implementation now emits an additional official evaluator replay artifact (`artifacts/release-gates/mm-ai-12/latest.json`) from the existing release-gate script while preserving deterministic `MM-AI-11` release-blocking criteria. Task is promoted to `In Review` after focused offline validation; cloud evaluator evidence is still required before `Done`.
+
+Update note (2026-02-25): `MM-BE-06` is reopened to implement a Plaid historical backfill intake enhancement that explicitly requests and ingests up to two years of available transactions (24 months), replacing implicit defaults and preserving idempotent cursor semantics.
+
+Update note (2026-02-25): `MM-BE-06` implementation now wires explicit Plaid transaction history depth (`days_requested`) at both Link-token initialization and sync-bootstrap initialization paths with bounded configuration (`30..730`, default `730`) and focused unit-test coverage. Task promoted to `In Review` pending integrated AppHost runtime validation.
 
 ### M3 Ingestion, Recurring, Reimbursements, and Projection Metadata
 | ID | Domain | Task | Dependencies | Done Criteria | Status |

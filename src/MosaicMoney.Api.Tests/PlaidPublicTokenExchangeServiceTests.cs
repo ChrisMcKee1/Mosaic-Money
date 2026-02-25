@@ -116,6 +116,7 @@ public sealed class PlaidPublicTokenExchangeServiceTests
             CountryCodes = ["US"],
             TransactionsSyncBootstrapCursor = "start",
             TransactionsSyncBootstrapCount = 250,
+            TransactionsHistoryDaysRequested = 999,
         };
 
         var provider = new CaptureBootstrapCursorPlaidTokenProvider();
@@ -132,6 +133,38 @@ public sealed class PlaidPublicTokenExchangeServiceTests
         Assert.NotNull(provider.LastBootstrapRequest);
         Assert.Equal(string.Empty, provider.LastBootstrapRequest!.Cursor);
         Assert.Equal(250, provider.LastBootstrapRequest.Count);
+        Assert.Equal(730, provider.LastBootstrapRequest.DaysRequested);
+    }
+
+    [Fact]
+    public async Task IssueLinkToken_WhenTransactionsHistoryDaysBelowMinimum_UsesMinimumBound()
+    {
+        await using var dbContext = CreateDbContext();
+        var householdId = await SeedHouseholdAsync(dbContext);
+
+        var options = new PlaidOptions
+        {
+            Environment = "sandbox",
+            ClientId = "test-client-id",
+            Secret = "test-secret",
+            Products = ["transactions"],
+            CountryCodes = ["US"],
+            TransactionsHistoryDaysRequested = 10,
+        };
+
+        var provider = new CaptureBootstrapCursorPlaidTokenProvider();
+        var lifecycleService = CreateLifecycleService(dbContext, provider, options);
+
+        var result = await lifecycleService.IssueLinkTokenAsync(new IssuePlaidLinkTokenCommand(
+            householdId,
+            "client-user-days-min",
+            "http://localhost:53832/onboarding/plaid",
+            ["transactions"],
+            null));
+
+        Assert.NotEqual(Guid.Empty, result.LinkSessionId);
+        Assert.NotNull(provider.LastCreateLinkTokenRequest);
+        Assert.Equal(30, provider.LastCreateLinkTokenRequest!.TransactionsDaysRequested);
     }
 
     private static PlaidLinkLifecycleService CreateLifecycleService(
@@ -196,13 +229,23 @@ public sealed class PlaidPublicTokenExchangeServiceTests
 
     private sealed class CaptureBootstrapCursorPlaidTokenProvider : IPlaidTokenProvider
     {
+        public PlaidLinkTokenCreateRequest? LastCreateLinkTokenRequest { get; private set; }
         public PlaidTransactionsSyncBootstrapRequest? LastBootstrapRequest { get; private set; }
 
         public Task<PlaidLinkTokenCreateResult> CreateLinkTokenAsync(
             PlaidLinkTokenCreateRequest request,
             CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException();
+            LastCreateLinkTokenRequest = request;
+
+            return Task.FromResult(new PlaidLinkTokenCreateResult(
+                LinkToken: "link-sandbox-capture-001",
+                ExpiresAtUtc: DateTime.UtcNow.AddHours(4),
+                Environment: request.Environment,
+                Products: request.Products,
+                OAuthEnabled: request.OAuthEnabled,
+                RedirectUri: request.RedirectUri,
+                RequestId: "req-link-capture-001"));
         }
 
         public Task<PlaidPublicTokenExchangeResult> ExchangePublicTokenAsync(

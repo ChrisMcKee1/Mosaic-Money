@@ -30,7 +30,8 @@ public sealed class PlaidHttpTokenProviderTests
             CountryCodes: ["US"],
             OAuthEnabled: true,
             OAuthStateId: "state-1",
-            ClientMetadataJson: null));
+            ClientMetadataJson: null,
+            TransactionsDaysRequested: 730));
 
         Assert.Equal("link-sandbox-123", result.LinkToken);
         Assert.Equal("req-link-123", result.RequestId);
@@ -47,6 +48,7 @@ public sealed class PlaidHttpTokenProviderTests
         Assert.Equal("client-user-1", payload.RootElement.GetProperty("user").GetProperty("client_user_id").GetString());
         Assert.Equal("http://localhost:53832/onboarding/plaid", payload.RootElement.GetProperty("redirect_uri").GetString());
         Assert.Equal("https://example.test/plaid/webhooks", payload.RootElement.GetProperty("webhook").GetString());
+        Assert.Equal(730, payload.RootElement.GetProperty("transactions").GetProperty("days_requested").GetInt32());
     }
 
     [Fact]
@@ -93,7 +95,8 @@ public sealed class PlaidHttpTokenProviderTests
             AccessToken: "access-sandbox-123",
             Environment: "sandbox",
             Cursor: "",
-            Count: 1));
+            Count: 1,
+            DaysRequested: 730));
 
         Assert.Equal("cursor-next-123", result.NextCursor);
         Assert.False(result.HasMore);
@@ -105,6 +108,34 @@ public sealed class PlaidHttpTokenProviderTests
         using var payload = JsonDocument.Parse(request.Body);
         Assert.Equal("access-sandbox-123", payload.RootElement.GetProperty("access_token").GetString());
         Assert.Equal(1, payload.RootElement.GetProperty("count").GetInt32());
+        Assert.Equal(730, payload.RootElement.GetProperty("options").GetProperty("days_requested").GetInt32());
+    }
+
+    [Fact]
+    public async Task BootstrapTransactionsSyncAsync_ClampsDaysRequestedToConfiguredBounds()
+    {
+        var handler = new StubHttpMessageHandler();
+        handler.EnqueueResponse(HttpStatusCode.OK, @"{
+    ""added"": [],
+    ""modified"": [],
+    ""removed"": [],
+    ""next_cursor"": ""cursor-next-123"",
+    ""has_more"": false,
+    ""request_id"": ""req-sync-123""
+}");
+
+        var provider = CreateProvider(handler, CreateOptions());
+
+        _ = await provider.BootstrapTransactionsSyncAsync(new PlaidTransactionsSyncBootstrapRequest(
+            AccessToken: "access-sandbox-123",
+            Environment: "sandbox",
+            Cursor: "",
+            Count: 1,
+            DaysRequested: 900));
+
+        var request = Assert.Single(handler.Requests);
+        using var payload = JsonDocument.Parse(request.Body);
+        Assert.Equal(730, payload.RootElement.GetProperty("options").GetProperty("days_requested").GetInt32());
     }
 
     [Fact]
