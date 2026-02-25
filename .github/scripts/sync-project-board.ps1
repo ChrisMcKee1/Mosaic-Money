@@ -18,7 +18,7 @@ $OPT = @{
 }
 
 # Complete issue map: issue number -> (node_id, desired_status)
-# Derived from specs 001-006 and the issue listing
+# Derived from specs 001-008 and the issue listing
 $issues = @(
     # --- M1: Platform & Contract Foundation (all Done) ---
     @{ num=1;  nid="I_kwDORVI-G87tOhl7"; status="Done" }        # MM-ASP-01
@@ -109,6 +109,22 @@ $issues = @(
     @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="Not Started" } # MM-FE-18
     @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="Not Started" } # MM-MOB-09
     @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="In Review" } # MM-AI-12
+
+    # --- M7: Identity, Household Access Control, and Account Ownership ---
+    @{ num=96; nid="I_kwDORVI-G87t4vjw"; status="In Review" } # MM-BE-19
+    @{ num=97; nid="I_kwDORVI-G87t4v__"; status="In Review" } # MM-BE-20
+    @{ num=98; nid="I_kwDORVI-G87t4wBe"; status="In Review" } # MM-BE-21
+    @{ num=99; nid="I_kwDORVI-G87t4wC-"; status="In Review" } # MM-BE-22
+    @{ num=100; nid="I_kwDORVI-G87t4wEW"; status="In Review" } # MM-BE-23
+    @{ num=101; nid="I_kwDORVI-G87t4wFe"; status="In Review" } # MM-BE-24
+    @{ num=102; nid="I_kwDORVI-G87t4wG4"; status="Not Started" } # MM-ASP-08
+    @{ num=103; nid="I_kwDORVI-G87t4wLb"; status="Not Started" } # MM-ASP-09
+    @{ num=104; nid="I_kwDORVI-G87t4wMv"; status="In Review" } # MM-FE-19
+    @{ num=105; nid="I_kwDORVI-G87t4wOX"; status="Not Started" } # MM-FE-20
+    @{ num=106; nid="I_kwDORVI-G87t4wP1"; status="Not Started" } # MM-FE-21
+    @{ num=107; nid="I_kwDORVI-G87t4wRp"; status="Not Started" } # MM-MOB-10
+    @{ num=108; nid="I_kwDORVI-G87t4wVU"; status="Not Started" } # MM-MOB-11
+    @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="Not Started" } # MM-MOB-12
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="

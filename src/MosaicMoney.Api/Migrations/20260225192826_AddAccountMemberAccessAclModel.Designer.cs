@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MosaicMoney.Api.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace MosaicMoney.Api.Migrations
 {
     [DbContext(typeof(MosaicMoneyDbContext))]
-    partial class MosaicMoneyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260225192826_AddAccountMemberAccessAclModel")]
+    partial class AddAccountMemberAccessAclModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -30,11 +33,6 @@ namespace MosaicMoney.Api.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<bool>("AccessPolicyNeedsReview")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
 
                     b.Property<string>("ExternalAccountKey")
                         .HasMaxLength(128)
@@ -61,49 +59,6 @@ namespace MosaicMoney.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Accounts");
-                });
-
-            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AccountAccessPolicyReviewQueueEntry", b =>
-                {
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("EnqueuedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("HouseholdId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("LastEvaluatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Rationale")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("ReasonCode")
-                        .IsRequired()
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<DateTime?>("ResolvedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("AccountId");
-
-                    b.HasIndex("HouseholdId", "ResolvedAtUtc", "LastEvaluatedAtUtc");
-
-                    b.ToTable("AccountAccessPolicyReviewQueueEntries", t =>
-                        {
-                            t.HasCheckConstraint("CK_AccountAccessPolicyReviewQueueEntry_EvaluationAfterEnqueue", "\"LastEvaluatedAtUtc\" >= \"EnqueuedAtUtc\"");
-
-                            t.HasCheckConstraint("CK_AccountAccessPolicyReviewQueueEntry_RationaleRequired", "LENGTH(TRIM(\"Rationale\")) > 0");
-
-                            t.HasCheckConstraint("CK_AccountAccessPolicyReviewQueueEntry_ReasonCodeRequired", "LENGTH(TRIM(\"ReasonCode\")) > 0");
-
-                            t.HasCheckConstraint("CK_AccountAccessPolicyReviewQueueEntry_ResolutionAfterEnqueue", "\"ResolvedAtUtc\" IS NULL OR \"ResolvedAtUtc\" >= \"EnqueuedAtUtc\"");
-                        });
                 });
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AccountMemberAccess", b =>
@@ -808,73 +763,6 @@ namespace MosaicMoney.Api.Migrations
                             t.HasCheckConstraint("CK_MosaicUser_AuthProviderRequired", "LENGTH(TRIM(\"AuthProvider\")) > 0");
 
                             t.HasCheckConstraint("CK_MosaicUser_AuthSubjectRequired", "LENGTH(TRIM(\"AuthSubject\")) > 0");
-                        });
-                });
-
-            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.PlaidAccountLink", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("AccountId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ItemId")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<string>("LastProviderRequestId")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<DateTime>("LastSeenAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("LinkedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("PlaidAccountId")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<string>("PlaidEnvironment")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<Guid?>("PlaidItemCredentialId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UnlinkedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountId")
-                        .IsUnique()
-                        .HasFilter("\"IsActive\" = TRUE");
-
-                    b.HasIndex("PlaidEnvironment", "ItemId", "PlaidAccountId")
-                        .IsUnique()
-                        .HasFilter("\"IsActive\" = TRUE");
-
-                    b.HasIndex("PlaidItemCredentialId", "IsActive", "LastSeenAtUtc");
-
-                    b.ToTable("PlaidAccountLinks", t =>
-                        {
-                            t.HasCheckConstraint("CK_PlaidAccountLink_ItemIdRequired", "LENGTH(TRIM(\"ItemId\")) > 0");
-
-                            t.HasCheckConstraint("CK_PlaidAccountLink_LastSeenAfterLinked", "\"LastSeenAtUtc\" >= \"LinkedAtUtc\"");
-
-                            t.HasCheckConstraint("CK_PlaidAccountLink_PlaidAccountIdRequired", "LENGTH(TRIM(\"PlaidAccountId\")) > 0");
-
-                            t.HasCheckConstraint("CK_PlaidAccountLink_UnlinkAudit", "(\"IsActive\" = TRUE AND \"UnlinkedAtUtc\" IS NULL) OR (\"IsActive\" = FALSE AND \"UnlinkedAtUtc\" IS NOT NULL)");
                         });
                 });
 
@@ -1628,25 +1516,6 @@ namespace MosaicMoney.Api.Migrations
                     b.Navigation("Household");
                 });
 
-            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AccountAccessPolicyReviewQueueEntry", b =>
-                {
-                    b.HasOne("MosaicMoney.Api.Domain.Ledger.Account", "Account")
-                        .WithOne("AccessPolicyReviewQueueEntry")
-                        .HasForeignKey("MosaicMoney.Api.Domain.Ledger.AccountAccessPolicyReviewQueueEntry", "AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MosaicMoney.Api.Domain.Ledger.Household", "Household")
-                        .WithMany("AccountAccessPolicyReviewQueueEntries")
-                        .HasForeignKey("HouseholdId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Account");
-
-                    b.Navigation("Household");
-                });
-
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AccountMemberAccess", b =>
                 {
                     b.HasOne("MosaicMoney.Api.Domain.Ledger.Account", "Account")
@@ -1765,24 +1634,6 @@ namespace MosaicMoney.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("LiabilityAccount");
-                });
-
-            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.PlaidAccountLink", b =>
-                {
-                    b.HasOne("MosaicMoney.Api.Domain.Ledger.Account", "Account")
-                        .WithMany("PlaidAccountLinks")
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MosaicMoney.Api.Domain.Ledger.PlaidItemCredential", "PlaidItemCredential")
-                        .WithMany("AccountLinks")
-                        .HasForeignKey("PlaidItemCredentialId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Account");
-
-                    b.Navigation("PlaidItemCredential");
                 });
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.PlaidLinkSessionEvent", b =>
@@ -1918,11 +1769,7 @@ namespace MosaicMoney.Api.Migrations
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.Account", b =>
                 {
-                    b.Navigation("AccessPolicyReviewQueueEntry");
-
                     b.Navigation("MemberAccessGrants");
-
-                    b.Navigation("PlaidAccountLinks");
 
                     b.Navigation("Transactions");
                 });
@@ -1947,8 +1794,6 @@ namespace MosaicMoney.Api.Migrations
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.Household", b =>
                 {
-                    b.Navigation("AccountAccessPolicyReviewQueueEntries");
-
                     b.Navigation("Accounts");
 
                     b.Navigation("RecurringItems");
@@ -1978,11 +1823,6 @@ namespace MosaicMoney.Api.Migrations
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.MosaicUser", b =>
                 {
                     b.Navigation("HouseholdMemberships");
-                });
-
-            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.PlaidItemCredential", b =>
-                {
-                    b.Navigation("AccountLinks");
                 });
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.PlaidLinkSession", b =>

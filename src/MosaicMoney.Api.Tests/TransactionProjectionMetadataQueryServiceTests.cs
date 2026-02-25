@@ -107,11 +107,13 @@ public sealed class TransactionProjectionMetadataQueryServiceTests
         dbContext.RecurringItems.Add(recurringItem);
         dbContext.EnrichedTransactions.Add(transaction);
         dbContext.ReimbursementProposals.AddRange(approvedProposal, pendingProposal);
+        var householdUserId = AddReadableAccess(dbContext, household.Id, account.Id);
         await dbContext.SaveChangesAsync();
 
         var service = new TransactionProjectionMetadataQueryService(dbContext);
 
         var results = await service.QueryAsync(
+            householdUserId: householdUserId,
             accountId: account.Id,
             fromDate: null,
             toDate: null,
@@ -201,12 +203,15 @@ public sealed class TransactionProjectionMetadataQueryServiceTests
             },
         });
 
+        var householdUserId = AddReadableAccess(dbContext, householdId, accountId);
+
         await dbContext.SaveChangesAsync();
         dbContext.ChangeTracker.Clear();
 
         var service = new TransactionProjectionMetadataQueryService(dbContext);
 
         var results = await service.QueryAsync(
+            householdUserId: householdUserId,
             accountId: accountId,
             fromDate: null,
             toDate: null,
@@ -297,11 +302,13 @@ public sealed class TransactionProjectionMetadataQueryServiceTests
         };
 
         dbContext.EnrichedTransactions.AddRange(txOutsideRange, txInRangeNeedsReview, txInRangeReviewed);
+        var householdUserId = AddReadableAccess(dbContext, householdId, accountId);
         await dbContext.SaveChangesAsync();
 
         var service = new TransactionProjectionMetadataQueryService(dbContext);
 
         var filtered = await service.QueryAsync(
+            householdUserId: householdUserId,
             accountId: accountId,
             fromDate: new DateOnly(2026, 2, 1),
             toDate: new DateOnly(2026, 2, 28),
@@ -316,6 +323,7 @@ public sealed class TransactionProjectionMetadataQueryServiceTests
         Assert.Equal(TransactionReviewStatus.NeedsReview.ToString(), filteredResult.ReviewStatus);
 
         var page1 = await service.QueryAsync(
+            householdUserId: householdUserId,
             accountId: accountId,
             fromDate: null,
             toDate: null,
@@ -330,6 +338,7 @@ public sealed class TransactionProjectionMetadataQueryServiceTests
         Assert.Equal(txInRangeNeedsReview.Id, page1[1].Id);
 
         var page2 = await service.QueryAsync(
+            householdUserId: householdUserId,
             accountId: accountId,
             fromDate: null,
             toDate: null,
@@ -341,6 +350,106 @@ public sealed class TransactionProjectionMetadataQueryServiceTests
 
         var page2Result = Assert.Single(page2);
         Assert.Equal(txOutsideRange.Id, page2Result.Id);
+    }
+
+    [Fact]
+    public async Task QueryAsync_ExcludesTransactionsOutsideReadableAccountAcl()
+    {
+        await using var dbContext = CreateDbContext();
+
+        var householdId = Guid.NewGuid();
+        var readableAccountId = Guid.NewGuid();
+        var hiddenAccountId = Guid.NewGuid();
+
+        dbContext.Households.Add(new Household
+        {
+            Id = householdId,
+            Name = "ACL Household",
+        });
+
+        dbContext.Accounts.AddRange(
+            new Account
+            {
+                Id = readableAccountId,
+                HouseholdId = householdId,
+                Name = "Readable Account",
+                ExternalAccountKey = "acl-readable",
+            },
+            new Account
+            {
+                Id = hiddenAccountId,
+                HouseholdId = householdId,
+                Name = "Hidden Account",
+                ExternalAccountKey = "acl-hidden",
+            });
+
+        var visibleTransaction = new EnrichedTransaction
+        {
+            Id = Guid.NewGuid(),
+            AccountId = readableAccountId,
+            Description = "visible-transaction",
+            Amount = -12.34m,
+            TransactionDate = new DateOnly(2026, 2, 25),
+            ReviewStatus = TransactionReviewStatus.None,
+            CreatedAtUtc = new DateTime(2026, 2, 25, 10, 0, 0, DateTimeKind.Utc),
+            LastModifiedAtUtc = new DateTime(2026, 2, 25, 10, 0, 0, DateTimeKind.Utc),
+        };
+
+        var hiddenTransaction = new EnrichedTransaction
+        {
+            Id = Guid.NewGuid(),
+            AccountId = hiddenAccountId,
+            Description = "hidden-transaction",
+            Amount = -98.76m,
+            TransactionDate = new DateOnly(2026, 2, 26),
+            ReviewStatus = TransactionReviewStatus.None,
+            CreatedAtUtc = new DateTime(2026, 2, 26, 11, 0, 0, DateTimeKind.Utc),
+            LastModifiedAtUtc = new DateTime(2026, 2, 26, 11, 0, 0, DateTimeKind.Utc),
+        };
+
+        dbContext.EnrichedTransactions.AddRange(visibleTransaction, hiddenTransaction);
+        var householdUserId = AddReadableAccess(dbContext, householdId, readableAccountId);
+        await dbContext.SaveChangesAsync();
+
+        var service = new TransactionProjectionMetadataQueryService(dbContext);
+        var results = await service.QueryAsync(
+            householdUserId: householdUserId,
+            accountId: null,
+            fromDate: null,
+            toDate: null,
+            reviewStatus: null,
+            needsReviewOnly: false,
+            page: 1,
+            pageSize: 50,
+            cancellationToken: default);
+
+        var result = Assert.Single(results);
+        Assert.Equal(visibleTransaction.Id, result.Id);
+        Assert.DoesNotContain(results, x => x.AccountId == hiddenAccountId);
+    }
+
+    private static Guid AddReadableAccess(MosaicMoneyDbContext dbContext, Guid householdId, Guid accountId)
+    {
+        var householdUserId = Guid.NewGuid();
+
+        dbContext.HouseholdUsers.Add(new HouseholdUser
+        {
+            Id = householdUserId,
+            HouseholdId = householdId,
+            DisplayName = "Projection Reader",
+            MembershipStatus = HouseholdMembershipStatus.Active,
+            ActivatedAtUtc = DateTime.UtcNow,
+        });
+
+        dbContext.AccountMemberAccessEntries.Add(new AccountMemberAccess
+        {
+            AccountId = accountId,
+            HouseholdUserId = householdUserId,
+            AccessRole = AccountAccessRole.Owner,
+            Visibility = AccountAccessVisibility.Visible,
+        });
+
+        return householdUserId;
     }
 
     private static MosaicMoneyDbContext CreateDbContext()

@@ -50,7 +50,9 @@ All task tables use a `Status` column with the following values:
 2. M2 Ledger Truth and Review Workflow Core
 3. M3 Ingestion, Recurring, Reimbursements, and Projection Metadata
 4. M4 AI Escalation Pipeline (Deterministic -> Semantic -> MAF)
-5. M5 UX Completion (Web + Mobile) and Release Gates
+5. M5 Verification, Release Gates, and Dashboard Data Wiring
+6. M6 UI Redesign and Theming
+7. M7 Identity, Household Access Control, and Account Ownership
 
 ## Cross-Domain Dependency DAG (Small Tasks)
 
@@ -118,6 +120,8 @@ Update note (2026-02-25): `MM-BE-06` is reopened to implement a Plaid historical
 
 Update note (2026-02-25): `MM-BE-06` implementation now wires explicit Plaid transaction history depth (`days_requested`) at both Link-token initialization and sync-bootstrap initialization paths with bounded configuration (`30..730`, default `730`) and focused unit-test coverage. Task promoted to `In Review` pending integrated AppHost runtime validation.
 
+Update note (2026-02-25): New M7 identity/access milestone is added and documented in `project-plan/specs/008-m7-identity-household-access-and-account-ownership.md` to cover first-class app identity, household membership lifecycle, account-level ACL visibility (mine-only/spouse-only/joint/read-only), and migration edge cases. Tasks `MM-BE-19..24`, `MM-ASP-08..09`, `MM-FE-19..21`, and `MM-MOB-10..12` are now tracked as `Not Started` and synced to the GitHub Project board.
+
 ### M3 Ingestion, Recurring, Reimbursements, and Projection Metadata
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
@@ -169,6 +173,24 @@ Update note (2026-02-25): `MM-BE-06` implementation now wires explicit Plaid tra
 | MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | In Review |
 | MM-FE-18 | Web | Semantic search and reranked dropdowns | MM-AI-05, MM-BE-10, MM-FE-17 | Search inputs and typeahead dropdowns use semantic retrieval + reranking so related intents (for example `utilities` and `water`) resolve together. | Not Started |
 | MM-MOB-09 | Mobile | Semantic search and reranked pickers | MM-AI-05, MM-BE-10, MM-MOB-07.3 | Mobile search and picker flows use semantic retrieval + reranking with parity to web behavior and confidence-safe fallbacks. | Not Started |
+
+### M7 Identity, Household Access Control, and Account Ownership
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-BE-19 | Backend | Add Mosaic user identity model | MM-BE-02, MM-BE-03 | `MosaicUsers` introduced with unique auth-subject mapping; household membership can bind to first-class app identities. | In Review |
+| MM-BE-20 | Backend | Evolve household membership model | MM-BE-19 | `HouseholdUsers` evolves into membership lifecycle (active/invited/removed) without breaking existing `NeedsReviewByUserId` references. | In Review |
+| MM-BE-21 | Backend | Add account ACL model | MM-BE-20 | Account-level access table supports `Owner`, `ReadOnly`, and hidden/no-access states for each household member. | In Review |
+| MM-BE-22 | Backend | Add Plaid account link mapping table | MM-BE-06, MM-BE-21 | Plaid item/account linkage is durable and unique, supports unlink/relink, and avoids duplicate account materialization. | In Review |
+| MM-BE-23 | Backend | Enforce membership-aware API authorization | MM-BE-21, MM-BE-04 | Transaction/account queries are filtered by member ACL visibility; direct account-id access without membership is denied. | In Review |
+| MM-BE-24 | Backend | Identity and ACL migration/backfill | MM-BE-19, MM-BE-20, MM-BE-21, MM-BE-22 | Existing households/accounts are backfilled fail-closed with explicit review queue for ambiguous sharing defaults. | In Review |
+| MM-ASP-08 | DevOps | Identity claim mapping configuration | MM-BE-19 | AppHost/API/Web/Mobile identity claim mapping is documented and reproducible across local and CI environments. | Not Started |
+| MM-ASP-09 | DevOps | Migration rollout and rollback playbook | MM-BE-24 | Step-by-step rollout, reconciliation checks, and rollback paths documented for account access migration. | Not Started |
+| MM-FE-19 | Web | Household member and invite management UI | MM-BE-20, MM-FE-10 | Web supports invite/accept/remove member workflows and membership status visibility. | In Review |
+| MM-FE-20 | Web | Account sharing controls UI | MM-BE-21, MM-FE-19 | Web supports per-account visibility/role assignment (mine-only, spouse-only, joint, read-only) with confirmation UX. | Not Started |
+| MM-FE-21 | Web | Account visibility filters and badges | MM-BE-23, MM-FE-20 | Account/transaction views expose `mine`, `joint`, `shared` filters and clear hidden/read-only badges. | Not Started |
+| MM-MOB-10 | Mobile | Membership and invite parity | MM-BE-20, MM-MOB-07 | Mobile supports member lifecycle views and invite acceptance with parity to web semantics. | Not Started |
+| MM-MOB-11 | Mobile | Account sharing controls parity | MM-BE-21, MM-MOB-10 | Mobile supports per-account sharing roles and visibility controls with safe defaults. | Not Started |
+| MM-MOB-12 | Mobile | ACL-aware account and transaction views | MM-BE-23, MM-MOB-11 | Mobile renders member-scoped account/transaction lists with hidden/read-only behavior matching backend authorization. | Not Started |
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

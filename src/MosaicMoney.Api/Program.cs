@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MosaicMoney.Api.Apis;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
+using MosaicMoney.Api.Domain.Ledger.AccessPolicy;
 using MosaicMoney.Api.Domain.Ledger.Classification;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
@@ -17,6 +18,8 @@ builder.AddNpgsqlDbContext<MosaicMoneyDbContext>(
     connectionName: "mosaicmoneydb",
     configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
 builder.Services.AddDataProtection();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<AccountAccessPolicyBackfillService>();
 builder.Services.Configure<PlaidOptions>(builder.Configuration.GetSection(PlaidOptions.SectionName));
 builder.Services.AddHttpClient<PlaidHttpTokenProvider>();
 builder.Services.AddScoped<PlaidDeltaIngestionService>();
@@ -118,6 +121,9 @@ static async Task ApplyMigrationsAsync(WebApplication app)
         pendingMigrations.Count());
 
     await dbContext.Database.MigrateAsync();
+
+    var backfillService = scope.ServiceProvider.GetRequiredService<AccountAccessPolicyBackfillService>();
+    await backfillService.ExecuteAsync();
 
     var appliedAfter = await dbContext.Database.GetAppliedMigrationsAsync();
     logger.LogInformation("Migration state after apply: {AppliedCount} applied.", appliedAfter.Count());

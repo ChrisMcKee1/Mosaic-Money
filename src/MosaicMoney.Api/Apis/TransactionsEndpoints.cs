@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
@@ -7,6 +8,10 @@ namespace MosaicMoney.Api.Apis;
 
 public static class TransactionsEndpoints
 {
+    private const string HouseholdUserIdHeaderName = "X-Mosaic-Household-User-Id";
+    private const string MosaicHouseholdUserIdClaimType = "mosaic_household_user_id";
+    private const string HouseholdUserIdClaimType = "household_user_id";
+
     public static RouteGroupBuilder MapTransactionEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/transactions", async (
@@ -18,7 +23,8 @@ public static class TransactionsEndpoints
             string? reviewStatus,
             bool? needsReviewOnly,
             int page = 1,
-            int pageSize = 50) =>
+            int pageSize = 50,
+            CancellationToken cancellationToken = default) =>
         {
             var errors = ValidateTransactionQuery(page, pageSize, fromDate, toDate, reviewStatus, out var reviewStatusFilter);
             if (errors.Count > 0)
@@ -26,9 +32,26 @@ public static class TransactionsEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
+            var accessScope = await ResolveReadableAccessScopeAsync(httpContext, dbContext, cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
+            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
+            if (accountId.HasValue
+                && !await readableAccountIds.AnyAsync(x => x == accountId.Value, cancellationToken))
+            {
+                return ApiValidation.ToForbiddenResult(
+                    httpContext,
+                    "account_access_denied",
+                    "The authenticated household member does not have access to the requested account.");
+            }
+
             var query = dbContext.EnrichedTransactions
                 .AsNoTracking()
                 .Include(x => x.Splits)
+                .Where(x => readableAccountIds.Contains(x.AccountId))
                 .AsQueryable();
 
             if (accountId.HasValue)
@@ -61,13 +84,14 @@ public static class TransactionsEndpoints
                 .ThenByDescending(x => x.CreatedAtUtc)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return Results.Ok(transactions.Select(ApiEndpointHelpers.MapTransaction).ToList());
         });
 
         group.MapGet("/transactions/projection-metadata", async (
             HttpContext httpContext,
+            MosaicMoneyDbContext dbContext,
             TransactionProjectionMetadataQueryService queryService,
             Guid? accountId,
             DateOnly? fromDate,
@@ -84,7 +108,24 @@ public static class TransactionsEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
+            var accessScope = await ResolveReadableAccessScopeAsync(httpContext, dbContext, cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
+            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
+            if (accountId.HasValue
+                && !await readableAccountIds.AnyAsync(x => x == accountId.Value, cancellationToken))
+            {
+                return ApiValidation.ToForbiddenResult(
+                    httpContext,
+                    "account_access_denied",
+                    "The authenticated household member does not have access to the requested account.");
+            }
+
             var projectionMetadata = await queryService.QueryAsync(
+                householdUserId: accessScope.HouseholdUserId,
                 accountId,
                 fromDate,
                 toDate,
@@ -100,12 +141,22 @@ public static class TransactionsEndpoints
         group.MapGet("/transactions/{id:guid}", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            Guid id) =>
+            Guid id,
+            CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await ResolveReadableAccessScopeAsync(httpContext, dbContext, cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
+            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
+
             var transaction = await dbContext.EnrichedTransactions
                 .AsNoTracking()
                 .Include(x => x.Splits)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .Where(x => readableAccountIds.Contains(x.AccountId))
+                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
             if (transaction is null)
             {
@@ -298,4 +349,71 @@ public static class TransactionsEndpoints
 
         return errors;
     }
+
+    private static IQueryable<Guid> BuildReadableAccountIdsQuery(MosaicMoneyDbContext dbContext, Guid householdUserId)
+    {
+        return dbContext.AccountMemberAccessEntries
+            .AsNoTracking()
+            .Where(x =>
+                x.HouseholdUserId == householdUserId
+                && x.Visibility == AccountAccessVisibility.Visible
+                && x.AccessRole != AccountAccessRole.None
+                && x.HouseholdUser.MembershipStatus == HouseholdMembershipStatus.Active)
+            .Select(x => x.AccountId);
+    }
+
+    private static async Task<ReadableAccessScope> ResolveReadableAccessScopeAsync(
+        HttpContext httpContext,
+        MosaicMoneyDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var principalValue = httpContext.User.FindFirstValue(MosaicHouseholdUserIdClaimType)
+            ?? httpContext.User.FindFirstValue(HouseholdUserIdClaimType);
+
+        if (string.IsNullOrWhiteSpace(principalValue)
+            && httpContext.Request.Headers.TryGetValue(HouseholdUserIdHeaderName, out var headerValues))
+        {
+            principalValue = headerValues.FirstOrDefault();
+        }
+
+        if (string.IsNullOrWhiteSpace(principalValue))
+        {
+            return new ReadableAccessScope(
+                Guid.Empty,
+                ApiValidation.ToUnauthorizedResult(
+                    httpContext,
+                    "member_context_required",
+                    "A household member context claim or X-Mosaic-Household-User-Id header is required."));
+        }
+
+        if (!Guid.TryParse(principalValue, out var householdUserId))
+        {
+            return new ReadableAccessScope(
+                Guid.Empty,
+                ApiValidation.ToUnauthorizedResult(
+                    httpContext,
+                    "member_context_invalid",
+                    "The household member context value must be a valid GUID."));
+        }
+
+        var activeMembershipExists = await dbContext.HouseholdUsers
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.Id == householdUserId && x.MembershipStatus == HouseholdMembershipStatus.Active,
+                cancellationToken);
+
+        if (!activeMembershipExists)
+        {
+            return new ReadableAccessScope(
+                Guid.Empty,
+                ApiValidation.ToForbiddenResult(
+                    httpContext,
+                    "membership_access_denied",
+                    "The household member is not active and cannot access account or transaction data."));
+        }
+
+        return new ReadableAccessScope(householdUserId, null);
+    }
+
+    private sealed record ReadableAccessScope(Guid HouseholdUserId, IResult? ErrorResult);
 }

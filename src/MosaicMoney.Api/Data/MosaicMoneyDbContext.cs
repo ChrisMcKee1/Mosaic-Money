@@ -14,9 +14,15 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<Household> Households => Set<Household>();
 
+    public DbSet<MosaicUser> MosaicUsers => Set<MosaicUser>();
+
     public DbSet<HouseholdUser> HouseholdUsers => Set<HouseholdUser>();
 
     public DbSet<Account> Accounts => Set<Account>();
+
+    public DbSet<AccountMemberAccess> AccountMemberAccessEntries => Set<AccountMemberAccess>();
+
+    public DbSet<AccountAccessPolicyReviewQueueEntry> AccountAccessPolicyReviewQueueEntries => Set<AccountAccessPolicyReviewQueueEntry>();
 
     public DbSet<Category> Categories => Set<Category>();
 
@@ -35,6 +41,8 @@ public sealed class MosaicMoneyDbContext : DbContext
     public DbSet<PlaidLinkSessionEvent> PlaidLinkSessionEvents => Set<PlaidLinkSessionEvent>();
 
     public DbSet<PlaidItemCredential> PlaidItemCredentials => Set<PlaidItemCredential>();
+
+    public DbSet<PlaidAccountLink> PlaidAccountLinks => Set<PlaidAccountLink>();
 
     public DbSet<PlaidItemSyncState> PlaidItemSyncStates => Set<PlaidItemSyncState>();
 
@@ -71,17 +79,136 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasIndex(x => x.Name)
             .IsUnique();
 
+        modelBuilder.Entity<MosaicUser>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_MosaicUser_AuthProviderRequired",
+                    "LENGTH(TRIM(\"AuthProvider\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_MosaicUser_AuthSubjectRequired",
+                    "LENGTH(TRIM(\"AuthSubject\")) > 0");
+            });
+
+        modelBuilder.Entity<MosaicUser>()
+            .HasIndex(x => new { x.AuthProvider, x.AuthSubject })
+            .IsUnique();
+
+        modelBuilder.Entity<MosaicUser>()
+            .HasIndex(x => new { x.IsActive, x.LastSeenAtUtc });
+
         modelBuilder.Entity<Subcategory>()
             .HasIndex(x => new { x.CategoryId, x.Name })
             .IsUnique();
 
         modelBuilder.Entity<HouseholdUser>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_HouseholdUser_MembershipStatusRange",
+                    "\"MembershipStatus\" IN (1, 2, 3)");
+
+                t.HasCheckConstraint(
+                    "CK_HouseholdUser_RemovedAudit",
+                    "(\"MembershipStatus\" = 3 AND \"RemovedAtUtc\" IS NOT NULL) OR (\"MembershipStatus\" <> 3 AND \"RemovedAtUtc\" IS NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_HouseholdUser_ActivationAfterInvite",
+                    "\"ActivatedAtUtc\" IS NULL OR \"InvitedAtUtc\" IS NULL OR \"ActivatedAtUtc\" >= \"InvitedAtUtc\"");
+            });
+
+        modelBuilder.Entity<HouseholdUser>()
             .HasIndex(x => new { x.HouseholdId, x.ExternalUserKey })
             .IsUnique();
+
+        modelBuilder.Entity<HouseholdUser>()
+            .Property(x => x.MembershipStatus)
+            .HasDefaultValue(HouseholdMembershipStatus.Active);
+
+        modelBuilder.Entity<HouseholdUser>()
+            .HasIndex(x => new { x.HouseholdId, x.MembershipStatus, x.MosaicUserId });
+
+        modelBuilder.Entity<HouseholdUser>()
+            .HasIndex(x => new { x.HouseholdId, x.MosaicUserId })
+            .IsUnique()
+            .HasFilter("\"MembershipStatus\" = 1 AND \"MosaicUserId\" IS NOT NULL");
 
         modelBuilder.Entity<Account>()
             .HasIndex(x => new { x.HouseholdId, x.ExternalAccountKey })
             .IsUnique();
+
+        modelBuilder.Entity<Account>()
+            .Property(x => x.AccessPolicyNeedsReview)
+            .HasDefaultValue(false);
+
+        modelBuilder.Entity<AccountMemberAccess>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_AccountMemberAccess_AccessRoleRange",
+                    "\"AccessRole\" IN (0, 1, 2)");
+
+                t.HasCheckConstraint(
+                    "CK_AccountMemberAccess_VisibilityRange",
+                    "\"Visibility\" IN (0, 1)");
+
+                t.HasCheckConstraint(
+                    "CK_AccountMemberAccess_AccessVisibilityConsistency",
+                    "(\"AccessRole\" = 0 AND \"Visibility\" = 0) OR (\"AccessRole\" IN (1, 2) AND \"Visibility\" = 1)");
+            });
+
+        modelBuilder.Entity<AccountMemberAccess>()
+            .HasKey(x => new { x.AccountId, x.HouseholdUserId });
+
+        modelBuilder.Entity<AccountMemberAccess>()
+            .Property(x => x.AccessRole)
+            .HasDefaultValue(AccountAccessRole.None);
+
+        modelBuilder.Entity<AccountMemberAccess>()
+            .Property(x => x.Visibility)
+            .HasDefaultValue(AccountAccessVisibility.Hidden);
+
+        modelBuilder.Entity<AccountMemberAccess>()
+            .HasIndex(x => new { x.HouseholdUserId, x.AccessRole, x.Visibility });
+
+        modelBuilder.Entity<AccountAccessPolicyReviewQueueEntry>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_AccountAccessPolicyReviewQueueEntry_ReasonCodeRequired",
+                    "LENGTH(TRIM(\"ReasonCode\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AccountAccessPolicyReviewQueueEntry_RationaleRequired",
+                    "LENGTH(TRIM(\"Rationale\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AccountAccessPolicyReviewQueueEntry_EvaluationAfterEnqueue",
+                    "\"LastEvaluatedAtUtc\" >= \"EnqueuedAtUtc\"");
+
+                t.HasCheckConstraint(
+                    "CK_AccountAccessPolicyReviewQueueEntry_ResolutionAfterEnqueue",
+                    "\"ResolvedAtUtc\" IS NULL OR \"ResolvedAtUtc\" >= \"EnqueuedAtUtc\"");
+            });
+
+        modelBuilder.Entity<AccountAccessPolicyReviewQueueEntry>()
+            .HasKey(x => x.AccountId);
+
+        modelBuilder.Entity<AccountAccessPolicyReviewQueueEntry>()
+            .HasIndex(x => new { x.HouseholdId, x.ResolvedAtUtc, x.LastEvaluatedAtUtc });
+
+        modelBuilder.Entity<AccountAccessPolicyReviewQueueEntry>()
+            .HasOne(x => x.Account)
+            .WithOne(x => x.AccessPolicyReviewQueueEntry)
+            .HasForeignKey<AccountAccessPolicyReviewQueueEntry>(x => x.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AccountAccessPolicyReviewQueueEntry>()
+            .HasOne(x => x.Household)
+            .WithMany(x => x.AccountAccessPolicyReviewQueueEntries)
+            .HasForeignKey(x => x.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<EnrichedTransaction>()
             .HasIndex(x => x.PlaidTransactionId)
@@ -263,8 +390,53 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasIndex(x => new { x.PlaidEnvironment, x.ItemId })
             .IsUnique();
 
+        modelBuilder.Entity<PlaidAccountLink>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_PlaidAccountLink_ItemIdRequired",
+                    "LENGTH(TRIM(\"ItemId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidAccountLink_PlaidAccountIdRequired",
+                    "LENGTH(TRIM(\"PlaidAccountId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidAccountLink_UnlinkAudit",
+                    "(\"IsActive\" = TRUE AND \"UnlinkedAtUtc\" IS NULL) OR (\"IsActive\" = FALSE AND \"UnlinkedAtUtc\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_PlaidAccountLink_LastSeenAfterLinked",
+                    "\"LastSeenAtUtc\" >= \"LinkedAtUtc\"");
+            });
+
+        modelBuilder.Entity<PlaidAccountLink>()
+            .HasIndex(x => new { x.PlaidEnvironment, x.ItemId, x.PlaidAccountId })
+            .IsUnique()
+            .HasFilter("\"IsActive\" = TRUE");
+
+        modelBuilder.Entity<PlaidAccountLink>()
+            .HasIndex(x => x.AccountId)
+            .IsUnique()
+            .HasFilter("\"IsActive\" = TRUE");
+
+        modelBuilder.Entity<PlaidAccountLink>()
+            .HasIndex(x => new { x.PlaidItemCredentialId, x.IsActive, x.LastSeenAtUtc });
+
         modelBuilder.Entity<PlaidItemCredential>()
             .HasIndex(x => new { x.HouseholdId, x.Status, x.LastRotatedAtUtc });
+
+        modelBuilder.Entity<PlaidItemCredential>()
+            .HasMany(x => x.AccountLinks)
+            .WithOne(x => x.PlaidItemCredential)
+            .HasForeignKey(x => x.PlaidItemCredentialId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PlaidAccountLink>()
+            .HasOne(x => x.Account)
+            .WithMany(x => x.PlaidAccountLinks)
+            .HasForeignKey(x => x.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<PlaidItemSyncState>()
             .ToTable(t =>
@@ -550,6 +722,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasForeignKey(x => x.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<MosaicUser>()
+            .HasMany(x => x.HouseholdMemberships)
+            .WithOne(x => x.MosaicUser)
+            .HasForeignKey(x => x.MosaicUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<Household>()
             .HasMany(x => x.Accounts)
             .WithOne(x => x.Household)
@@ -572,6 +750,18 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasMany(x => x.Transactions)
             .WithOne(x => x.Account)
             .HasForeignKey(x => x.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Account>()
+            .HasMany(x => x.MemberAccessGrants)
+            .WithOne(x => x.Account)
+            .HasForeignKey(x => x.AccountId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<HouseholdUser>()
+            .HasMany(x => x.AccountAccessGrants)
+            .WithOne(x => x.HouseholdUser)
+            .HasForeignKey(x => x.HouseholdUserId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<RecurringItem>()

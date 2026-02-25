@@ -23,6 +23,7 @@ public sealed class TransactionProjectionMetadataQueryService
     }
 
     public async Task<IReadOnlyList<TransactionProjectionMetadataDto>> QueryAsync(
+        Guid householdUserId,
         Guid? accountId,
         DateOnly? fromDate,
         DateOnly? toDate,
@@ -32,10 +33,20 @@ public sealed class TransactionProjectionMetadataQueryService
         int pageSize,
         CancellationToken cancellationToken = default)
     {
+        var readableAccountIds = _dbContext.AccountMemberAccessEntries
+            .AsNoTracking()
+            .Where(x =>
+                x.HouseholdUserId == householdUserId
+                && x.Visibility == AccountAccessVisibility.Visible
+                && x.AccessRole != AccountAccessRole.None
+                && x.HouseholdUser.MembershipStatus == HouseholdMembershipStatus.Active)
+            .Select(x => x.AccountId);
+
         var query = _dbContext.EnrichedTransactions
             .AsNoTracking()
             .Include(x => x.Splits)
             .Include(x => x.RecurringItem)
+            .Where(x => readableAccountIds.Contains(x.AccountId))
             .AsQueryable();
 
         if (accountId.HasValue)

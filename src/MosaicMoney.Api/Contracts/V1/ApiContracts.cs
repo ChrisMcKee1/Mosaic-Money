@@ -52,6 +52,20 @@ public static class ApiValidation
             new ApiErrorEnvelope(code, message, httpContext.TraceIdentifier)));
     }
 
+    public static IResult ToUnauthorizedResult(HttpContext httpContext, string code, string message)
+    {
+        return Results.Json(
+            new ApiErrorResponse(new ApiErrorEnvelope(code, message, httpContext.TraceIdentifier)),
+            statusCode: StatusCodes.Status401Unauthorized);
+    }
+
+    public static IResult ToForbiddenResult(HttpContext httpContext, string code, string message)
+    {
+        return Results.Json(
+            new ApiErrorResponse(new ApiErrorEnvelope(code, message, httpContext.TraceIdentifier)),
+            statusCode: StatusCodes.Status403Forbidden);
+    }
+
     public static IResult ToServiceUnavailableResult(HttpContext httpContext, string code, string message)
     {
         return Results.Json(
@@ -815,3 +829,41 @@ public sealed class CreateHouseholdRequest
 }
 
 public sealed record HouseholdDto(Guid Id, string Name, DateTime CreatedAtUtc);
+
+public sealed class CreateHouseholdInviteRequest
+{
+    [Required]
+    [EmailAddress]
+    [MaxLength(320)]
+    public string Email { get; init; } = string.Empty;
+
+    [Required]
+    [MaxLength(32)]
+    public string Role { get; init; } = "Member";
+}
+
+public sealed class AcceptHouseholdInviteRequest
+{
+    [MaxLength(200)]
+    public string? DisplayName { get; init; }
+}
+
+public sealed record HouseholdMemberDto(
+    Guid Id,
+    Guid HouseholdId,
+    string DisplayName,
+    string? ExternalUserKey,
+    string MembershipStatus,
+    string Role,
+    DateTime? InvitedAtUtc,
+    DateTime? ActivatedAtUtc,
+    DateTime? RemovedAtUtc);
+
+public sealed record HouseholdInviteDto(
+    Guid Id,
+    Guid HouseholdId,
+    string Email,
+    string Role,
+    string MembershipStatus,
+    DateTime? InvitedAtUtc,
+    DateTime? RemovedAtUtc);

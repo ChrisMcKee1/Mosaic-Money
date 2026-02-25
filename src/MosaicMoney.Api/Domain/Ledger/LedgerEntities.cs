@@ -93,6 +93,26 @@ public enum PlaidItemSyncStatus
     Processing = 3,
 }
 
+public enum HouseholdMembershipStatus
+{
+    Active = 1,
+    Invited = 2,
+    Removed = 3,
+}
+
+public enum AccountAccessRole
+{
+    None = 0,
+    ReadOnly = 1,
+    Owner = 2,
+}
+
+public enum AccountAccessVisibility
+{
+    Hidden = 0,
+    Visible = 1,
+}
+
 public sealed class Household
 {
     public Guid Id { get; set; }
@@ -106,7 +126,34 @@ public sealed class Household
 
     public ICollection<Account> Accounts { get; set; } = new List<Account>();
 
+    public ICollection<AccountAccessPolicyReviewQueueEntry> AccountAccessPolicyReviewQueueEntries { get; set; } = new List<AccountAccessPolicyReviewQueueEntry>();
+
     public ICollection<RecurringItem> RecurringItems { get; set; } = new List<RecurringItem>();
+}
+
+public sealed class MosaicUser
+{
+    public Guid Id { get; set; }
+
+    [MaxLength(64)]
+    public string AuthProvider { get; set; } = string.Empty;
+
+    [MaxLength(200)]
+    public string AuthSubject { get; set; } = string.Empty;
+
+    [MaxLength(320)]
+    public string? Email { get; set; }
+
+    [MaxLength(200)]
+    public string? DisplayName { get; set; }
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastSeenAtUtc { get; set; } = DateTime.UtcNow;
+
+    public ICollection<HouseholdUser> HouseholdMemberships { get; set; } = new List<HouseholdUser>();
 }
 
 public sealed class HouseholdUser
@@ -115,15 +162,29 @@ public sealed class HouseholdUser
 
     public Guid HouseholdId { get; set; }
 
+    public Guid? MosaicUserId { get; set; }
+
     [MaxLength(200)]
     public string DisplayName { get; set; } = string.Empty;
 
     [MaxLength(200)]
     public string? ExternalUserKey { get; set; }
 
+    public HouseholdMembershipStatus MembershipStatus { get; set; } = HouseholdMembershipStatus.Active;
+
+    public DateTime? InvitedAtUtc { get; set; }
+
+    public DateTime? ActivatedAtUtc { get; set; }
+
+    public DateTime? RemovedAtUtc { get; set; }
+
     public Household Household { get; set; } = null!;
 
+    public MosaicUser? MosaicUser { get; set; }
+
     public ICollection<EnrichedTransaction> NeedsReviewTransactions { get; set; } = new List<EnrichedTransaction>();
+
+    public ICollection<AccountMemberAccess> AccountAccessGrants { get; set; } = new List<AccountMemberAccess>();
 }
 
 public sealed class Account
@@ -143,9 +204,59 @@ public sealed class Account
 
     public bool IsActive { get; set; } = true;
 
+    public bool AccessPolicyNeedsReview { get; set; }
+
     public Household Household { get; set; } = null!;
 
     public ICollection<EnrichedTransaction> Transactions { get; set; } = new List<EnrichedTransaction>();
+
+    public ICollection<AccountMemberAccess> MemberAccessGrants { get; set; } = new List<AccountMemberAccess>();
+
+    public AccountAccessPolicyReviewQueueEntry? AccessPolicyReviewQueueEntry { get; set; }
+
+    public ICollection<PlaidAccountLink> PlaidAccountLinks { get; set; } = new List<PlaidAccountLink>();
+}
+
+public sealed class AccountMemberAccess
+{
+    public Guid AccountId { get; set; }
+
+    public Guid HouseholdUserId { get; set; }
+
+    public AccountAccessRole AccessRole { get; set; } = AccountAccessRole.None;
+
+    public AccountAccessVisibility Visibility { get; set; } = AccountAccessVisibility.Hidden;
+
+    public DateTime GrantedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastModifiedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public Account Account { get; set; } = null!;
+
+    public HouseholdUser HouseholdUser { get; set; } = null!;
+}
+
+public sealed class AccountAccessPolicyReviewQueueEntry
+{
+    public Guid AccountId { get; set; }
+
+    public Guid HouseholdId { get; set; }
+
+    [MaxLength(120)]
+    public string ReasonCode { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string Rationale { get; set; } = string.Empty;
+
+    public DateTime EnqueuedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastEvaluatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime? ResolvedAtUtc { get; set; }
+
+    public Account Account { get; set; } = null!;
+
+    public Household Household { get; set; } = null!;
 }
 
 public sealed class Category
@@ -504,6 +615,41 @@ public sealed class PlaidItemCredential
     public string? RecoveryReasonCode { get; set; }
 
     public DateTime? RecoverySignaledAtUtc { get; set; }
+
+    public ICollection<PlaidAccountLink> AccountLinks { get; set; } = new List<PlaidAccountLink>();
+}
+
+public sealed class PlaidAccountLink
+{
+    public Guid Id { get; set; }
+
+    public Guid AccountId { get; set; }
+
+    public Guid? PlaidItemCredentialId { get; set; }
+
+    [MaxLength(32)]
+    public string PlaidEnvironment { get; set; } = "sandbox";
+
+    [MaxLength(128)]
+    public string ItemId { get; set; } = string.Empty;
+
+    [MaxLength(128)]
+    public string PlaidAccountId { get; set; } = string.Empty;
+
+    public bool IsActive { get; set; } = true;
+
+    public DateTime LinkedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastSeenAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UnlinkedAtUtc { get; set; }
+
+    [MaxLength(120)]
+    public string? LastProviderRequestId { get; set; }
+
+    public Account Account { get; set; } = null!;
+
+    public PlaidItemCredential? PlaidItemCredential { get; set; }
 }
 
 public sealed class PlaidItemSyncState
