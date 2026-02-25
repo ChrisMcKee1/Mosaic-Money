@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { TransactionDto } from "../contracts";
 import { formatCurrency, formatLedgerDate } from "../utils/formatters";
+import { theme } from "../../../theme/tokens";
 
 interface NeedsReviewQueueItemProps {
   transaction: TransactionDto;
@@ -42,15 +43,16 @@ export function NeedsReviewQueueItem({ transaction, onPress }: NeedsReviewQueueI
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 12,
     padding: 14,
   },
   cardPressed: {
-    opacity: 0.78,
+    backgroundColor: theme.colors.surfaceHover,
+    borderColor: theme.colors.primaryHover,
   },
   rowTop: {
     alignItems: "flex-start",
@@ -58,7 +60,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   description: {
-    color: "#101828",
+    color: theme.colors.textMain,
     flex: 1,
     fontSize: 16,
     fontWeight: "600",
@@ -67,12 +69,13 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 15,
     fontWeight: "700",
+    fontFamily: "monospace",
   },
   amountNegative: {
-    color: "#b42318",
+    color: theme.colors.negative,
   },
   amountPositive: {
-    color: "#027a48",
+    color: theme.colors.positive,
   },
   rowMeta: {
     alignItems: "center",
@@ -81,22 +84,24 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   metaText: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 13,
   },
   pendingBadge: {
-    backgroundColor: "#fff4cc",
+    backgroundColor: theme.colors.warningBg,
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.warning,
   },
   pendingText: {
-    color: "#7a2e0e",
+    color: theme.colors.warning,
     fontSize: 12,
     fontWeight: "700",
   },
   reviewReason: {
-    color: "#7a2e0e",
+    color: theme.colors.warning,
     fontSize: 13,
     marginTop: 8,
   },

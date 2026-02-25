@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { TransactionProjectionMetadataDto } from "../contracts";
 import { formatCurrency, formatLedgerDate } from "../../transactions/utils/formatters";
+import { theme } from "../../../theme/tokens";
 
 interface ProjectionListSectionProps {
   items: TransactionProjectionMetadataDto[];
@@ -91,20 +92,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   sectionTitle: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 20,
     fontWeight: "800",
+    letterSpacing: -0.5,
   },
   sectionBody: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 13,
     lineHeight: 20,
     marginBottom: 10,
     marginTop: 4,
   },
   itemCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 10,
@@ -112,13 +114,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   itemCardSelected: {
-    borderColor: "#175cd3",
+    borderColor: theme.colors.primary,
     borderWidth: 2,
     paddingHorizontal: 11,
     paddingVertical: 11,
   },
   itemCardPressed: {
-    opacity: 0.84,
+    backgroundColor: theme.colors.surfaceHover,
   },
   itemTopRow: {
     alignItems: "flex-start",
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   itemDescription: {
-    color: "#101828",
+    color: theme.colors.textMain,
     flex: 1,
     fontSize: 15,
     fontWeight: "700",
@@ -135,12 +137,13 @@ const styles = StyleSheet.create({
   itemAmount: {
     fontSize: 15,
     fontWeight: "800",
+    fontFamily: "monospace",
   },
   itemAmountNegative: {
-    color: "#b42318",
+    color: theme.colors.negative,
   },
   itemAmountPositive: {
-    color: "#027a48",
+    color: theme.colors.positive,
   },
   itemMetaRow: {
     flexDirection: "row",
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   itemMeta: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 12,
   },
   badgeRow: {
@@ -157,8 +160,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   badge: {
-    backgroundColor: "#eff4ff",
-    borderColor: "#d0d5dd",
+    backgroundColor: theme.colors.surfaceHover,
+    borderColor: theme.colors.border,
     borderRadius: 999,
     borderWidth: 1,
     marginRight: 6,
@@ -167,7 +170,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   badgeText: {
-    color: "#1849a9",
+    color: theme.colors.primary,
     fontSize: 11,
     fontWeight: "700",
   },

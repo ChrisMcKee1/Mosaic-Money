@@ -1,0 +1,51 @@
+export const theme = {
+  colors: {
+    background: "#0B0F19",
+    surface: "#131B2F",
+    surfaceHover: "#1E293B",
+    border: "#1F2937",
+    primary: "#00F0FF",
+    primaryHover: "#38BDF8",
+    positive: "#00FF94",
+    positiveBg: "rgba(0, 255, 148, 0.1)",
+    negative: "#FF3366",
+    negativeBg: "rgba(255, 51, 102, 0.1)",
+    warning: "#F59E0B",
+    warningBg: "rgba(245, 158, 11, 0.1)",
+    textMain: "#F9FAFB",
+    textMuted: "#9CA3AF",
+    textSubtle: "#6B7280",
+    approveBg: "#166534",
+    approveText: "#f8fffb",
+    rejectBg: "transparent",
+    rejectBorder: "#FF3366",
+    rejectText: "#FF5A84",
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    xxl: 32,
+  },
+  borderRadius: {
+    sm: 6,
+    md: 8,
+    lg: 12,
+    xl: 16,
+    xxl: 24,
+  },
+  typography: {
+    display: {
+      fontFamily: "System",
+      letterSpacing: -0.5,
+    },
+    body: {
+      fontFamily: "System",
+    },
+    mono: {
+      fontFamily: "monospace",
+    },
+  },
+};

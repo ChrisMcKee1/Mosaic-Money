@@ -14,6 +14,7 @@ import type { TransactionDto } from "../contracts";
 import { useNeedsReviewQueue } from "../hooks/useNeedsReviewQueue";
 import { NeedsReviewQueueItem } from "./NeedsReviewQueueItem";
 import { StatePanel } from "./StatePanel";
+import { theme } from "../../../theme/tokens";
 
 export function NeedsReviewQueueScreen() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export function NeedsReviewQueueScreen() {
   if (isLoading && transactions.length === 0) {
     return (
       <SafeAreaView style={styles.centeredPage}>
-        <ActivityIndicator size="large" color="#1849a9" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading pending reviews...</Text>
       </SafeAreaView>
     );
@@ -109,17 +110,17 @@ export function NeedsReviewQueueScreen() {
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#f2f4f7",
+    backgroundColor: theme.colors.background,
     flex: 1,
   },
   centeredPage: {
     alignItems: "center",
-    backgroundColor: "#f2f4f7",
+    backgroundColor: theme.colors.background,
     flex: 1,
     justifyContent: "center",
   },
   loadingText: {
-    color: "#344054",
+    color: theme.colors.textMuted,
     marginTop: 12,
   },
   listContent: {
@@ -131,24 +132,25 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   heading: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 24,
     fontWeight: "800",
+    letterSpacing: -0.5,
   },
   subheading: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 14,
     marginTop: 6,
   },
   warning: {
-    color: "#b42318",
+    color: theme.colors.warning,
     fontSize: 13,
     marginTop: 8,
   },
   connectButton: {
     alignSelf: "flex-start",
-    backgroundColor: "#ffffff",
-    borderColor: "#175cd3",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 8,
     borderWidth: 1,
     marginTop: 12,
@@ -156,10 +158,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   connectButtonPressed: {
-    opacity: 0.82,
+    backgroundColor: theme.colors.surfaceHover,
   },
   connectButtonText: {
-    color: "#175cd3",
+    color: theme.colors.primary,
     fontSize: 13,
     fontWeight: "700",
   },

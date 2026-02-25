@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { useReviewMutationRecovery } from "../src/features/transactions/hooks/useReviewMutationRecovery";
+import { theme } from "../src/theme/tokens";
 
 function ReviewMutationRecoveryHost() {
   useReviewMutationRecovery();
@@ -13,7 +14,9 @@ export default function RootLayout() {
 
       <Stack
         screenOptions={{
-          contentStyle: { backgroundColor: "#f2f4f7" },
+          contentStyle: { backgroundColor: theme.colors.background },
+          headerStyle: { backgroundColor: theme.colors.surface },
+          headerTintColor: theme.colors.textMain,
           headerBackTitle: "Back",
         }}
       >

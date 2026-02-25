@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { TransactionProjectionMetadataDto } from "../contracts";
 import { formatCurrency, formatLedgerDate, formatUtcDateTime } from "../../transactions/utils/formatters";
+import { theme } from "../../../theme/tokens";
 
 interface ProjectionDetailSectionProps {
   projection: TransactionProjectionMetadataDto;
@@ -104,20 +105,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   sectionTitle: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 20,
     fontWeight: "800",
+    letterSpacing: -0.5,
   },
   sectionBody: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 13,
     lineHeight: 20,
     marginBottom: 10,
     marginTop: 4,
   },
   card: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 10,
@@ -125,34 +127,34 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   cardTitle: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 8,
   },
   detailRow: {
-    borderBottomColor: "#eef2f6",
+    borderBottomColor: theme.colors.border,
     borderBottomWidth: 1,
     marginBottom: 8,
     paddingBottom: 8,
   },
   detailLabel: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
   },
   detailValue: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 14,
     marginTop: 3,
   },
   emptySplit: {
-    color: "#667085",
+    color: theme.colors.textSubtle,
     fontSize: 13,
   },
   splitRow: {
-    borderColor: "#e4e7ec",
+    borderColor: theme.colors.border,
     borderRadius: 10,
     borderWidth: 1,
     marginBottom: 8,
@@ -160,12 +162,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   splitId: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 13,
     fontWeight: "700",
   },
   splitMeta: {
-    color: "#344054",
+    color: theme.colors.textMuted,
     fontSize: 12,
     marginTop: 3,
   },

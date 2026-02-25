@@ -15,6 +15,7 @@ import { StatePanel } from "../../transactions/components/StatePanel";
 import { formatUtcDateTime } from "../../transactions/utils/formatters";
 import { useProjectionMetadata } from "../hooks/useProjectionMetadata";
 import { useProjectionSummaryMetrics } from "../hooks/useProjectionSummaryMetrics";
+import { theme } from "../../../theme/tokens";
 
 export function ProjectionDashboardScreen() {
   const {
@@ -71,7 +72,7 @@ export function ProjectionDashboardScreen() {
       <SafeAreaView style={styles.page}>
         <ScrollView contentContainerStyle={styles.loadingContent}>
           <View style={styles.loadingHeader}>
-            <ActivityIndicator size="large" color="#1849a9" />
+            <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={styles.loadingText}>Loading projection dashboard...</Text>
           </View>
 
@@ -170,7 +171,7 @@ export function ProjectionDashboardScreen() {
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#f2f4f7",
+    backgroundColor: theme.colors.background,
     flex: 1,
   },
   loadingContent: {
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   loadingText: {
-    color: "#344054",
+    color: theme.colors.textMuted,
     marginTop: 12,
   },
   scrollContent: {
@@ -197,21 +198,22 @@ const styles = StyleSheet.create({
     rowGap: 6,
   },
   heading: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 24,
     fontWeight: "800",
+    letterSpacing: -0.5,
   },
   subheading: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },
   timestamp: {
-    color: "#667085",
+    color: theme.colors.textSubtle,
     fontSize: 12,
   },
   warning: {
-    color: "#b42318",
+    color: theme.colors.warning,
     fontSize: 13,
   },
   statusBanner: {
@@ -222,46 +224,46 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   statusBannerInfo: {
-    backgroundColor: "#eff8ff",
-    borderColor: "#b2ddff",
+    backgroundColor: theme.colors.surfaceHover,
+    borderColor: theme.colors.primary,
   },
   statusBannerWarning: {
-    backgroundColor: "#fffaeb",
-    borderColor: "#fecd89",
+    backgroundColor: theme.colors.warningBg,
+    borderColor: theme.colors.warning,
   },
   statusBannerTextInfo: {
-    color: "#175cd3",
+    color: theme.colors.primary,
     fontSize: 12,
     fontWeight: "600",
   },
   statusBannerTextWarning: {
-    color: "#b54708",
+    color: theme.colors.warning,
     fontSize: 12,
     fontWeight: "600",
   },
   loadingCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
   loadingLineWide: {
-    backgroundColor: "#eaecf0",
+    backgroundColor: theme.colors.surfaceHover,
     borderRadius: 8,
     height: 14,
     width: "80%",
   },
   loadingLineMedium: {
-    backgroundColor: "#eaecf0",
+    backgroundColor: theme.colors.surfaceHover,
     borderRadius: 8,
     height: 12,
     marginTop: 10,
     width: "55%",
   },
   loadingLineShort: {
-    backgroundColor: "#eaecf0",
+    backgroundColor: theme.colors.surfaceHover,
     borderRadius: 8,
     height: 12,
     marginTop: 10,

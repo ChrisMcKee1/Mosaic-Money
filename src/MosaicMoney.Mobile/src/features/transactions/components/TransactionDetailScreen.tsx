@@ -11,6 +11,7 @@ import { useTransactionDetail } from "../hooks/useTransactionDetail";
 import { formatCurrency, formatLedgerDate, formatUtcDateTime } from "../utils/formatters";
 import { ReviewActionPanel } from "./ReviewActionPanel";
 import { StatePanel } from "./StatePanel";
+import { theme } from "../../../theme/tokens";
 
 interface TransactionDetailScreenProps {
   transactionId: string | null | undefined;
@@ -40,7 +41,7 @@ export function TransactionDetailScreen({ transactionId }: TransactionDetailScre
   if (isLoading && !transaction) {
     return (
       <SafeAreaView style={styles.centeredPage}>
-        <ActivityIndicator size="large" color="#1849a9" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading transaction detail...</Text>
       </SafeAreaView>
     );
@@ -114,8 +115,8 @@ export function TransactionDetailScreen({ transactionId }: TransactionDetailScre
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Dual Notes</Text>
-          <NoteSection title="UserNote" content={transaction.userNote} accentColor="#175cd3" />
-          <NoteSection title="AgentNote" content={transaction.agentNote} accentColor="#087443" />
+          <NoteSection title="UserNote" content={transaction.userNote} accentColor={theme.colors.primary} />
+          <NoteSection title="AgentNote" content={transaction.agentNote} accentColor={theme.colors.positive} />
         </View>
 
         <ReviewActionPanel transaction={transaction} onActionSynced={refresh} />
@@ -126,17 +127,17 @@ export function TransactionDetailScreen({ transactionId }: TransactionDetailScre
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#f2f4f7",
+    backgroundColor: theme.colors.background,
     flex: 1,
   },
   centeredPage: {
     alignItems: "center",
-    backgroundColor: "#f2f4f7",
+    backgroundColor: theme.colors.background,
     flex: 1,
     justifyContent: "center",
   },
   loadingText: {
-    color: "#344054",
+    color: theme.colors.textMuted,
     marginTop: 12,
   },
   content: {
@@ -144,61 +145,63 @@ const styles = StyleSheet.create({
     rowGap: 12,
   },
   headerCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     padding: 16,
   },
   title: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 22,
     fontWeight: "800",
+    letterSpacing: -0.5,
   },
   amount: {
-    color: "#0f1728",
+    color: theme.colors.textMain,
     fontSize: 24,
     fontWeight: "700",
     marginTop: 8,
+    fontFamily: "monospace",
   },
   readOnlyHint: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 13,
     marginTop: 10,
   },
   sectionCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     padding: 16,
   },
   sectionTitle: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
   },
   ledgerRow: {
-    borderBottomColor: "#eef2f6",
+    borderBottomColor: theme.colors.border,
     borderBottomWidth: 1,
     marginBottom: 10,
     paddingBottom: 10,
   },
   ledgerLabel: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: "700",
     textTransform: "uppercase",
   },
   ledgerValue: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 14,
     marginTop: 4,
   },
   noteCard: {
-    backgroundColor: "#fcfdff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surfaceHover,
+    borderColor: theme.colors.border,
     borderLeftWidth: 4,
     borderRadius: 10,
     borderWidth: 1,
@@ -206,13 +209,13 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   noteTitle: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 13,
     fontWeight: "700",
     marginBottom: 6,
   },
   noteBody: {
-    color: "#344054",
+    color: theme.colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
   },

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { theme } from "../../../theme/tokens";
 
 interface StatePanelProps {
   title: string;
@@ -34,8 +35,8 @@ export function StatePanel({ title, body, actionLabel, onAction, disabled }: Sta
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    backgroundColor: "#ffffff",
-    borderColor: "#d5d9e0",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     marginHorizontal: 16,
@@ -44,33 +45,34 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   title: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 8,
     textAlign: "center",
+    letterSpacing: -0.5,
   },
   body: {
-    color: "#344054",
+    color: theme.colors.textMuted,
     fontSize: 14,
     lineHeight: 20,
     textAlign: "center",
   },
   action: {
-    backgroundColor: "#1849a9",
+    backgroundColor: theme.colors.primary,
     borderRadius: 8,
     marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
   actionPressed: {
-    opacity: 0.82,
+    backgroundColor: theme.colors.primaryHover,
   },
   actionDisabled: {
-    backgroundColor: "#98a2b3",
+    backgroundColor: theme.colors.surfaceHover,
   },
   actionText: {
-    color: "#ffffff",
+    color: theme.colors.background,
     fontSize: 14,
     fontWeight: "600",
   },

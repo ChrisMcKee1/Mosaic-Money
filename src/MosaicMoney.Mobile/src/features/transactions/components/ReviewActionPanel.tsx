@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { TransactionDto } from "../contracts";
 import { useTransactionReviewActions } from "../hooks/useTransactionReviewActions";
 import { formatUtcDateTime } from "../utils/formatters";
+import { theme } from "../../../theme/tokens";
 
 interface ReviewActionPanelProps {
   transaction: TransactionDto;
@@ -149,19 +150,19 @@ export function ReviewActionPanel({
 
 const styles = StyleSheet.create({
   sectionCard: {
-    backgroundColor: "#ffffff",
-    borderColor: "#d8dee8",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
     borderRadius: 12,
     borderWidth: 1,
     padding: 16,
   },
   sectionTitle: {
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 18,
     fontWeight: "700",
   },
   sectionBody: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
     marginTop: 8,
@@ -173,33 +174,35 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#175cd3",
+    backgroundColor: theme.colors.approveBg,
     borderRadius: 10,
     flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
   primaryButtonPressed: {
-    opacity: 0.9,
+    backgroundColor: theme.colors.positive,
   },
   primaryButtonText: {
-    color: "#ffffff",
+    color: theme.colors.approveText,
     fontSize: 14,
     fontWeight: "700",
   },
   rejectButton: {
     alignItems: "center",
-    backgroundColor: "#b42318",
+    backgroundColor: theme.colors.rejectBg,
+    borderColor: theme.colors.rejectBorder,
+    borderWidth: 1,
     borderRadius: 10,
     flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
   rejectButtonPressed: {
-    opacity: 0.9,
+    backgroundColor: theme.colors.negativeBg,
   },
   rejectButtonText: {
-    color: "#ffffff",
+    color: theme.colors.rejectText,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -207,18 +210,18 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
   inputLabel: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 12,
     fontWeight: "700",
     marginTop: 14,
     textTransform: "uppercase",
   },
   reasonInput: {
-    backgroundColor: "#fcfdff",
-    borderColor: "#d0d8e3",
+    backgroundColor: theme.colors.surfaceHover,
+    borderColor: theme.colors.border,
     borderRadius: 10,
     borderWidth: 1,
-    color: "#101828",
+    color: theme.colors.textMain,
     fontSize: 14,
     marginTop: 8,
     minHeight: 92,
@@ -226,26 +229,26 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   helperText: {
-    color: "#475467",
+    color: theme.colors.textMuted,
     fontSize: 12,
     marginTop: 8,
   },
   noticeInfo: {
-    backgroundColor: "#eef4ff",
-    borderColor: "#bfd3ff",
+    backgroundColor: theme.colors.surfaceHover,
+    borderColor: theme.colors.primary,
     borderRadius: 10,
     borderWidth: 1,
     marginTop: 12,
     padding: 10,
   },
   noticeInfoText: {
-    color: "#1849a9",
+    color: theme.colors.primary,
     fontSize: 13,
     lineHeight: 18,
   },
   pendingSyncCard: {
-    backgroundColor: "#fffaeb",
-    borderColor: "#fedf89",
+    backgroundColor: theme.colors.warningBg,
+    borderColor: theme.colors.warning,
     borderRadius: 10,
     borderWidth: 1,
     marginTop: 12,
@@ -253,25 +256,25 @@ const styles = StyleSheet.create({
     rowGap: 8,
   },
   pendingSyncTitle: {
-    color: "#7a2e0e",
+    color: theme.colors.warning,
     fontSize: 13,
     fontWeight: "700",
     textTransform: "uppercase",
   },
   pendingSyncBody: {
-    color: "#7a2e0e",
+    color: theme.colors.warning,
     fontSize: 13,
     lineHeight: 18,
   },
   pendingSyncMeta: {
-    color: "#9a3412",
+    color: theme.colors.warning,
     fontSize: 12,
     lineHeight: 16,
   },
   retryButton: {
     alignItems: "center",
     alignSelf: "flex-start",
-    backgroundColor: "#f79009",
+    backgroundColor: theme.colors.warning,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -280,20 +283,20 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   retryButtonText: {
-    color: "#ffffff",
+    color: theme.colors.background,
     fontSize: 13,
     fontWeight: "700",
   },
   noticeError: {
-    backgroundColor: "#fef3f2",
-    borderColor: "#fecdca",
+    backgroundColor: theme.colors.negativeBg,
+    borderColor: theme.colors.negative,
     borderRadius: 10,
     borderWidth: 1,
     marginTop: 12,
     padding: 10,
   },
   noticeErrorText: {
-    color: "#b42318",
+    color: theme.colors.negative,
     fontSize: 13,
     lineHeight: 18,
   },
