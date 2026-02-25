@@ -81,7 +81,7 @@ export default function PlaidOnboardingPage() {
             </p>
             <button 
               onClick={handleStart}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-[var(--color-button-ink)] font-medium py-2 px-4 rounded transition-colors"
             >
               Get Started
             </button>
@@ -117,7 +117,7 @@ export default function PlaidOnboardingPage() {
                 </button>
                 <button 
                   onClick={handleOpenLink}
-                  className="bg-black hover:bg-gray-800 text-white font-medium py-2 px-4 rounded transition-colors"
+                  className="bg-black hover:bg-gray-800 text-[var(--color-button-ink)] font-medium py-2 px-4 rounded transition-colors"
                 >
                   Simulate Success
                 </button>
@@ -179,7 +179,7 @@ export default function PlaidOnboardingPage() {
             </div>
             <button 
               onClick={() => setStatus("idle")}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-[var(--color-button-ink)] font-medium py-2 px-4 rounded transition-colors"
             >
               Try Again
             </button>

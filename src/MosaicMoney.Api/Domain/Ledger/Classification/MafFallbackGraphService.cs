@@ -8,6 +8,7 @@ public static class MafFallbackGraphStatusCodes
 {
     public const string Ok = "ok";
     public const string NoProposals = "no_proposals";
+    public const string ExternalMessagingSendDenied = "external_messaging_send_denied";
     public const string Disabled = "disabled";
     public const string InvalidRequest = "invalid_request";
     public const string Timeout = "timeout";
@@ -43,13 +44,18 @@ public sealed record MafFallbackProposal(
     decimal Confidence,
     string RationaleCode,
     string Rationale,
-    string? AgentNoteSummary);
+    string? AgentNoteSummary,
+    string? ProposedAction,
+    string? ProposedExternalMessageDraft);
 
 public sealed record MafFallbackGraphResult(
     bool Succeeded,
     string StatusCode,
     string StatusMessage,
-    IReadOnlyList<MafFallbackProposal> Proposals);
+    IReadOnlyList<MafFallbackProposal> Proposals,
+    bool MessagingSendDenied,
+    int MessagingSendDeniedCount,
+    string? MessagingSendDeniedActions);
 
 public interface IMafFallbackGraphExecutor
 {
@@ -78,7 +84,20 @@ public sealed class MafFallbackGraphService(
 {
     private const int MaxReasonCodeLength = 120;
     private const int MaxRationaleLength = 500;
-    private const int MaxAgentSummaryLength = 600;
+    private const int MaxProposedActionLength = 80;
+    private const int MaxExternalMessageDraftLength = 1000;
+    private static readonly HashSet<string> ExplicitExternalSendActions =
+    [
+        "notify_external_system",
+    ];
+
+    private sealed record ParsedProposalCollection(
+        IReadOnlyList<MafFallbackProposal> Proposals,
+        IReadOnlyList<string> DeniedSendActions);
+
+    private sealed record ParsedProposalOutcome(
+        MafFallbackProposal? Proposal,
+        string? DeniedSendAction);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -99,7 +118,11 @@ public sealed class MafFallbackGraphService(
         [property: JsonPropertyName("rationale")]
         string? Rationale,
         [property: JsonPropertyName("agentNoteSummary")]
-        string? AgentNoteSummary);
+        string? AgentNoteSummary,
+        [property: JsonPropertyName("proposedAction")]
+        string? ProposedAction,
+        [property: JsonPropertyName("proposedExternalMessageDraft")]
+        string? ProposedExternalMessageDraft);
 
     public async Task<MafFallbackGraphResult> ExecuteAsync(
         MafFallbackGraphRequest request,
@@ -112,7 +135,10 @@ public sealed class MafFallbackGraphService(
                 Succeeded: false,
                 MafFallbackGraphStatusCodes.Disabled,
                 "MAF fallback graph is disabled by configuration.",
-                []);
+                [],
+                false,
+                0,
+                null);
         }
 
         if (request.TransactionId == Guid.Empty || request.AllowedSubcategories.Count == 0)
@@ -121,7 +147,10 @@ public sealed class MafFallbackGraphService(
                 Succeeded: false,
                 MafFallbackGraphStatusCodes.InvalidRequest,
                 "MAF fallback requires a transaction id and at least one allowed subcategory.",
-                []);
+                [],
+                false,
+                0,
+                null);
         }
 
         var allowedSubcategoryIds = request.AllowedSubcategories
@@ -138,26 +167,57 @@ public sealed class MafFallbackGraphService(
             var parsedResponse = JsonSerializer.Deserialize<MafFallbackResponseSchema>(rawResponse, JsonOptions)
                 ?? throw new JsonException("Response body was null.");
 
-            var parsedProposals = ParseAndValidateProposals(
+            var parsedResult = ParseAndValidateProposals(
                 parsedResponse.Proposals,
                 allowedSubcategoryIds,
                 resolvedOptions.MinimumProposalConfidence,
                 resolvedOptions.MaxProposals);
 
-            if (parsedProposals.Count == 0)
+            var deniedCount = parsedResult.DeniedSendActions.Count;
+            var deniedActionsCsv = deniedCount == 0
+                ? null
+                : string.Join(",", parsedResult.DeniedSendActions.Distinct(StringComparer.Ordinal));
+
+            if (deniedCount > 0)
             {
+                logger.LogWarning(
+                    "MAF fallback denied {DeniedCount} external messaging send action(s) for transaction {TransactionId}. Actions: {DeniedActions}",
+                    deniedCount,
+                    request.TransactionId,
+                    deniedActionsCsv);
+            }
+
+            if (parsedResult.Proposals.Count == 0)
+            {
+                var noProposalStatusCode = deniedCount > 0
+                    ? MafFallbackGraphStatusCodes.ExternalMessagingSendDenied
+                    : MafFallbackGraphStatusCodes.NoProposals;
+                var noProposalStatusMessage = deniedCount > 0
+                    ? $"MAF fallback denied {deniedCount} external messaging send action(s); draft-only output remains allowed."
+                    : "MAF fallback did not return any schema-valid proposals above threshold.";
+
                 return new MafFallbackGraphResult(
                     Succeeded: true,
-                    MafFallbackGraphStatusCodes.NoProposals,
-                    "MAF fallback did not return any schema-valid proposals above threshold.",
-                    []);
+                    noProposalStatusCode,
+                    noProposalStatusMessage,
+                    [],
+                    deniedCount > 0,
+                    deniedCount,
+                    deniedActionsCsv);
             }
+
+            var successStatusMessage = deniedCount > 0
+                ? $"MAF fallback returned schema-valid proposals and denied {deniedCount} external messaging send action(s)."
+                : "MAF fallback returned schema-valid proposals.";
 
             return new MafFallbackGraphResult(
                 Succeeded: true,
                 MafFallbackGraphStatusCodes.Ok,
-                "MAF fallback returned schema-valid proposals.",
-                parsedProposals);
+                successStatusMessage,
+                parsedResult.Proposals,
+                deniedCount > 0,
+                deniedCount,
+                deniedActionsCsv);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && timeoutCts.IsCancellationRequested)
         {
@@ -170,7 +230,10 @@ public sealed class MafFallbackGraphService(
                 Succeeded: false,
                 MafFallbackGraphStatusCodes.Timeout,
                 $"MAF fallback timed out after {timeoutSeconds}s.",
-                []);
+                [],
+                false,
+                0,
+                null);
         }
         catch (JsonException ex)
         {
@@ -183,7 +246,10 @@ public sealed class MafFallbackGraphService(
                 Succeeded: false,
                 MafFallbackGraphStatusCodes.SchemaValidationFailed,
                 "MAF fallback returned an invalid proposal schema.",
-                []);
+                [],
+                false,
+                0,
+                null);
         }
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
@@ -196,11 +262,14 @@ public sealed class MafFallbackGraphService(
                 Succeeded: false,
                 MafFallbackGraphStatusCodes.ExecutionFailed,
                 "MAF fallback execution failed.",
-                []);
+                [],
+                false,
+                0,
+                null);
         }
     }
 
-    private static IReadOnlyList<MafFallbackProposal> ParseAndValidateProposals(
+    private static ParsedProposalCollection ParseAndValidateProposals(
         IReadOnlyList<MafFallbackProposalSchema>? proposals,
         IReadOnlySet<Guid> allowedSubcategoryIds,
         decimal minimumConfidence,
@@ -208,18 +277,46 @@ public sealed class MafFallbackGraphService(
     {
         if (proposals is null || proposals.Count == 0)
         {
-            return [];
+            return new ParsedProposalCollection([], []);
         }
 
         var boundedThreshold = decimal.Clamp(minimumConfidence, 0m, 1m);
         var boundedMaxProposals = Math.Clamp(maxProposals, 1, 10);
+        var deniedSendActions = new List<string>();
 
-        var parsed = proposals
-            .Select(ParseProposal)
-            .Where(x => x is not null)
-            .Select(x => x!)
-            .Where(x => allowedSubcategoryIds.Contains(x.ProposedSubcategoryId))
-            .Where(x => x.Confidence >= boundedThreshold)
+        var parsedProposals = new List<MafFallbackProposal>(proposals.Count);
+        foreach (var proposal in proposals)
+        {
+            var parsedOutcome = ParseProposal(proposal);
+            if (parsedOutcome is null)
+            {
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(parsedOutcome.DeniedSendAction))
+            {
+                deniedSendActions.Add(parsedOutcome.DeniedSendAction!);
+            }
+
+            if (parsedOutcome.Proposal is null)
+            {
+                continue;
+            }
+
+            if (!allowedSubcategoryIds.Contains(parsedOutcome.Proposal.ProposedSubcategoryId))
+            {
+                continue;
+            }
+
+            if (parsedOutcome.Proposal.Confidence < boundedThreshold)
+            {
+                continue;
+            }
+
+            parsedProposals.Add(parsedOutcome.Proposal);
+        }
+
+        var parsed = parsedProposals
             .GroupBy(x => x.ProposedSubcategoryId)
             .Select(group => group
                 .OrderByDescending(x => x.Confidence)
@@ -230,11 +327,19 @@ public sealed class MafFallbackGraphService(
             .Take(boundedMaxProposals)
             .ToList();
 
-        return parsed;
+        return new ParsedProposalCollection(parsed, deniedSendActions);
     }
 
-    private static MafFallbackProposal? ParseProposal(MafFallbackProposalSchema proposal)
+    private static ParsedProposalOutcome? ParseProposal(MafFallbackProposalSchema proposal)
     {
+        var proposedAction = NormalizeOptionalAction(proposal.ProposedAction);
+        if (IsExternalMessagingSendAction(proposedAction))
+        {
+            return new ParsedProposalOutcome(
+                Proposal: null,
+                DeniedSendAction: proposedAction);
+        }
+
         if (!Guid.TryParse(proposal.ProposedSubcategoryId, out var subcategoryId))
         {
             return null;
@@ -248,19 +353,24 @@ public sealed class MafFallbackGraphService(
         var confidence = decimal.Round(decimal.Clamp(proposal.Confidence.Value, 0m, 1m), 4, MidpointRounding.AwayFromZero);
         var rationaleCode = Truncate(proposal.RationaleCode?.Trim(), MaxReasonCodeLength);
         var rationale = Truncate(proposal.Rationale?.Trim(), MaxRationaleLength);
-        var agentSummary = Truncate(proposal.AgentNoteSummary?.Trim(), MaxAgentSummaryLength);
+        var agentSummary = AgentNoteSummaryPolicy.Sanitize(proposal.AgentNoteSummary);
+        var externalMessageDraft = NormalizeOptionalValue(proposal.ProposedExternalMessageDraft, MaxExternalMessageDraftLength);
 
         if (string.IsNullOrWhiteSpace(rationaleCode) || string.IsNullOrWhiteSpace(rationale))
         {
             return null;
         }
 
-        return new MafFallbackProposal(
-            subcategoryId,
-            confidence,
-            rationaleCode,
-            rationale,
-            string.IsNullOrWhiteSpace(agentSummary) ? null : agentSummary);
+        return new ParsedProposalOutcome(
+            new MafFallbackProposal(
+                subcategoryId,
+                confidence,
+                rationaleCode,
+                rationale,
+                agentSummary,
+                proposedAction,
+                externalMessageDraft),
+            DeniedSendAction: null);
     }
 
     private static string Truncate(string? value, int maxLength)
@@ -273,5 +383,36 @@ public sealed class MafFallbackGraphService(
         return value.Length <= maxLength
             ? value
             : value[..maxLength];
+    }
+
+    private static string? NormalizeOptionalValue(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength
+            ? trimmed
+            : trimmed[..maxLength];
+    }
+
+    private static bool IsExternalMessagingSendAction(string? proposedAction)
+    {
+        if (string.IsNullOrWhiteSpace(proposedAction))
+        {
+            return false;
+        }
+
+        var normalized = proposedAction.Trim().ToLowerInvariant();
+        return normalized.StartsWith("send_", StringComparison.Ordinal)
+            || ExplicitExternalSendActions.Contains(normalized);
+    }
+
+    private static string? NormalizeOptionalAction(string? action)
+    {
+        var normalized = NormalizeOptionalValue(action, MaxProposedActionLength);
+        return normalized?.ToLowerInvariant();
     }
 }

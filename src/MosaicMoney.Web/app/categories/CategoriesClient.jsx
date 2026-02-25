@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Tag, TrendingUp, AlertCircle } from "lucide-react";
+import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -61,7 +62,7 @@ export function CategoriesClient({ transactions }) {
         </div>
         <h2 className="text-xl font-display font-bold text-white">{selectedCategory.name}</h2>
         <div className="flex items-baseline gap-2 mt-2">
-          <p className="text-3xl font-mono font-medium text-white">${selectedCategory.spent.toFixed(2)}</p>
+          <CurrencyDisplay amount={selectedCategory.spent} className="text-3xl font-mono font-medium" />
           <p className="text-sm text-[var(--color-text-muted)]">/ ${selectedCategory.budget.toFixed(0)}</p>
         </div>
         
@@ -139,9 +140,7 @@ export function CategoriesClient({ transactions }) {
                   <p className="text-sm font-medium text-white truncate max-w-[150px]">{tx.description}</p>
                   <p className="text-xs text-[var(--color-text-muted)]">{tx.rawTransactionDate}</p>
                 </div>
-                <span className="text-sm font-mono font-medium text-white">
-                  ${Math.abs(tx.rawAmount).toFixed(2)}
-                </span>
+                <CurrencyDisplay amount={tx.rawAmount} isTransfer={tx.excludeFromBudget} className="text-sm font-mono font-medium" />
               </div>
             ))}
         </div>
@@ -196,7 +195,7 @@ export function CategoriesClient({ transactions }) {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-display font-bold text-white">${totalSpent.toFixed(0)}</span>
+              <CurrencyDisplay amount={totalSpent} className="text-2xl font-display font-bold" />
               <span className="text-xs text-[var(--color-text-muted)]">of ${totalBudget.toFixed(0)}</span>
             </div>
           </div>
@@ -230,9 +229,9 @@ export function CategoriesClient({ transactions }) {
                       <AlertCircle className="w-4 h-4 text-[var(--color-negative)]" />
                     )}
                   </div>
-                  <div className="text-right">
-                    <span className="font-mono font-medium text-white">${cat.spent.toFixed(2)}</span>
-                    <span className="text-sm text-[var(--color-text-muted)] ml-1">/ ${cat.budget.toFixed(0)}</span>
+                  <div className="text-right flex items-baseline gap-1">
+                    <CurrencyDisplay amount={cat.spent} className="font-mono font-medium" />
+                    <span className="text-sm text-[var(--color-text-muted)]">/ ${cat.budget.toFixed(0)}</span>
                   </div>
                 </div>
                 <div className="h-2 w-full bg-[var(--color-surface-hover)] rounded-full overflow-hidden">

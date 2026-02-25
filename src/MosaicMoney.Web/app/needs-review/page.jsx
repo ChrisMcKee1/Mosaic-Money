@@ -19,14 +19,14 @@ export default async function NeedsReviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Needs Review</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-display font-semibold text-white">Needs Review</h1>
+        <p className="mt-1 text-sm text-[var(--color-text-muted)]">
           Transactions requiring human approval or classification.
         </p>
       </div>
       
       {error ? (
-        <div data-testid="needs-review-error-banner" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div data-testid="needs-review-error-banner" className="bg-[var(--color-negative-bg)] border border-[var(--color-negative)] text-[var(--color-negative)] px-4 py-3 rounded-md">
           {error}
         </div>
       ) : (

@@ -41,6 +41,30 @@ Why this path is deterministic:
 - Uses detached run so orchestration survives terminal lifecycle.
 - Uses `wait` gates before developer traffic and diagnostics.
 
+## Orchestration policy gate (MM-ASP-07)
+
+Use this deterministic policy gate before PRs and in CI to enforce Aspire orchestration conventions.
+
+```powershell
+pwsh -File .github/scripts/test-orchestration-policy-gates.ps1
+```
+
+Or via npm from repo root:
+
+```powershell
+npm run policy:orchestration
+```
+
+Current enforced checks:
+- Reject deprecated `AddNpmApp` in AppHost code.
+- Reject hardcoded localhost service URLs in web/api/worker app code.
+- Require `AddServiceDefaults()` in API and Worker entrypoints.
+- Require expected `WithReference(...)` wiring in `src/apphost.cs` for API, Worker, and Web dependencies.
+
+Failure behavior:
+- Prints one line per policy violation with check ID and file location.
+- Exits non-zero (`exit 1`) when any violation is detected.
+
 ## Recovery workflow
 
 Use this when resources are unhealthy, missing endpoints, or startup appears partial.

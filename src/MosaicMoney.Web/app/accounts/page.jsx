@@ -1,6 +1,7 @@
 import { PageLayout } from "../../components/layout/PageLayout";
 import { AccountsList } from "../../components/accounts/AccountsList";
 import { PieChart, Wallet, CreditCard, Building, Landmark, TrendingUp } from "lucide-react";
+import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
 
 export const metadata = {
   title: "Accounts | Mosaic Money",
@@ -28,23 +29,23 @@ export default function AccountsPage() {
       {/* Net Worth Summary */}
       <div className="bg-[var(--color-surface-hover)] rounded-xl p-5 border border-[var(--color-border)]">
         <h3 className="text-sm font-medium text-[var(--color-text-muted)] mb-1">Net Worth</h3>
-        <p className="text-3xl font-display font-bold text-white">${netWorth.toLocaleString()}</p>
-        
+        <CurrencyDisplay amount={netWorth} type="balance" className="text-3xl font-display font-bold" />
+
         <div className="mt-6 space-y-4">
           <div>
             <div className="flex justify-between text-sm mb-1">
               <span className="text-[var(--color-text-muted)]">Assets</span>
-              <span className="text-[var(--color-positive)] font-mono">${totalAssets.toLocaleString()}</span>
+              <CurrencyDisplay amount={totalAssets} type="balance" className="font-mono" />
             </div>
             <div className="h-1.5 w-full bg-[var(--color-surface)] rounded-full overflow-hidden">
               <div className="h-full bg-[var(--color-positive)] rounded-full" style={{ width: '100%' }} />
             </div>
           </div>
-          
+
           <div>
             <div className="flex justify-between text-sm mb-1">
               <span className="text-[var(--color-text-muted)]">Debts</span>
-              <span className="text-[var(--color-negative)] font-mono">${totalDebts.toLocaleString()}</span>
+              <CurrencyDisplay amount={-totalDebts} type="balance" className="font-mono" />
             </div>
             <div className="h-1.5 w-full bg-[var(--color-surface)] rounded-full overflow-hidden">
               <div className="h-full bg-[var(--color-negative)] rounded-full" style={{ width: `${(totalDebts / totalAssets) * 100}%` }} />

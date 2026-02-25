@@ -206,9 +206,7 @@ public static class ClassificationOutcomeEndpoints
                 ReviewStatus = parsedReviewStatus,
                 DecisionReasonCode = request.DecisionReasonCode.Trim(),
                 DecisionRationale = request.DecisionRationale.Trim(),
-                AgentNoteSummary = string.IsNullOrWhiteSpace(request.AgentNoteSummary)
-                    ? null
-                    : request.AgentNoteSummary.Trim(),
+                AgentNoteSummary = AgentNoteSummaryPolicy.Sanitize(request.AgentNoteSummary),
                 CreatedAtUtc = now,
             };
 

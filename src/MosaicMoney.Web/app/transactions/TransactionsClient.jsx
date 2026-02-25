@@ -6,6 +6,8 @@ import { Search, Filter, ArrowDownRight, ArrowUpRight, Tag, Calendar, FileText, 
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
+
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
@@ -29,12 +31,11 @@ export function TransactionsClient({ initialTransactions }) {
           {selectedTx.description?.charAt(0) || "T"}
         </div>
         <h2 className="text-xl font-display font-bold text-white">{selectedTx.description}</h2>
-        <p className={cn(
-          "text-3xl font-mono font-medium mt-2",
-          selectedTx.rawAmount < 0 ? "text-white" : "text-[var(--color-positive)]"
-        )}>
-          {selectedTx.rawAmount > 0 ? "+" : ""}{selectedTx.rawAmount < 0 ? "-" : ""}${Math.abs(selectedTx.rawAmount).toFixed(2)}
-        </p>
+        <CurrencyDisplay 
+          amount={selectedTx.rawAmount} 
+          isTransfer={selectedTx.excludeFromBudget} 
+          className="text-3xl mt-2 block" 
+        />
         <p className="text-sm text-[var(--color-text-muted)] mt-1">{selectedTx.rawTransactionDate}</p>
       </div>
 
@@ -148,7 +149,9 @@ export function TransactionsClient({ initialTransactions }) {
                     <div className="flex items-center gap-4">
                       <div className={cn(
                         "w-10 h-10 rounded-full flex items-center justify-center",
-                        tx.rawAmount < 0 ? "bg-[var(--color-surface-hover)] text-white" : "bg-[var(--color-positive)]/10 text-[var(--color-positive)]"
+                          tx.excludeFromBudget ? "bg-[var(--color-surface-hover)] text-[var(--color-text-muted)]" :
+                          tx.rawAmount < 0 ? "bg-[var(--color-positive-bg)] text-[var(--color-positive)]" : 
+                          "bg-[var(--color-negative-bg)] text-[var(--color-negative)]"
                       )}>
                         {tx.rawAmount < 0 ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                       </div>
@@ -165,12 +168,11 @@ export function TransactionsClient({ initialTransactions }) {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={cn(
-                        "text-sm font-mono font-medium",
-                        tx.rawAmount < 0 ? "text-white" : "text-[var(--color-positive)]"
-                      )}>
-                        {tx.rawAmount > 0 ? "+" : ""}{tx.rawAmount < 0 ? "-" : ""}${Math.abs(tx.rawAmount).toFixed(2)}
-                      </p>
+                        <CurrencyDisplay 
+                          amount={tx.rawAmount} 
+                          isTransfer={tx.excludeFromBudget} 
+                          className="text-sm block" 
+                        />
                       {tx.reviewStatus === 'NeedsReview' && (
                         <span className="text-[10px] text-[var(--color-warning)] mt-1 block">Needs Review</span>
                       )}

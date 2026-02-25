@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "policy:orchestration": "pwsh -File .github/scripts/test-orchestration-policy-gates.ps1"
+  },
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@fontsource/outfit": "^5.2.8",

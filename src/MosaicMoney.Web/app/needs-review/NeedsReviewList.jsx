@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { reviewTransaction } from "./actions";
+import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
 
 export default function NeedsReviewList({ transactions }) {
   const router = useRouter();
@@ -16,8 +17,8 @@ export default function NeedsReviewList({ transactions }) {
 
   if (!transactions || transactions.length === 0) {
     return (
-      <div data-testid="needs-review-empty" className="bg-white shadow rounded-lg border border-gray-200 p-6">
-        <p className="text-gray-500 text-center py-8">No items need review.</p>
+      <div data-testid="needs-review-empty" className="bg-[var(--color-surface)] shadow rounded-xl border border-[var(--color-border)] p-6">
+        <p className="text-[var(--color-text-muted)] text-center py-8">No items need review.</p>
       </div>
     );
   }
@@ -84,33 +85,37 @@ export default function NeedsReviewList({ transactions }) {
   return (
     <div className="space-y-4">
       {error && (
-        <div data-testid="needs-review-action-error" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div data-testid="needs-review-action-error" className="bg-[var(--color-negative-bg)] border border-[var(--color-negative)] text-[var(--color-negative)] px-4 py-3 rounded-md">
           {error}
         </div>
       )}
       {transactions.map((tx) => (
-        <div key={tx.id} data-testid={`needs-review-item-${tx.id}`} className="bg-white shadow rounded-lg border border-gray-200 p-6">
+        <div key={tx.id} data-testid={`needs-review-item-${tx.id}`} className="bg-[var(--color-surface)] shadow rounded-xl border border-[var(--color-border)] p-6 hover:bg-[var(--color-surface-hover)] transition-colors">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-medium text-gray-900">{tx.description}</h3>
-              <p className="text-sm text-gray-500">
-                {new Date(tx.transactionDate).toLocaleDateString()} &middot; ${tx.amount.toFixed(2)}
-              </p>
+              <h3 className="text-lg font-medium text-white">{tx.description}</h3>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  {new Date(tx.transactionDate).toLocaleDateString()}
+                </p>
+                <span className="text-[var(--color-text-muted)]">&middot;</span>
+                <CurrencyDisplay amount={tx.amount} isTransfer={tx.excludeFromBudget} className="text-sm" />
+              </div>
               {tx.reviewReason && (
-                <p className="mt-2 text-sm text-amber-700 bg-amber-50 p-2 rounded border border-amber-100">
+                <p className="mt-2 text-sm text-[var(--color-warning)] bg-[var(--color-warning)]/10 p-2 rounded border border-[var(--color-warning)]/20">
                   <strong>Reason for review:</strong> {tx.reviewReason}
                 </p>
               )}
               {(tx.userNote || tx.agentNote) && (
                 <div className="mt-3 space-y-1">
                   {tx.userNote && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">User Note:</span> {tx.userNote}
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      <span className="font-medium text-white">User Note:</span> {tx.userNote}
                     </p>
                   )}
                   {tx.agentNote && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-medium">Agent Note:</span> {tx.agentNote}
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      <span className="font-medium text-white">Agent Note:</span> {tx.agentNote}
                     </p>
                   )}
                 </div>
@@ -118,12 +123,12 @@ export default function NeedsReviewList({ transactions }) {
             </div>
             <div className="flex flex-col space-y-2 items-end">
               {reclassifyId === tx.id ? (
-                <div className="flex flex-col space-y-2 items-end bg-gray-50 p-3 rounded border border-gray-200">
+                <div className="flex flex-col space-y-2 items-end bg-[var(--color-surface-hover)] p-3 rounded-lg border border-[var(--color-border)]">
                   <input
                     data-testid={`needs-review-subcategory-${tx.id}`}
                     type="text"
                     placeholder="Subcategory ID (UUID)"
-                    className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="text-sm bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] rounded-md shadow-sm focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] px-3 py-2"
                     value={subcategoryId}
                     onChange={(e) => setSubcategoryId(e.target.value)}
                   />
@@ -131,7 +136,7 @@ export default function NeedsReviewList({ transactions }) {
                     data-testid={`needs-review-reclassify-reason-${tx.id}`}
                     type="text"
                     placeholder="Reason (optional)"
-                    className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="text-sm bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] rounded-md shadow-sm focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] px-3 py-2"
                     value={reviewReason}
                     onChange={(e) => setReviewReason(e.target.value)}
                   />
@@ -139,7 +144,7 @@ export default function NeedsReviewList({ transactions }) {
                     <button
                       data-testid={`needs-review-cancel-reclassify-${tx.id}`}
                       onClick={() => setReclassifyId(null)}
-                      className="text-sm text-gray-500 hover:text-gray-700"
+                      className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
                       disabled={loadingId === tx.id}
                     >
                       Cancel
@@ -147,7 +152,7 @@ export default function NeedsReviewList({ transactions }) {
                     <button
                       data-testid={`needs-review-confirm-reclassify-${tx.id}`}
                       onClick={() => handleReclassify(tx.id)}
-                      className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+                      className="text-sm bg-[var(--color-primary)] text-[var(--color-text-main)] px-3 py-1.5 rounded-md hover:bg-[var(--color-primary-hover)] disabled:opacity-50 transition-colors font-semibold"
                       disabled={loadingId === tx.id}
                     >
                       {loadingId === tx.id ? "Saving..." : "Confirm"}
@@ -155,12 +160,12 @@ export default function NeedsReviewList({ transactions }) {
                   </div>
                 </div>
               ) : rejectId === tx.id ? (
-                <div className="flex flex-col space-y-2 items-end bg-gray-50 p-3 rounded border border-gray-200">
+                <div className="flex flex-col space-y-2 items-end bg-[var(--color-surface-hover)] p-3 rounded-lg border border-[var(--color-border)]">
                   <input
                     data-testid={`needs-review-user-id-${tx.id}`}
                     type="text"
                     placeholder="NeedsReviewByUserId (UUID)"
-                    className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="text-sm bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] rounded-md shadow-sm focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] px-3 py-2"
                     value={needsReviewByUserId}
                     onChange={(e) => setNeedsReviewByUserId(e.target.value)}
                   />
@@ -168,7 +173,7 @@ export default function NeedsReviewList({ transactions }) {
                     data-testid={`needs-review-reject-reason-${tx.id}`}
                     type="text"
                     placeholder="Reason (required)"
-                    className="text-sm border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="text-sm bg-[var(--color-background)] border border-[var(--color-border)] text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] rounded-md shadow-sm focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] px-3 py-2"
                     value={reviewReason}
                     onChange={(e) => setReviewReason(e.target.value)}
                   />
@@ -176,7 +181,7 @@ export default function NeedsReviewList({ transactions }) {
                     <button
                       data-testid={`needs-review-cancel-reject-${tx.id}`}
                       onClick={() => setRejectId(null)}
-                      className="text-sm text-gray-500 hover:text-gray-700"
+                      className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] transition-colors"
                       disabled={loadingId === tx.id}
                     >
                       Cancel
@@ -184,7 +189,7 @@ export default function NeedsReviewList({ transactions }) {
                     <button
                       data-testid={`needs-review-confirm-reject-${tx.id}`}
                       onClick={() => handleReject(tx.id, tx.needsReviewByUserId)}
-                      className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 disabled:opacity-50"
+                      className="text-sm bg-[var(--color-negative)] text-[var(--color-button-ink)] px-3 py-1.5 rounded-md hover:brightness-110 disabled:opacity-50 transition-colors font-semibold"
                       disabled={loadingId === tx.id}
                     >
                       {loadingId === tx.id ? "Saving..." : "Confirm Reject"}
@@ -199,7 +204,7 @@ export default function NeedsReviewList({ transactions }) {
                       setRejectId(tx.id);
                       setReviewReason(tx.reviewReason || "");
                     }}
-                    className="text-sm bg-white border border-red-300 text-red-700 px-3 py-1 rounded hover:bg-red-50 disabled:opacity-50"
+                    className="text-sm bg-[var(--color-reject-bg)] border border-[var(--color-reject-border)] text-[var(--color-reject-text)] px-3 py-1.5 rounded-md hover:bg-[var(--color-reject-bg-hover)] disabled:opacity-50 transition-colors font-semibold"
                     disabled={loadingId === tx.id}
                   >
                     Reject
@@ -207,7 +212,7 @@ export default function NeedsReviewList({ transactions }) {
                   <button
                     data-testid={`needs-review-reclassify-${tx.id}`}
                     onClick={() => setReclassifyId(tx.id)}
-                    className="text-sm bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-50 disabled:opacity-50"
+                    className="text-sm bg-[var(--color-secondary-bg)] border border-[var(--color-secondary-border)] text-[var(--color-secondary-text)] px-3 py-1.5 rounded-md hover:bg-[var(--color-secondary-bg-hover)] disabled:opacity-50 transition-colors font-medium"
                     disabled={loadingId === tx.id}
                   >
                     Reclassify
@@ -215,7 +220,7 @@ export default function NeedsReviewList({ transactions }) {
                   <button
                     data-testid={`needs-review-approve-${tx.id}`}
                     onClick={() => handleApprove(tx.id)}
-                    className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50"
+                    className="text-sm bg-[var(--color-approve-bg)] text-[var(--color-approve-text)] px-3 py-1.5 rounded-md hover:bg-[var(--color-approve-bg-hover)] disabled:opacity-50 transition-colors font-semibold"
                     disabled={loadingId === tx.id}
                   >
                     {loadingId === tx.id ? "Approving..." : "Approve"}

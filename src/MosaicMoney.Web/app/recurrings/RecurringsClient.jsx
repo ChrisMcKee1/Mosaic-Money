@@ -6,6 +6,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Calendar, CheckCircle2, Clock, AlertCircle, RefreshCw, FileText } from "lucide-react";
+import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -58,7 +59,7 @@ export function RecurringsClient({ items }) {
           <RefreshCw className="w-6 h-6 text-[var(--color-primary)]" />
         </div>
         <h2 className="text-xl font-display font-bold text-white">{selectedItem.merchantName || "Unknown Merchant"}</h2>
-        <p className="text-3xl font-mono font-medium text-white mt-2">${selectedItem.expectedAmount.toFixed(2)}</p>
+        <CurrencyDisplay amount={selectedItem.expectedAmount} className="text-3xl font-mono font-medium mt-2 block" />
         
         <div className="flex items-center gap-2 mt-4">
           <span className={cn(
@@ -106,9 +107,7 @@ export function RecurringsClient({ items }) {
                     <p className="text-xs text-[var(--color-text-muted)]">{pastDate}</p>
                   </div>
                 </div>
-                <span className="text-sm font-mono font-medium text-white">
-                  ${selectedItem.expectedAmount.toFixed(2)}
-                </span>
+                <CurrencyDisplay amount={selectedItem.expectedAmount} className="text-sm font-mono font-medium" />
               </div>
             );
           })}
@@ -164,7 +163,7 @@ export function RecurringsClient({ items }) {
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-display font-bold text-white">${totalLeft.toFixed(0)}</span>
+              <CurrencyDisplay amount={totalLeft} className="text-2xl font-display font-bold" />
               <span className="text-xs text-[var(--color-text-muted)]">Left to Pay</span>
             </div>
           </div>
@@ -173,13 +172,13 @@ export function RecurringsClient({ items }) {
               <span className="text-[var(--color-text-muted)] flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[var(--color-positive)]" /> Paid
               </span>
-              <span className="font-mono text-white">${totalPaid.toFixed(2)}</span>
+              <CurrencyDisplay amount={totalPaid} className="font-mono" />
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-[var(--color-text-muted)] flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[var(--color-surface-hover)]" /> Left
               </span>
-              <span className="font-mono text-white">${totalLeft.toFixed(2)}</span>
+              <CurrencyDisplay amount={totalLeft} className="font-mono" />
             </div>
           </div>
         </div>
@@ -217,7 +216,7 @@ export function RecurringsClient({ items }) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono font-medium text-white">${item.expectedAmount.toFixed(2)}</p>
+                    <CurrencyDisplay amount={item.expectedAmount} className="text-sm font-mono font-medium" />
                     <p className="text-xs text-[var(--color-text-muted)] mt-1 capitalize">{item.frequency || "Monthly"}</p>
                   </div>
                 </button>

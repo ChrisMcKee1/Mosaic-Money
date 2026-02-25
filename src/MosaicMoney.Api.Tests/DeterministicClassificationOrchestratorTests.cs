@@ -33,6 +33,10 @@ public sealed class DeterministicClassificationOrchestratorTests
         Assert.Equal(ClassificationStage.Deterministic, stageOutput.Stage);
         Assert.Equal(1, stageOutput.StageOrder);
         Assert.False(stageOutput.EscalatedToNextStage);
+        Assert.Contains(
+            $"Gate decision {ClassificationAmbiguityReasonCodes.DeterministicAccepted}",
+            stageOutput.Rationale,
+            StringComparison.Ordinal);
         Assert.Equal(0, semanticStub.CallCount);
         Assert.Equal(0, mafStub.CallCount);
     }
@@ -80,10 +84,20 @@ public sealed class DeterministicClassificationOrchestratorTests
             .SingleAsync(x => x.Id == result.Outcome.Id);
 
         Assert.Equal(2, persistedOutcome.StageOutputs.Count);
+        var deterministicOutput = persistedOutcome.StageOutputs.Single(x => x.Stage == ClassificationStage.Deterministic);
+        Assert.Contains(
+            $"Gate decision {ClassificationAmbiguityReasonCodes.LowConfidence}",
+            deterministicOutput.Rationale,
+            StringComparison.Ordinal);
+
         var semanticOutput = persistedOutcome.StageOutputs.Single(x => x.Stage == ClassificationStage.Semantic);
         Assert.Equal(2, semanticOutput.StageOrder);
         Assert.Equal(SemanticRetrievalStatusCodes.Ok, semanticOutput.RationaleCode);
         Assert.Equal(seeded.EnergySubcategoryId, semanticOutput.ProposedSubcategoryId);
+        Assert.Contains(
+            $"Fusion decision {ClassificationAmbiguityReasonCodes.LowConfidence}",
+            semanticOutput.Rationale,
+            StringComparison.Ordinal);
         Assert.Equal(1, semanticStub.CallCount);
         Assert.Equal(0, mafStub.CallCount);
     }
@@ -156,8 +170,13 @@ public sealed class DeterministicClassificationOrchestratorTests
                         0.8840m,
                         "maf_graph_top_proposal",
                         "MAF fallback identified the top proposal after deterministic and semantic insufficiency.",
-                        "MAF fallback suggested a review candidate with confidence 0.8840.")
-                ])
+                        "MAF fallback suggested a review candidate with confidence 0.8840.",
+                        "draft_message",
+                        "Draft reminder for user approval.")
+                ],
+                MessagingSendDenied: false,
+                MessagingSendDeniedCount: 0,
+                MessagingSendDeniedActions: null)
         };
 
         var orchestrator = CreateOrchestrator(
@@ -171,6 +190,9 @@ public sealed class DeterministicClassificationOrchestratorTests
         Assert.NotNull(result);
         Assert.Equal(ClassificationDecision.NeedsReview, result!.Outcome.Decision);
         Assert.Equal(TransactionReviewStatus.NeedsReview, result.TransactionReviewStatus);
+        Assert.Equal("maf_graph_top_proposal", result.Outcome.DecisionReasonCode);
+        Assert.Equal(0.8840m, result.Outcome.FinalConfidence);
+        Assert.Contains("MAF fallback identified the top proposal", result.Outcome.DecisionRationale, StringComparison.Ordinal);
         Assert.Null(result.TransactionSubcategoryId);
         Assert.Equal(1, mafStub.CallCount);
 
@@ -215,7 +237,10 @@ public sealed class DeterministicClassificationOrchestratorTests
                 Succeeded: false,
                 StatusCode: MafFallbackGraphStatusCodes.Timeout,
                 StatusMessage: "MAF fallback timed out after 8s.",
-                Proposals: [])
+                Proposals: [],
+                MessagingSendDenied: false,
+                MessagingSendDeniedCount: 0,
+                MessagingSendDeniedActions: null)
         };
 
         var orchestrator = CreateOrchestrator(
@@ -229,6 +254,8 @@ public sealed class DeterministicClassificationOrchestratorTests
         Assert.NotNull(result);
         Assert.Equal(ClassificationDecision.NeedsReview, result!.Outcome.Decision);
         Assert.Equal(TransactionReviewStatus.NeedsReview, result.TransactionReviewStatus);
+        Assert.Equal(MafFallbackGraphStatusCodes.Timeout, result.Outcome.DecisionReasonCode);
+        Assert.Contains("timed out", result.Outcome.DecisionRationale, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, mafStub.CallCount);
 
         var persistedOutcome = await dbContext.TransactionClassificationOutcomes
@@ -244,6 +271,67 @@ public sealed class DeterministicClassificationOrchestratorTests
 
         var transaction = await dbContext.EnrichedTransactions.SingleAsync(x => x.Id == seeded.TransactionId);
         Assert.Null(transaction.SubcategoryId);
+    }
+
+    [Fact]
+    public async Task ClassifyAndPersistAsync_MafFallbackDeniedSendAction_PersistsGuardrailAuditRationale()
+    {
+        await using var dbContext = CreateDbContext();
+        var seeded = await SeedLedgerDataAsync(dbContext, "unknown merchant", -51.33m);
+
+        var semanticStub = new StubSemanticRetrievalService
+        {
+            ResultToReturn = new SemanticRetrievalResult(
+                Succeeded: true,
+                StatusCode: SemanticRetrievalStatusCodes.NoCandidates,
+                StatusMessage: "No semantic candidates met the configured score threshold.",
+                Candidates: [])
+        };
+
+        var mafEligibilityStub = new StubMafFallbackEligibilityGate { IsEligible = true };
+        var mafStub = new StubMafFallbackGraphService
+        {
+            ResultToReturn = new MafFallbackGraphResult(
+                Succeeded: true,
+                StatusCode: MafFallbackGraphStatusCodes.Ok,
+                StatusMessage: "MAF fallback returned schema-valid proposals.",
+                Proposals:
+                [
+                    new MafFallbackProposal(
+                        seeded.EnergySubcategoryId,
+                        0.9030m,
+                        "maf_graph_top_proposal",
+                        "MAF fallback identified a likely category for review.",
+                        "Concise review summary.",
+                        "draft_message",
+                        "Draft text for human review only.")
+                ],
+                MessagingSendDenied: true,
+                MessagingSendDeniedCount: 1,
+                MessagingSendDeniedActions: "send_message")
+        };
+
+        var orchestrator = CreateOrchestrator(
+            dbContext,
+            semanticStub,
+            mafEligibilityGate: mafEligibilityStub,
+            mafFallbackGraphService: mafStub);
+
+        var result = await orchestrator.ClassifyAndPersistAsync(seeded.TransactionId, seeded.ReviewerId);
+
+        Assert.NotNull(result);
+        Assert.Equal(ClassificationDecision.NeedsReview, result!.Outcome.Decision);
+        Assert.Equal(MafFallbackGraphStatusCodes.ExternalMessagingSendDenied, result.Outcome.DecisionReasonCode);
+        Assert.Contains("Guardrail denied 1 external send action", result.Outcome.DecisionRationale, StringComparison.Ordinal);
+
+        var persistedOutcome = await dbContext.TransactionClassificationOutcomes
+            .Include(x => x.StageOutputs)
+            .SingleAsync(x => x.Id == result.Outcome.Id);
+
+        var mafStage = persistedOutcome.StageOutputs.Single(x => x.Stage == ClassificationStage.MafFallback);
+        Assert.Equal(MafFallbackGraphStatusCodes.ExternalMessagingSendDenied, mafStage.RationaleCode);
+        Assert.Contains("Guardrail denied 1 external send action", mafStage.Rationale, StringComparison.Ordinal);
+        Assert.Contains("send_message", mafStage.Rationale, StringComparison.Ordinal);
     }
 
     private static DeterministicClassificationOrchestrator CreateOrchestrator(
@@ -414,7 +502,10 @@ public sealed class DeterministicClassificationOrchestratorTests
             Succeeded: true,
             StatusCode: MafFallbackGraphStatusCodes.NoProposals,
             StatusMessage: "MAF fallback did not return any schema-valid proposals above threshold.",
-            Proposals: []);
+            Proposals: [],
+            MessagingSendDenied: false,
+            MessagingSendDeniedCount: 0,
+            MessagingSendDeniedActions: null);
 
         public Task<MafFallbackGraphResult> ExecuteAsync(
             MafFallbackGraphRequest request,

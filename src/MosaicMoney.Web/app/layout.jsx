@@ -27,7 +27,28 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${jakarta.variable} ${jetbrains.variable} dark`}>
+    <html
+      lang="en"
+      data-theme="dark"
+      suppressHydrationWarning
+      className={`${outfit.variable} ${jakarta.variable} ${jetbrains.variable}`}
+    >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (() => {
+                try {
+                  const key = 'mosaic-theme';
+                  const saved = localStorage.getItem(key);
+                  const theme = saved === 'light' ? 'light' : 'dark';
+                  document.documentElement.dataset.theme = theme;
+                } catch {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="bg-background text-text-main antialiased selection:bg-primary selection:text-background">
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:p-4 focus:bg-surface focus:text-primary focus:z-50">
           Skip to main content

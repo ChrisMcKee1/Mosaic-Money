@@ -201,7 +201,7 @@ File-based AppHost commands:
 dotnet user-secrets set "Parameters:azure-openai-endpoint" "https://<resource>.openai.azure.com/" --file src/apphost.cs
 dotnet user-secrets set "Parameters:azure-openai-api-key" "<azure-openai-api-key>" --file src/apphost.cs
 dotnet user-secrets set "Parameters:azure-openai-embedding-deployment" "text-embedding-3-small" --file src/apphost.cs
-dotnet user-secrets set "Parameters:azure-openai-chat-deployment" "gpt-4.1-mini" --file src/apphost.cs
+dotnet user-secrets set "Parameters:azure-openai-chat-deployment" "gpt-5.2" --file src/apphost.cs
 dotnet user-secrets list --file src/apphost.cs
 
 # Enable Azure embeddings in API runtime (project-based user-secrets)

@@ -21,6 +21,8 @@ Implement a distinctive, production-grade frontend interface with high design qu
 | MM-FE-14 | `mosaic-money-frontend` | In Review | **Categories & Budgeting Screen**: Implement total spent vs budget donut chart, detailed progress bars for regular categories. Right panel for category breakdown and historical bar chart. |
 | MM-FE-15 | `mosaic-money-frontend` | In Review | **Investments Screen**: Implement live balance estimate chart, top movers widget, and account list with 1W balance change. Right panel for specific asset details (e.g., Crypto chart and positions). |
 | MM-FE-16 | `mosaic-money-frontend` | In Review | **Recurrings Screen**: Implement left to pay vs paid so far donut chart, list of recurring transactions with status (paid, overdue, upcoming). Right panel for recurring rule details and history. |
+| MM-FE-18 | `mosaic-money-frontend` | Not Started | **Semantic Search & Reranked Typeahead (Web)**: Upgrade all web search inputs/dropdowns to use semantic retrieval + reranking so related intents (for example `utilities` and `water`) surface relevant results even when exact labels differ. |
+| MM-MOB-09 | `mosaic-money-mobile` | Not Started | **Semantic Search & Reranked Pickers (Mobile)**: Apply the same semantic retrieval + reranking behavior to mobile search and picker experiences to preserve cross-surface AI-enabled discovery quality. |
 
 ## Implementation Guidelines
 - Follow the `frontend-design` skill principles.

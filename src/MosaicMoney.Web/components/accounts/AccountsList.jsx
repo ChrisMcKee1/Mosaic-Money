@@ -2,6 +2,7 @@
 
 import { Wallet, CreditCard, Building, Landmark, TrendingUp, MoreHorizontal } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { CurrencyDisplay } from "../ui/CurrencyDisplay";
 
 const generateSparklineData = (base, isPositive) => {
   return Array.from({ length: 10 }).map((_, i) => ({
@@ -40,9 +41,7 @@ export function AccountsList({ accounts }) {
                 {getIcon(type)}
                 {type}
               </h2>
-              <span className={`font-mono font-medium ${isPositive ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}>
-                {isPositive ? '' : '-'}${Math.abs(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
+              <CurrencyDisplay amount={total} type="balance" className="font-mono font-medium" />
             </div>
 
             <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
@@ -87,9 +86,7 @@ export function AccountsList({ accounts }) {
                       </div>
 
                       <div className="text-right flex items-center gap-4">
-                        <p className={`text-sm font-mono font-medium ${isAccPositive ? 'text-white' : 'text-[var(--color-negative)]'}`}>
-                          {isAccPositive ? '' : '-'}${Math.abs(account.balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
+                        <CurrencyDisplay amount={account.balance} type="balance" className="text-sm font-mono font-medium" />
                         <button className="p-1.5 text-[var(--color-text-muted)] hover:text-white rounded-md hover:bg-[var(--color-surface)] transition-colors">
                           <MoreHorizontal className="w-4 h-4" />
                         </button>

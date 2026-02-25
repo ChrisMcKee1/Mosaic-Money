@@ -90,7 +90,135 @@ public sealed class MafFallbackGraphServiceTests
         Assert.Equal(allowedA, result.Proposals[0].ProposedSubcategoryId);
         Assert.Equal(0.9123m, result.Proposals[0].Confidence);
         Assert.Equal(allowedB, result.Proposals[1].ProposedSubcategoryId);
+                Assert.False(result.MessagingSendDenied);
+                Assert.Equal(0, result.MessagingSendDeniedCount);
     }
+
+        [Fact]
+        public async Task ExecuteAsync_SendActionDenied_ReturnsAuditableGuardrailStatus()
+        {
+                var allowed = Guid.NewGuid();
+
+                var payload = $$"""
+                {
+                    "proposals": [
+                        {
+                            "proposedSubcategoryId": "{{allowed}}",
+                            "confidence": 0.9500,
+                            "rationaleCode": "maf_send_action",
+                            "rationale": "Attempting direct outbound send.",
+                            "agentNoteSummary": "Should be blocked.",
+                            "proposedAction": "send_message",
+                            "proposedExternalMessageDraft": "Draft-only content"
+                        }
+                    ]
+                }
+                """;
+
+                var executor = new StubMafFallbackGraphExecutor(_ => Task.FromResult(payload));
+                var service = CreateService(
+                        executor,
+                        new MafFallbackGraphOptions
+                        {
+                                Enabled = true,
+                                TimeoutSeconds = 8,
+                                MaxProposals = 3,
+                                MinimumProposalConfidence = 0.7m,
+                        });
+
+                var result = await service.ExecuteAsync(BuildRequest(allowed));
+
+                Assert.True(result.Succeeded);
+                Assert.Equal(MafFallbackGraphStatusCodes.ExternalMessagingSendDenied, result.StatusCode);
+                Assert.True(result.MessagingSendDenied);
+                Assert.Equal(1, result.MessagingSendDeniedCount);
+                Assert.Equal("send_message", result.MessagingSendDeniedActions);
+                Assert.Empty(result.Proposals);
+        }
+
+            [Fact]
+            public async Task ExecuteAsync_CustomSendPrefixedAction_IsDeniedFailClosed()
+            {
+                var allowed = Guid.NewGuid();
+
+                var payload = $$"""
+                {
+                    "proposals": [
+                        {
+                            "proposedSubcategoryId": "{{allowed}}",
+                            "confidence": 0.9400,
+                            "rationaleCode": "maf_custom_send_action",
+                            "rationale": "Attempted custom outbound send operation.",
+                            "agentNoteSummary": "Should be denied by send_* guardrail.",
+                            "proposedAction": "send_whatsapp",
+                            "proposedExternalMessageDraft": "Draft-only content"
+                        }
+                    ]
+                }
+                """;
+
+                var executor = new StubMafFallbackGraphExecutor(_ => Task.FromResult(payload));
+                var service = CreateService(
+                    executor,
+                    new MafFallbackGraphOptions
+                    {
+                        Enabled = true,
+                        TimeoutSeconds = 8,
+                        MaxProposals = 3,
+                        MinimumProposalConfidence = 0.7m,
+                    });
+
+                var result = await service.ExecuteAsync(BuildRequest(allowed));
+
+                Assert.True(result.Succeeded);
+                Assert.Equal(MafFallbackGraphStatusCodes.ExternalMessagingSendDenied, result.StatusCode);
+                Assert.True(result.MessagingSendDenied);
+                Assert.Equal(1, result.MessagingSendDeniedCount);
+                Assert.Equal("send_whatsapp", result.MessagingSendDeniedActions);
+                Assert.Empty(result.Proposals);
+            }
+
+        [Fact]
+        public async Task ExecuteAsync_TranscriptStyleAgentSummary_SuppressesStoredSummary()
+        {
+                var allowed = Guid.NewGuid();
+
+                var payload = $$"""
+                {
+                    "proposals": [
+                        {
+                            "proposedSubcategoryId": "{{allowed}}",
+                            "confidence": 0.9300,
+                            "rationaleCode": "maf_candidate",
+                            "rationale": "Candidate remains review-bound.",
+                            "agentNoteSummary": "User: classify this transaction. Assistant: running tools now. Tool output: {\"tool\":\"search\",\"result\":\"...\"}",
+                            "proposedAction": "draft_message",
+                            "proposedExternalMessageDraft": "Here is a draft for your review."
+                        }
+                    ]
+                }
+                """;
+
+                var executor = new StubMafFallbackGraphExecutor(_ => Task.FromResult(payload));
+                var service = CreateService(
+                        executor,
+                        new MafFallbackGraphOptions
+                        {
+                                Enabled = true,
+                                TimeoutSeconds = 8,
+                                MaxProposals = 3,
+                                MinimumProposalConfidence = 0.7m,
+                        });
+
+                var result = await service.ExecuteAsync(BuildRequest(allowed));
+
+                Assert.True(result.Succeeded);
+                Assert.Equal(MafFallbackGraphStatusCodes.Ok, result.StatusCode);
+                var proposal = Assert.Single(result.Proposals);
+                Assert.Equal(AgentNoteSummaryPolicy.SuppressedSummary, proposal.AgentNoteSummary);
+                Assert.Equal("draft_message", proposal.ProposedAction);
+                Assert.Equal("Here is a draft for your review.", proposal.ProposedExternalMessageDraft);
+        }
 
     [Fact]
     public async Task ExecuteAsync_InvalidSchema_ReturnsSchemaValidationFailure()

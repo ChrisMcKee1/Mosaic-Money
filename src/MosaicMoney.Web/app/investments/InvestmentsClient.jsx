@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TrendingUp, TrendingDown, Activity, Briefcase, Bitcoin, Shield } from "lucide-react";
+import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -80,13 +81,13 @@ export function InvestmentsClient({ accounts }) {
         <p className="text-sm text-[var(--color-text-muted)]">{selectedAccount.type}</p>
         
         <div className="mt-4">
-          <p className="text-3xl font-mono font-medium text-white">${selectedAccount.balance.toFixed(2)}</p>
+          <CurrencyDisplay type="balance" amount={selectedAccount.balance} className="text-3xl font-mono font-medium" />
           <div className={cn(
             "flex items-center gap-1 text-sm font-medium mt-1",
             selectedAccount.change1W >= 0 ? "text-[var(--color-positive)]" : "text-[var(--color-negative)]"
           )}>
             {selectedAccount.change1W >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-            {selectedAccount.change1W >= 0 ? "+" : ""}${Math.abs(selectedAccount.change1W).toFixed(2)} ({selectedAccount.change1WPercent > 0 ? "+" : ""}{selectedAccount.change1WPercent.toFixed(2)}%)
+            <CurrencyDisplay type="balance" amount={selectedAccount.change1W} className="font-mono" /> ({selectedAccount.change1WPercent > 0 ? "+" : ""}{selectedAccount.change1WPercent.toFixed(2)}%)
           </div>
         </div>
       </div>
@@ -135,7 +136,7 @@ export function InvestmentsClient({ accounts }) {
                 <p className="text-xs text-[var(--color-text-muted)]">{pos.shares} shares</p>
               </div>
               <div className="text-right">
-                <p className="text-sm font-mono font-medium text-white">${pos.value.toFixed(2)}</p>
+                <CurrencyDisplay type="balance" amount={pos.value} className="text-sm font-mono font-medium" />
                 <p className={cn(
                   "text-xs font-medium",
                   pos.change >= 0 ? "text-[var(--color-positive)]" : "text-[var(--color-negative)]"
@@ -171,13 +172,13 @@ export function InvestmentsClient({ accounts }) {
         <div className="mb-6">
           <p className="text-sm font-medium text-[var(--color-text-muted)] mb-1">Total Portfolio Value</p>
           <div className="flex items-end gap-4">
-            <p className="text-4xl font-display font-bold text-white">${totalBalance.toFixed(2)}</p>
+            <CurrencyDisplay type="balance" amount={totalBalance} className="text-4xl font-display font-bold" />
             <div className={cn(
               "flex items-center gap-1 text-sm font-medium mb-1 px-2 py-1 rounded-md",
               totalChange1W >= 0 ? "bg-[var(--color-positive)]/10 text-[var(--color-positive)]" : "bg-[var(--color-negative)]/10 text-[var(--color-negative)]"
             )}>
               {totalChange1W >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              {totalChange1W >= 0 ? "+" : ""}${Math.abs(totalChange1W).toFixed(2)} ({totalChange1WPercent > 0 ? "+" : ""}{totalChange1WPercent.toFixed(2)}%) 1W
+              <CurrencyDisplay type="balance" amount={totalChange1W} className="font-mono" /> ({totalChange1WPercent > 0 ? "+" : ""}{totalChange1WPercent.toFixed(2)}%) 1W
             </div>
           </div>
         </div>
@@ -249,7 +250,7 @@ export function InvestmentsClient({ accounts }) {
                   {Math.abs(asset.change).toFixed(1)}%
                 </div>
               </div>
-              <p className="text-lg font-mono font-medium text-white">${asset.price.toFixed(2)}</p>
+              <CurrencyDisplay type="balance" amount={asset.price} className="text-lg font-mono font-medium" />
             </div>
           ))}
         </div>
@@ -279,12 +280,12 @@ export function InvestmentsClient({ accounts }) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-mono font-medium text-white">${acc.balance.toFixed(2)}</p>
+                  <CurrencyDisplay type="balance" amount={acc.balance} className="text-sm font-mono font-medium" />
                   <p className={cn(
                     "text-xs font-medium mt-0.5",
                     acc.change1W >= 0 ? "text-[var(--color-positive)]" : "text-[var(--color-negative)]"
                   )}>
-                    {acc.change1W >= 0 ? "+" : ""}${Math.abs(acc.change1W).toFixed(2)}
+                    {acc.change1W >= 0 ? "+" : ""}<CurrencyDisplay type="balance" amount={acc.change1W} className="inline" />
                   </p>
                 </div>
               </button>

@@ -37,6 +37,18 @@ build/
 playwright-report/
 test-results/
 blob-report/
+.playwright-cli/
+**/.playwright-cli/
+
+# Playwright CLI temp captures
+.playwright-cli/**/*.yml
+.playwright-cli/**/*.yaml
+.playwright-cli/**/*.log
+.playwright-cli/**/*.png
+.playwright-cli/**/*.jpg
+.playwright-cli/**/*.jpeg
+.playwright-cli/**/*.webp
+.playwright-cli/**/*.gif
 
 # Environment files (block real secrets)
 .env

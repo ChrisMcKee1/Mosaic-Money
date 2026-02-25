@@ -56,9 +56,9 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 |---|---|---|---|---|---|
 | MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. | Done |
 | MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | In Progress |
-| MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Not Started |
+| MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Done |
 | MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | In Review |
-| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | Not Started |
+| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | In Progress |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Done |
 | MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Done |
 | MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | In Review |
@@ -70,6 +70,14 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-BE-17 | Backend | Plaid Recurring Transactions Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/transactions/recurring/get`. | Done |
 | MM-BE-18 | Backend | Net Worth History Aggregation API | MM-BE-15 | API endpoint to aggregate historical balances across all account types. | Done |
 | MM-FE-17 | Web | Wire M5 Dashboard UI to Backend APIs | MM-BE-16, MM-BE-17, MM-BE-18 | `page.jsx` fetches real data for Net Worth, Asset Allocation, Recent Transactions, Recurring, and Debt. | Done |
+
+Implementation note (2026-02-24): `MM-AI-11` now has a concrete release-blocker evaluation gate in `src/MosaicMoney.Api.Tests/AgenticEvalReleaseGate.cs` with executable checks in `src/MosaicMoney.Api.Tests/AgenticEvalReleaseGateTests.cs`.
+- Routing correctness threshold: `>= 95%` labeled staged-routing scenarios.
+- Ambiguity fail-closed threshold: `100%` route-to-`NeedsReview` compliance.
+- External messaging hard-stop threshold: `100%` deny for outbound `send_*`/`notify_external_system` actions while preserving draft-only behavior.
+- Explainability threshold: `>= 95%` `AgentNote` summary policy compliance (concise, bounded, transcript-safe).
+- Evidence command: `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~AgenticEvalReleaseGateTests"`.
+- Status remains `In Progress` pending planner review and project-board synchronization.
 
 ## Verification Matrix
 | Area | Validation | Pass Criteria |
