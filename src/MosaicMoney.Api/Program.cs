@@ -63,9 +63,29 @@ builder.Services.AddScoped<ITransactionEmbeddingQueueProcessor, TransactionEmbed
 builder.Services.AddHostedService<TransactionEmbeddingQueueBackgroundService>();
 builder.Services.AddHostedService<PlaidTransactionsSyncBackgroundService>();
 
+var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+if (allowedCorsOrigins.Length > 0)
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy
+                .WithOrigins(allowedCorsOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    });
+}
+
 var app = builder.Build();
 
 await ApplyMigrationsAsync(app);
+
+if (allowedCorsOrigins.Length > 0)
+{
+    app.UseCors();
+}
 
 app.MapDefaultEndpoints();
 app.MapMosaicMoneyApi();

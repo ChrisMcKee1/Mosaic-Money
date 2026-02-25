@@ -1,12 +1,6 @@
 import { useCallback, useRef, useState } from "react";
-import {
-  LinkIOSPresentationStyle,
-  LinkLogLevel,
-  create,
-  open,
-  type LinkExit,
-  type LinkSuccess,
-} from "react-native-plaid-link-sdk";
+import { Platform } from "react-native";
+import type { LinkExit, LinkSuccess } from "react-native-plaid-link-sdk";
 import { toReadableError } from "../../../shared/services/mobileApiClient";
 import type { PlaidPublicTokenExchangeResultDto } from "../contracts";
 import {
@@ -35,6 +29,20 @@ export interface PlaidLinkOnboardingState {
   start: () => Promise<void>;
   openLink: () => Promise<void>;
   reset: () => void;
+}
+
+type PlaidLinkSdk = typeof import("react-native-plaid-link-sdk");
+
+function getPlaidSdk(): PlaidLinkSdk | null {
+  if (Platform.OS === "web") {
+    return null;
+  }
+
+  try {
+    return require("react-native-plaid-link-sdk") as PlaidLinkSdk;
+  } catch {
+    return null;
+  }
 }
 
 function createClientUserId(): string {
@@ -93,6 +101,13 @@ export function usePlaidLinkOnboarding(): PlaidLinkOnboardingState {
   );
 
   const start = useCallback(async () => {
+    const plaidSdk = getPlaidSdk();
+    if (!plaidSdk) {
+      setError("Plaid Link is unavailable in this runtime. Use a native iOS or Android target.");
+      setStatus("error");
+      return;
+    }
+
     setStatus("issuingToken");
     setError(null);
     setExchangeResult(null);
@@ -108,10 +123,10 @@ export function usePlaidLinkOnboarding(): PlaidLinkOnboardingState {
       });
 
       await Promise.resolve(
-        create({
+        plaidSdk.create({
           token: issued.linkToken,
           noLoadingState: false,
-          logLevel: LinkLogLevel.INFO,
+          logLevel: plaidSdk.LinkLogLevel.INFO,
         }),
       );
 
@@ -126,6 +141,13 @@ export function usePlaidLinkOnboarding(): PlaidLinkOnboardingState {
   }, []);
 
   const openLink = useCallback(async () => {
+    const plaidSdk = getPlaidSdk();
+    if (!plaidSdk) {
+      setError("Plaid Link is unavailable in this runtime. Use a native iOS or Android target.");
+      setStatus("error");
+      return;
+    }
+
     if (!linkTokenRef.current || !linkSessionIdRef.current) {
       setError("A Link session is not ready. Start a new secure session first.");
       setStatus("error");
@@ -186,15 +208,15 @@ export function usePlaidLinkOnboarding(): PlaidLinkOnboardingState {
     };
 
     try {
-      open({
+      plaidSdk.open({
         onSuccess: (success) => {
           void handleSuccess(success);
         },
         onExit: (exit) => {
           void handleExit(exit);
         },
-        iOSPresentationStyle: LinkIOSPresentationStyle.FULL_SCREEN,
-        logLevel: LinkLogLevel.INFO,
+        iOSPresentationStyle: plaidSdk.LinkIOSPresentationStyle.FULL_SCREEN,
+        logLevel: plaidSdk.LinkLogLevel.INFO,
       });
     } catch (openError) {
       setError(toReadableError(openError, "Unable to launch Plaid Link in this runtime."));
