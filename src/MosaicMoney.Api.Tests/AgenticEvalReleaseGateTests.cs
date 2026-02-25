@@ -7,6 +7,7 @@ namespace MosaicMoney.Api.Tests;
 public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
 {
     private const string EvidencePathEnvironmentVariableName = "MM_AI_11_EVIDENCE_PATH";
+    private const string OfficialEvaluatorEvidencePathEnvironmentVariableName = "MM_AI_12_EVIDENCE_PATH";
 
     [Fact]
     public async Task EvaluateAsync_AllCriteriaMeetReleaseBlockingThresholds()
@@ -15,6 +16,7 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
 
         WriteReportToOutput(report);
         TryWriteEvidenceArtifact(report);
+        TryWriteOfficialEvaluatorReplayArtifact(report);
 
         Assert.True(report.IsReleaseReady, report.ToFailureMessage());
     }
@@ -54,6 +56,13 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
                 criterion.Passed,
                 criterion.Evidence);
         }
+
+        output.WriteLine(
+            "official_evaluator_stack: dotnetLoaded={0}, foundryConfigured={1}, failClosed={2}, note={3}",
+            report.OfficialEvaluatorStack.ExecutionReadiness.DotNetEvaluatorTypesLoaded,
+            report.OfficialEvaluatorStack.ExecutionReadiness.FoundryCloudEvaluatorsConfigured,
+            report.OfficialEvaluatorStack.ExecutionReadiness.FailClosedIfCloudUnavailable,
+            report.OfficialEvaluatorStack.ExecutionReadiness.ReadinessNote);
     }
 
     private void TryWriteEvidenceArtifact(AgenticEvalReleaseGateReport report)
@@ -76,6 +85,7 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
             EvaluatedAtUtc: DateTimeOffset.UtcNow,
             Result: report.IsReleaseReady ? "GO" : "NO_GO",
             IsReleaseReady: report.IsReleaseReady,
+            OfficialEvaluatorStack: report.OfficialEvaluatorStack,
             Criteria:
             [
                 .. report.Criteria.Select(static criterion => new AgenticEvalReleaseGateCriterionEvidence(
@@ -99,11 +109,50 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
         output.WriteLine("{0}: evidence artifact written to {1}", report.GateId, resolvedPath);
     }
 
+    private void TryWriteOfficialEvaluatorReplayArtifact(AgenticEvalReleaseGateReport report)
+    {
+        var evidencePath = Environment.GetEnvironmentVariable(OfficialEvaluatorEvidencePathEnvironmentVariableName);
+        if (string.IsNullOrWhiteSpace(evidencePath))
+        {
+            return;
+        }
+
+        var resolvedPath = Path.GetFullPath(evidencePath);
+        var directoryPath = Path.GetDirectoryName(resolvedPath);
+        if (!string.IsNullOrWhiteSpace(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
+
+        var artifact = new AgenticEvalOfficialEvaluatorReplayEvidence(
+            GateId: report.GateId,
+            ProfileId: report.OfficialEvaluatorStack.ProfileId,
+            EvaluatedAtUtc: DateTimeOffset.UtcNow,
+            SourceLinks: report.OfficialEvaluatorStack.SourceLinks,
+            DotNetPackageReferences: report.OfficialEvaluatorStack.DotNetPackageReferences,
+            DotNetComponentTypeAnchors: report.OfficialEvaluatorStack.DotNetComponentTypeAnchors,
+            DatasetSchema: report.OfficialEvaluatorStack.DatasetSchema,
+            CriteriaMappings: report.OfficialEvaluatorStack.CriteriaMappings,
+            ExecutionReadiness: report.OfficialEvaluatorStack.ExecutionReadiness,
+            Notes: report.OfficialEvaluatorStack.Notes);
+
+        var serializedArtifact = JsonSerializer.Serialize(
+            artifact,
+            new JsonSerializerOptions
+            {
+                WriteIndented = true,
+            });
+
+        File.WriteAllText(resolvedPath, serializedArtifact);
+        output.WriteLine("{0}: official evaluator replay artifact written to {1}", report.GateId, resolvedPath);
+    }
+
     private sealed record AgenticEvalReleaseGateEvidence(
         string GateId,
         DateTimeOffset EvaluatedAtUtc,
         string Result,
         bool IsReleaseReady,
+        AgenticEvalOfficialEvaluatorStackSnapshot OfficialEvaluatorStack,
         IReadOnlyList<AgenticEvalReleaseGateCriterionEvidence> Criteria);
 
     private sealed record AgenticEvalReleaseGateCriterionEvidence(
@@ -114,4 +163,16 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
         int TotalChecks,
         bool Passed,
         string Evidence);
+
+    private sealed record AgenticEvalOfficialEvaluatorReplayEvidence(
+        string GateId,
+        string ProfileId,
+        DateTimeOffset EvaluatedAtUtc,
+        IReadOnlyList<string> SourceLinks,
+        IReadOnlyList<string> DotNetPackageReferences,
+        IReadOnlyList<string> DotNetComponentTypeAnchors,
+        IReadOnlyList<AgenticEvalOfficialDatasetField> DatasetSchema,
+        IReadOnlyList<AgenticEvalOfficialCriterionMapping> CriteriaMappings,
+        AgenticEvalOfficialExecutionReadiness ExecutionReadiness,
+        string Notes);
 }

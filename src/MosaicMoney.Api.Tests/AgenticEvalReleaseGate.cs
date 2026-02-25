@@ -17,7 +17,8 @@ internal sealed record AgenticEvalReleaseGateCriterion(
 internal sealed record AgenticEvalReleaseGateReport(
     string GateId,
     IReadOnlyList<AgenticEvalReleaseGateCriterion> Criteria,
-    bool IsReleaseReady)
+    bool IsReleaseReady,
+    AgenticEvalOfficialEvaluatorStackSnapshot OfficialEvaluatorStack)
 {
     public AgenticEvalReleaseGateCriterion GetCriterion(string criterionName)
     {
@@ -45,6 +46,9 @@ internal sealed record AgenticEvalReleaseGateReport(
                 $"- {criterion.Name}: score={criterion.Score:F4}, threshold={criterion.Threshold:F4}, checks={criterion.PassedChecks}/{criterion.TotalChecks}, evidence={criterion.Evidence}");
         }
 
+        lines.Add(
+            $"- official_evaluator_stack: dotnetLoaded={OfficialEvaluatorStack.ExecutionReadiness.DotNetEvaluatorTypesLoaded}, foundryConfigured={OfficialEvaluatorStack.ExecutionReadiness.FoundryCloudEvaluatorsConfigured}, failClosed={OfficialEvaluatorStack.ExecutionReadiness.FailClosedIfCloudUnavailable}");
+
         return string.Join(Environment.NewLine, lines);
     }
 }
@@ -69,6 +73,7 @@ internal static class AgenticEvalReleaseGate
         var ambiguity = EvaluateAmbiguityFailClosedBehavior();
         var messaging = await EvaluateExternalMessagingHardStopBehaviorAsync(cancellationToken);
         var explainability = EvaluateAgentNoteExplainabilityBehavior();
+        var officialEvaluatorStack = AgenticEvalOfficialEvaluatorStack.BuildSnapshot();
 
         var criteria = new[]
         {
@@ -81,7 +86,8 @@ internal static class AgenticEvalReleaseGate
         return new AgenticEvalReleaseGateReport(
             GateId,
             criteria,
-            criteria.All(x => x.Passed));
+            criteria.All(x => x.Passed),
+            officialEvaluatorStack);
     }
 
     private static AgenticEvalReleaseGateCriterion EvaluateRoutingCorrectness()

@@ -65,7 +65,7 @@ Deliver a bounded, auditable AI escalation pipeline that executes in strict orde
 | MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | Done |
 | MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | Done |
 | MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Pipeline emits final classification or `NeedsReview` with traceable stage-by-stage rationale. | Done |
-| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Add .NET evaluator libraries and Foundry evaluator/graders workflow with rerunnable documentation-backed instructions, dataset mappings, and CI evidence artifacts. | Not Started |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Add .NET evaluator libraries and Foundry evaluator/graders workflow with rerunnable documentation-backed instructions, dataset mappings, and CI evidence artifacts. | In Review |
 
 Implementation note (2026-02-23): `MM-AI-05` now includes an advisory PostgreSQL semantic retrieval contract that reads existing transaction embeddings (`pgvector` cosine distance), returns bounded candidates with normalized `[0..1]` scores, and emits explicit provenance (`ProvenanceSource`, `ProvenanceReference`, `ProvenancePayloadJson`). Deterministic stage remains first and authoritative for decisioning; semantic stage evidence is appended only after deterministic `NeedsReview` routing and does not auto-categorize independently.
 
@@ -74,6 +74,12 @@ Implementation note (2026-02-23): `MM-AI-07` now adds an explicit eligibility ga
 Implementation note (2026-02-24): `MM-AI-10` orchestration now persists stage-level rationale that includes escalation policy context (deterministic gate + semantic fusion decisions) and promotes stage-3 MAF rationale into the final persisted outcome when fallback executes. Guardrail denials and fallback failures remain fail-closed to `NeedsReview` with auditable reason codes.
 
 Implementation note (2026-02-24): `MM-AI-08` and `MM-AI-09` are promoted to `Done` after planner review with focused verification (`MafFallbackGraphServiceTests`, `AgentNoteSummaryPolicyTests`, and `AgenticEvalReleaseGateTests`) passing on .NET 10.
+
+Implementation note (2026-02-25): `MM-AI-12` implementation is in review with official evaluator stack integration points added to the existing `MM-AI-11` release-gate workflow.
+- `.NET` evaluator package anchors are now wired in test infrastructure (`Microsoft.Extensions.AI.Evaluation`, `Quality`, `Safety`, `Reporting`) with fail-closed behavior when Foundry cloud prerequisites are unavailable.
+- Release-gate evidence now emits an official evaluator replay artifact at `artifacts/release-gates/mm-ai-12/latest.json` through `.github/scripts/run-mm-ai-11-release-gate.ps1` (`-OfficialEvaluatorOutputPath` override supported).
+- Mapping coverage includes all `MM-AI-11` criteria and reusable dataset fields (`query`, `response`, `tool_definitions`, `actions`, `expected_actions`, `ground_truth`) for rerunnable replay scenarios.
+- Task status is now `In Review` after focused offline validation (`AgenticEvalOfficialEvaluatorStackTests`, `AgenticEvalOfficialEvaluatorArtifactsTests`, `AgenticEvalReleaseGateTests`) and release-gate script replay; cloud-run evidence is still required before `Done`.
 
 ## MM-AI-12 Documentation Replay Pack
 Use this runbook verbatim when restarting evaluator modernization work after a pause. Do not mark `MM-AI-12` done without producing all artifacts listed below.

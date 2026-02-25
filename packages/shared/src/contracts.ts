@@ -115,6 +115,13 @@ export interface PlaidPublicTokenExchangeResultDto {
   storedAtUtc: string;
 }
 
+export interface PlaidPublicTokenExchangeRequest {
+  publicToken: string;
+  linkSessionId: string;
+  institutionId?: string;
+  institutionName?: string;
+}
+
 export interface RecurringItemDto {
   id: string;
   householdId: string;
