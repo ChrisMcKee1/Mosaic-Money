@@ -44,12 +44,12 @@ $issues = @(
     @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="Done" }        # MM-BE-14
     @{ num=20; nid="I_kwDORVI-G87tOjF8"; status="Done" }        # MM-FE-04
     @{ num=21; nid="I_kwDORVI-G87tOjHr"; status="Done" }        # MM-FE-05
-    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="Parked" }      # MM-FE-09
+    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="Not Started" } # MM-FE-09
     @{ num=23; nid="I_kwDORVI-G87tOjN9"; status="Done" }        # MM-MOB-02
     @{ num=24; nid="I_kwDORVI-G87tOjRE"; status="Done" }        # MM-MOB-03
     @{ num=25; nid="I_kwDORVI-G87tOjTk"; status="Done" }        # MM-MOB-04
     @{ num=26; nid="I_kwDORVI-G87tOjWi"; status="Done" }        # MM-MOB-05
-    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="Parked" }      # MM-MOB-08
+    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="Not Started" } # MM-MOB-08
     @{ num=64; nid="I_kwDORVI-G87tRGKo"; status="Done" }        # MM-BE-15
 
     # --- M3: Ingestion, Recurring, Reimbursements & Projections (all Done) ---
@@ -76,19 +76,19 @@ $issues = @(
     @{ num=46; nid="I_kwDORVI-G87tOleY"; status="Done" }        # MM-AI-05
     @{ num=47; nid="I_kwDORVI-G87tOljK"; status="Done" }        # MM-AI-06
     @{ num=48; nid="I_kwDORVI-G87tOloV"; status="Done" }        # MM-AI-07
-    @{ num=49; nid="I_kwDORVI-G87tOlqE"; status="In Review" } # MM-AI-08
-    @{ num=50; nid="I_kwDORVI-G87tOlr1"; status="In Review" } # MM-AI-09
-    @{ num=51; nid="I_kwDORVI-G87tOltb"; status="Not Started" } # MM-AI-10
+    @{ num=49; nid="I_kwDORVI-G87tOlqE"; status="Done" }      # MM-AI-08
+    @{ num=50; nid="I_kwDORVI-G87tOlr1"; status="Done" }      # MM-AI-09
+    @{ num=51; nid="I_kwDORVI-G87tOltb"; status="Done" }      # MM-AI-10
 
     # --- M5: UX Completion & Release Gates ---
     @{ num=52; nid="I_kwDORVI-G87tOmSr"; status="Done" }        # MM-ASP-05
     @{ num=53; nid="I_kwDORVI-G87tOmXP"; status="In Progress" } # MM-ASP-06
     @{ num=54; nid="I_kwDORVI-G87tOmY-"; status="Done" } # MM-ASP-07
-    @{ num=55; nid="I_kwDORVI-G87tOmat"; status="In Review" }   # MM-BE-11
-    @{ num=56; nid="I_kwDORVI-G87tOmey"; status="Not Started" } # MM-AI-11
+    @{ num=55; nid="I_kwDORVI-G87tOmat"; status="Done" }        # MM-BE-11
+    @{ num=56; nid="I_kwDORVI-G87tOmey"; status="Done" }        # MM-AI-11
     @{ num=57; nid="I_kwDORVI-G87tOmgs"; status="Done" }        # MM-FE-08
     @{ num=58; nid="I_kwDORVI-G87tOmjY"; status="Done" }        # MM-MOB-07.1
-    @{ num=59; nid="I_kwDORVI-G87tOmlT"; status="In Review" }   # MM-MOB-07.2
+    @{ num=59; nid="I_kwDORVI-G87tOmlT"; status="Done" }        # MM-MOB-07.2
     @{ num=60; nid="I_kwDORVI-G87tOmnF"; status="In Progress" } # MM-MOB-07.3
     @{ num=61; nid="I_kwDORVI-G87tOmq3"; status="Not Started" } # MM-QA-01
     @{ num=62; nid="I_kwDORVI-G87tOmsd"; status="Not Started" } # MM-QA-02
@@ -108,6 +108,7 @@ $issues = @(
     @{ num=71; nid="I_kwDORVI-G87tUScw"; status="In Review" } # MM-FE-16
     @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="Not Started" } # MM-FE-18
     @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="Not Started" } # MM-MOB-09
+    @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="Not Started" } # MM-AI-12
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="

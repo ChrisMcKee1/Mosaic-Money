@@ -50,6 +50,10 @@ blob-report/
 .playwright-cli/**/*.webp
 .playwright-cli/**/*.gif
 
+# Generated release-gate snapshots (ephemeral run outputs)
+artifacts/release-gates/**/latest.json
+artifacts/release-gates/**/latest-*.json
+
 # Environment files (block real secrets)
 .env
 .env.local

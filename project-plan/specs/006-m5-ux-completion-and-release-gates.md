@@ -57,11 +57,12 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. | Done |
 | MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | In Progress |
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Done |
-| MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | In Review |
-| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | In Progress |
+| MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | Done |
+| MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | Done |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate official `.NET` + Foundry evaluators/graders with source-linked replay instructions and reproducible evidence artifacts. | Not Started |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Done |
 | MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Done |
-| MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | In Review |
+| MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Done |
 | MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | In Progress |
 | MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | Not Started |
 | MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Not Started |
@@ -76,8 +77,18 @@ Implementation note (2026-02-24): `MM-AI-11` now has a concrete release-blocker 
 - Ambiguity fail-closed threshold: `100%` route-to-`NeedsReview` compliance.
 - External messaging hard-stop threshold: `100%` deny for outbound `send_*`/`notify_external_system` actions while preserving draft-only behavior.
 - Explainability threshold: `>= 95%` `AgentNote` summary policy compliance (concise, bounded, transcript-safe).
-- Evidence command: `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~AgenticEvalReleaseGateTests"`.
-- Status remains `In Progress` pending planner review and project-board synchronization.
+- Evidence command (tests only): `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~AgenticEvalReleaseGateTests"`.
+- Evidence command (planner-ready artifact): `pwsh .github/scripts/run-mm-ai-11-release-gate.ps1`.
+- Artifact output: `artifacts/release-gates/mm-ai-11/latest.json` with `result` (`GO` or `NO_GO`), release-ready boolean, and per-criterion scores/evidence.
+- Planner review completed: `MM-AI-11` promoted to `Done` after focused verification passed.
+
+Implementation note (2026-02-24): `MM-AI-12` is added as a follow-on modernization task to adopt official evaluator frameworks (`Microsoft.Extensions.AI.Evaluation` and Azure AI Foundry evaluator/graders) with a source-linked replay pack in `project-plan/specs/005-m4-ai-escalation-pipeline-deterministic-semantic-maf.md`.
+
+Implementation note (2026-02-24): Planner review promoted `MM-BE-11` to `Done` after full backend regression execution passed (`dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj`: 136 passed, 0 failed).
+
+Implementation note (2026-02-24): Planner review promoted `MM-MOB-07.2` to `Done` after sync-recovery validation passed (`cd src/MosaicMoney.Mobile; npm run test:sync-recovery`: 4 passed, 0 failed).
+
+Implementation note (2026-02-24): Planner review for `MM-ASP-06` confirmed deterministic stack bring-up and diagnostics baseline via Aspire CLI (`aspire run --project src/apphost.cs --detach --isolated`, `aspire wait`, `aspire resources`, and per-resource log tail commands). Remaining step to promote `MM-ASP-06` to `Done`: capture non-empty telemetry traces for API/Worker/Web in the standardized workflow, since current `aspire telemetry traces <resource> --project src/apphost.cs` checks return empty/not-found results in this environment.
 
 ## Verification Matrix
 | Area | Validation | Pass Criteria |

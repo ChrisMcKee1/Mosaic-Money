@@ -284,6 +284,7 @@ internal static class AgenticEvalReleaseGate
         var sendActions = new[]
         {
             "send_message",
+            "send_email_receipt",
             "send_whatsapp",
             "notify_external_system",
         };

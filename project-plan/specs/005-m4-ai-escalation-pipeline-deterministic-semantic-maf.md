@@ -62,15 +62,52 @@ Deliver a bounded, auditable AI escalation pipeline that executes in strict orde
 | MM-AI-05 | AI | PostgreSQL semantic retrieval layer | MM-BE-10, MM-AI-02 | In-database retrieval returns bounded candidates with normalized scores and provenance fields. | Done |
 | MM-AI-06 | AI | Confidence fusion policy | MM-AI-03, MM-AI-04, MM-AI-05 | Deterministic precedence, semantic fallback thresholds, and conflict-to-review behavior are encoded. | Done |
 | MM-AI-07 | AI | MAF fallback graph execution | MM-AI-06 | MAF graph runs only after stage insufficiency and returns schema-validated proposals with bounded cost/latency. | Done |
-| MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | In Review |
-| MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | In Review |
-| MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Pipeline emits final classification or `NeedsReview` with traceable stage-by-stage rationale. | In Review |
+| MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | Done |
+| MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | Done |
+| MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Pipeline emits final classification or `NeedsReview` with traceable stage-by-stage rationale. | Done |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Add .NET evaluator libraries and Foundry evaluator/graders workflow with rerunnable documentation-backed instructions, dataset mappings, and CI evidence artifacts. | Not Started |
 
 Implementation note (2026-02-23): `MM-AI-05` now includes an advisory PostgreSQL semantic retrieval contract that reads existing transaction embeddings (`pgvector` cosine distance), returns bounded candidates with normalized `[0..1]` scores, and emits explicit provenance (`ProvenanceSource`, `ProvenanceReference`, `ProvenancePayloadJson`). Deterministic stage remains first and authoritative for decisioning; semantic stage evidence is appended only after deterministic `NeedsReview` routing and does not auto-categorize independently.
 
 Implementation note (2026-02-23): `MM-AI-07` now adds an explicit eligibility gate and bounded fallback execution contract for MAF stage calls. Stage-3 runs only after deterministic and semantic insufficiency, validates proposal schema before persistence, and fails closed to `NeedsReview` on timeout/execution/schema errors.
 
 Implementation note (2026-02-24): `MM-AI-10` orchestration now persists stage-level rationale that includes escalation policy context (deterministic gate + semantic fusion decisions) and promotes stage-3 MAF rationale into the final persisted outcome when fallback executes. Guardrail denials and fallback failures remain fail-closed to `NeedsReview` with auditable reason codes.
+
+Implementation note (2026-02-24): `MM-AI-08` and `MM-AI-09` are promoted to `Done` after planner review with focused verification (`MafFallbackGraphServiceTests`, `AgentNoteSummaryPolicyTests`, and `AgenticEvalReleaseGateTests`) passing on .NET 10.
+
+## MM-AI-12 Documentation Replay Pack
+Use this runbook verbatim when restarting evaluator modernization work after a pause. Do not mark `MM-AI-12` done without producing all artifacts listed below.
+
+Primary documentation links (must be re-read each iteration):
+- `https://learn.microsoft.com/en-us/dotnet/ai/evaluation/libraries`
+- `https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/evaluation-evaluators/azure-openai-graders?view=foundry`
+- `https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/evaluation-evaluators/agent-evaluators?view=foundry`
+- `https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/built-in-evaluators?view=foundry`
+
+Supporting implementation docs (recommended in the same pass):
+- `https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/evaluate-sdk?view=foundry`
+- `https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/cloud-evaluation?view=foundry`
+- `https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk?view=foundry`
+
+Detailed execution checklist:
+1. Re-read all primary links and log date/time, reviewer, and key doc changes since the last run.
+2. Build an evaluator mapping matrix for Mosaic Money criteria (`routing_correctness`, `ambiguity_fail_closed_to_needs_review`, `external_messaging_hard_stop`, `agentnote_explainability_summary_policy`) to:
+	- `.NET` evaluator library components (`Microsoft.Extensions.AI.Evaluation`, `Quality`, `Safety`, `Reporting`).
+	- Foundry agent evaluators (`task_adherence`, `task_completion`, `intent_resolution`, tool-call evaluators as applicable).
+	- Azure OpenAI graders (`score_model`, `label_model`, `string_check`, `text_similarity`) for deterministic pass/fail checks.
+3. Define dataset schema and mappings (`query`, `response`, `tool_definitions`, `actions`, `expected_actions`, `ground_truth`) and store reusable fixtures under test assets.
+4. Implement evaluation runners and config with explicit thresholds, pass/fail interpretation, and fail-closed behavior for unavailable preview evaluators.
+5. Produce evidence artifacts per run:
+	- Test output and pass/fail summary.
+	- Serialized evaluator results (local and/or cloud run).
+	- Threshold comparison report.
+	- Decision log on whether release gate status changes are warranted.
+6. Update this spec and `project-plan/specs/001-mvp-foundation-task-breakdown.md` with outcomes and any threshold or evaluator-selection changes.
+
+Completion criteria for `MM-AI-12`:
+- Official evaluator stack is integrated and executable in CI.
+- Research replay instructions remain current and source-linked.
+- Evidence artifacts are reproducible and attached to the corresponding issue/PR.
 
 ## Dependency Sequence (Implementation Order)
 1. `MM-BE-10`: establish non-blocking embedding generation before semantic stage rollout.
