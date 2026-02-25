@@ -23,12 +23,11 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 - Spec 005 defines M4 AI pipeline behavior but does not finalize cross-surface release hardening.
 - M5 needed unified go/no-go criteria tying backend correctness, AI safety, web/mobile regressions, and orchestration policy checks.
 - M5 needed explicit release rehearsal and rollback criteria before production promotion.
-- **UI Data Gap Analysis (2026-02-24)**: The new M5 Dashboard UI requires data that is not currently exposed by the backend or ingested from Plaid.
-  - **Net Worth History**: Requires historical balances. Needs a backend API to aggregate historical snapshots.
-  - **Asset Allocation**: Requires Plaid Investments API (`/investments/holdings/get`).
-  - **Recurring Subscriptions**: Requires Plaid Recurring Transactions API (`/transactions/recurring/get`).
-  - **Debt / Liabilities**: Requires Plaid Liabilities API (`/liabilities/get`) - backend ingestion is done, but needs UI API endpoints.
-  - **Recent Transactions**: Requires Plaid Transactions API (`/transactions/sync`) - backend ingestion is done, but needs UI API endpoints.
+- **UI Data Gap Analysis (2026-02-24, resolved 2026-02-25)**:
+  - **Net Worth History**: addressed by `MM-BE-18` and wired in `MM-FE-17`.
+  - **Asset Allocation**: addressed by `MM-BE-16` and wired in `MM-FE-17`.
+  - **Recurring Subscriptions**: addressed by `MM-BE-17` and wired in `MM-FE-17`.
+  - **Debt / Liabilities + Recent Transactions**: wired for dashboard usage in `MM-FE-17` using current backend API surface; future expansion remains possible if additional liability-specific contract depth is required.
 
 ## In Scope
 - DevOps release-hardening gates (`MM-ASP-05`, `MM-ASP-06`, `MM-ASP-07`).

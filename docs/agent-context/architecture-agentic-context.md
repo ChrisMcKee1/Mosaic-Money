@@ -3,9 +3,16 @@
 This file is the planner-friendly architecture grounding summary.
 Canonical source: [Full Architecture](../../project-plan/architecture.md)
 
+Detailed architecture docs:
+- [Architecture Docs Index](../architecture/README.md)
+- [System Topology](../architecture/system-topology.md)
+- [AI Orchestration Flow](../architecture/ai-orchestration-flow.md)
+- [Deployment Modes](../architecture/deployment-modes.md)
+- [Data Models Index](../data-models/README.md)
+
 ## Core Stack
 - Backend: C# 14 with .NET 10 Minimal APIs.
-- Orchestration: Aspire 13.2 AppHost with API, worker, and frontend composition.
+- Orchestration: Aspire 13.3 preview AppHost with API, worker, and frontend composition.
 - Orchestration database mode: use `AddAzurePostgresFlexibleServer` as the canonical Postgres resource; local full-stack can run via `.RunAsContainer()` and DB-only Azure rollout uses `src/apphost.database/apphost.cs`.
 - Web: Next.js 16 with React 19 and Tailwind CSS.
 - Mobile: React Native via Expo SDK 55 for mobile apps, with iPhone-first MVP release focus and Windows dev host + physical phone testing workflow.
@@ -17,6 +24,7 @@ Canonical source: [Full Architecture](../../project-plan/architecture.md)
 ## Architectural Rules
 - Keep Copilot as UI and coding assistant, not runtime orchestration.
 - Keep deterministic and in-database AI paths primary for cost and latency control.
+- Escalation order is deterministic -> semantic retrieval -> MAF fallback.
 - For Azure rollout requiring only database provisioning, deploy `src/apphost.database/apphost.cs` with Aspire CLI because `aspire deploy` does not currently provide per-resource filtering.
 - DB-only rollout recommendation: run `aspire do provision-mosaic-postgres-kv` first, tag the vault (`mosaic=true`, `workload=mosaic-money`), then continue database provisioning.
 - Route low-confidence cases into `NeedsReview` instead of forced auto-resolution.

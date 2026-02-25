@@ -41,7 +41,7 @@ Project-based AppHost:
 
 ```bash
 dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:PostgresDB" "<value>"
+dotnet user-secrets set "ConnectionStrings:mosaicmoneydb" "<value>"
 dotnet user-secrets list
 ```
 
@@ -51,7 +51,7 @@ File-based AppHost (`apphost.cs`):
 # Add once in apphost.cs:
 #:property UserSecretsId=<id>
 
-dotnet user-secrets set "ConnectionStrings:PostgresDB" "<value>" --file apphost.cs
+dotnet user-secrets set "ConnectionStrings:mosaicmoneydb" "<value>" --file apphost.cs
 dotnet user-secrets list --file apphost.cs
 ```
 
@@ -109,7 +109,7 @@ Backend `appsettings.json` example (placeholders only):
 ```json
 {
   "ConnectionStrings": {
-    "PostgresDB": ""
+    "mosaicmoneydb": ""
   },
   "AI": {
     "EmbeddingModel": "text-embedding-3-small",

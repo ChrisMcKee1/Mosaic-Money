@@ -106,8 +106,8 @@ $issues = @(
     @{ num=69; nid="I_kwDORVI-G87tUSZk"; status="In Review" } # MM-FE-14
     @{ num=70; nid="I_kwDORVI-G87tUSbK"; status="In Review" } # MM-FE-15
     @{ num=71; nid="I_kwDORVI-G87tUScw"; status="In Review" } # MM-FE-16
-    @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="Not Started" } # MM-FE-18
-    @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="Not Started" } # MM-MOB-09
+    @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="In Review" } # MM-FE-18
+    @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="In Review" } # MM-MOB-09
     @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="In Review" } # MM-AI-12
 
     # --- M7: Identity, Household Access Control, and Account Ownership ---
