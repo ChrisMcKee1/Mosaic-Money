@@ -31,8 +31,7 @@
         "run",
         "--project",
         "src/apphost.cs",
-        "--detach",
-        "--isolated"
+        "--detach"
       ],
       "group": "build",
       "problemMatcher": []
@@ -246,7 +245,6 @@
       "args": [
         "telemetry",
         "traces",
-        "web",
         "--project",
         "src/apphost.cs",
         "--limit",

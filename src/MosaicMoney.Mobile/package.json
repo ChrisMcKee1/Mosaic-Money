@@ -11,7 +11,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test:sync-recovery": "vitest run src/features/transactions/offline/reviewMutationRecovery.test.ts"
+    "test:sync-recovery": "vitest run src/features/transactions/offline/reviewMutationRecovery.test.ts",
+    "test:review-projection": "vitest run src/features/transactions/offline/reviewProjectionWorkflow.integration.test.ts"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

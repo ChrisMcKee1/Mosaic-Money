@@ -55,7 +55,7 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
 | MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup/recovery behavior with documented run paths. | Done |
-| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | In Progress |
+| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Standardized diagnostics for API, Worker, Web, and AI workflow traces. | Done |
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Done |
 | MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | Done |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | Done |
@@ -63,7 +63,7 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Done |
 | MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Done |
 | MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Done |
-| MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | In Progress |
+| MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | Done |
 | MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | Not Started |
 | MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Not Started |
 | MM-QA-03 | QA | Release rehearsal and rollback drill | MM-QA-01, MM-QA-02 | Rehearsed release with validated rollback path and go/no-go artifact. | Not Started |
@@ -88,7 +88,9 @@ Implementation note (2026-02-24): Planner review promoted `MM-BE-11` to `Done` a
 
 Implementation note (2026-02-24): Planner review promoted `MM-MOB-07.2` to `Done` after sync-recovery validation passed (`cd src/MosaicMoney.Mobile; npm run test:sync-recovery`: 4 passed, 0 failed).
 
-Implementation note (2026-02-24): Planner review for `MM-ASP-06` confirmed deterministic stack bring-up and diagnostics baseline via Aspire CLI (`aspire run --project src/apphost.cs --detach --isolated`, `aspire wait`, `aspire resources`, and per-resource log tail commands). Remaining step to promote `MM-ASP-06` to `Done`: capture non-empty telemetry traces for API/Worker/Web in the standardized workflow, since current `aspire telemetry traces <resource> --project src/apphost.cs` checks return empty/not-found results in this environment.
+Implementation note (2026-02-24): Planner review promoted `MM-MOB-07.3` to `Done` after review/projection integration validation passed on mobile (`cd src/MosaicMoney.Mobile; npm run test:sync-recovery`: 4 passed, 0 failed; `cd src/MosaicMoney.Mobile; npm run test:review-projection`: 2 passed, 0 failed).
+
+Implementation note (2026-02-24): Planner review promoted `MM-ASP-06` to `Done` after standardizing diagnostics workflow on detached non-isolated startup (`aspire run --project src/apphost.cs --detach`) and validating trace/log capture (`aspire telemetry traces --project src/apphost.cs --limit <n>` plus resource-filtered API traces). Current CLI nuance is documented: `aspire telemetry traces web ...` may return `Resource 'web' not found` for JavaScript executable resources, so cross-resource trace capture uses unfiltered traces command.
 
 ## Verification Matrix
 | Area | Validation | Pass Criteria |

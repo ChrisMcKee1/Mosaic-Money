@@ -18,7 +18,7 @@ aspire --help
 aspire agent --help
 aspire telemetry --help
 aspire docs --help
-aspire docs search "run detach isolated"
+aspire docs search "run detach"
 aspire docs search "resources logs wait command"
 aspire docs search "configure the mcp server tools"
 ```
@@ -29,7 +29,7 @@ Run from repo root (`C:\Users\chrismckee\GitHub\Mosaic-Money`).
 
 ```powershell
 dotnet build src/apphost.cs
-aspire run --project src/apphost.cs --detach --isolated
+aspire run --project src/apphost.cs --detach
 aspire wait api --project src/apphost.cs --status healthy --timeout 180
 aspire wait worker --project src/apphost.cs --status up --timeout 180
 aspire wait web --project src/apphost.cs --status up --timeout 180
@@ -73,7 +73,7 @@ Use this when resources are unhealthy, missing endpoints, or startup appears par
 aspire ps
 aspire stop --project src/apphost.cs
 dotnet build src/apphost.cs
-aspire run --project src/apphost.cs --detach --isolated
+aspire run --project src/apphost.cs --detach
 aspire wait api --project src/apphost.cs --status healthy --timeout 180
 aspire resources --project src/apphost.cs
 ```
@@ -105,7 +105,7 @@ Use this as the single diagnostics workflow for API, Worker, Web, and AI-related
 
 ```powershell
 dotnet build src/apphost.cs
-aspire run --project src/apphost.cs --detach --isolated
+aspire run --project src/apphost.cs --detach
 aspire wait api --project src/apphost.cs --status healthy --timeout 180
 aspire wait worker --project src/apphost.cs --status up --timeout 180
 aspire wait web --project src/apphost.cs --status up --timeout 180
@@ -131,7 +131,7 @@ aspire telemetry logs worker --project src/apphost.cs --limit 100
 aspire telemetry logs web --project src/apphost.cs --limit 100
 aspire telemetry traces api --project src/apphost.cs --limit 50
 aspire telemetry traces worker --project src/apphost.cs --limit 50
-aspire telemetry traces web --project src/apphost.cs --limit 50
+aspire telemetry traces --project src/apphost.cs --limit 50
 ```
 
 For error-focused trace triage:
@@ -139,7 +139,7 @@ For error-focused trace triage:
 ```powershell
 aspire telemetry traces api --project src/apphost.cs --limit 50 --has-error
 aspire telemetry traces worker --project src/apphost.cs --limit 50 --has-error
-aspire telemetry traces web --project src/apphost.cs --limit 50 --has-error
+aspire telemetry traces --project src/apphost.cs --limit 50 --has-error
 ```
 
 ### 4) MCP diagnostics flow (agentic)
@@ -194,6 +194,10 @@ Use these task labels for consistent execution from VS Code:
 - `Aspire: Diagnostics Snapshot (API/Worker/Web)`
 - `Aspire: Recover Stack`
 
+Notes for current Aspire CLI behavior in this workspace:
+- Detached non-isolated runs (`aspire run --detach`) consistently expose trace data for diagnostics.
+- `aspire telemetry traces web ...` can return `Resource 'web' not found` for JavaScript executable resources; use unfiltered `aspire telemetry traces --project src/apphost.cs --limit <n>` for cross-resource trace capture.
+
 ## MCP workflow (daily command surface)
 
 Initialize and run MCP tooling with `aspire agent` commands.
@@ -244,7 +248,7 @@ Use this path for day-to-day mobile development when running Expo on Windows and
 
 ```powershell
 dotnet build src/apphost.cs
-aspire run --project src/apphost.cs --detach --isolated
+aspire run --project src/apphost.cs --detach
 aspire wait api --project src/apphost.cs --status healthy --timeout 180
 
 cd src/MosaicMoney.Mobile

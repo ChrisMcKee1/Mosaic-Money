@@ -82,14 +82,14 @@ $issues = @(
 
     # --- M5: UX Completion & Release Gates ---
     @{ num=52; nid="I_kwDORVI-G87tOmSr"; status="Done" }        # MM-ASP-05
-    @{ num=53; nid="I_kwDORVI-G87tOmXP"; status="In Progress" } # MM-ASP-06
+    @{ num=53; nid="I_kwDORVI-G87tOmXP"; status="Done" }        # MM-ASP-06
     @{ num=54; nid="I_kwDORVI-G87tOmY-"; status="Done" } # MM-ASP-07
     @{ num=55; nid="I_kwDORVI-G87tOmat"; status="Done" }        # MM-BE-11
     @{ num=56; nid="I_kwDORVI-G87tOmey"; status="Done" }        # MM-AI-11
     @{ num=57; nid="I_kwDORVI-G87tOmgs"; status="Done" }        # MM-FE-08
     @{ num=58; nid="I_kwDORVI-G87tOmjY"; status="Done" }        # MM-MOB-07.1
     @{ num=59; nid="I_kwDORVI-G87tOmlT"; status="Done" }        # MM-MOB-07.2
-    @{ num=60; nid="I_kwDORVI-G87tOmnF"; status="In Progress" } # MM-MOB-07.3
+    @{ num=60; nid="I_kwDORVI-G87tOmnF"; status="Done" }        # MM-MOB-07.3
     @{ num=61; nid="I_kwDORVI-G87tOmq3"; status="Not Started" } # MM-QA-01
     @{ num=62; nid="I_kwDORVI-G87tOmsd"; status="Not Started" } # MM-QA-02
     @{ num=63; nid="I_kwDORVI-G87tOmtk"; status="Not Started" } # MM-QA-03

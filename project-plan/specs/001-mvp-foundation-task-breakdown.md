@@ -137,13 +137,13 @@ Update note (2026-02-24): Planner review promoted `MM-AI-08` and `MM-AI-09` to `
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
 | MM-ASP-05 | DevOps | Local run reliability hardening | MM-ASP-04 | Deterministic startup with dependency waits and documented recovery paths. | Done |
-| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Team can inspect health/logs/traces for API, Worker, Web, and AI workflow traces in one standard workflow. | In Progress |
+| MM-ASP-06 | DevOps | Dashboard + MCP diagnostics flow | MM-ASP-05, MM-AI-10 | Team can inspect health/logs/traces for API, Worker, Web, and AI workflow traces in one standard workflow. | Done |
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Checks reject `AddNpmApp`, hardcoded endpoints, and missing service-defaults patterns. | Done |
 | MM-BE-11 | Backend | Financial correctness/regression tests | MM-BE-01, MM-BE-02, MM-BE-03, MM-BE-04, MM-BE-05, MM-BE-06, MM-BE-07, MM-BE-08, MM-BE-09, MM-BE-10 | Money/date/matching/review/reimbursement edge-case tests pass. | Done |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Measured criteria enforced for routing correctness, ambiguity fail-closed behavior, external messaging hard-stop denial, and `AgentNote` explainability with a go/no-go artifact output. | Done |
 | MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate `.NET` evaluator libraries and Foundry evaluator/graders with source-linked rerun instructions, dataset mappings, and CI evidence artifacts. | Not Started |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. | Done |
-| MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | In Progress |
+| MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | Done |
 | MM-BE-16 | Backend | Plaid Investments Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/investments/holdings/get`. | Done |
 | MM-BE-17 | Backend | Plaid Recurring Transactions Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/transactions/recurring/get`. | Done |
 | MM-BE-18 | Backend | Net Worth History Aggregation API | MM-BE-15 | API endpoint to aggregate historical balances across all account types. | Done |
