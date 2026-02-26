@@ -44,12 +44,12 @@ $issues = @(
     @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="Done" }        # MM-BE-14
     @{ num=20; nid="I_kwDORVI-G87tOjF8"; status="Done" }        # MM-FE-04
     @{ num=21; nid="I_kwDORVI-G87tOjHr"; status="Done" }        # MM-FE-05
-    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="Blocked" } # MM-FE-09
+    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="In Review" } # MM-FE-09
     @{ num=23; nid="I_kwDORVI-G87tOjN9"; status="Done" }        # MM-MOB-02
     @{ num=24; nid="I_kwDORVI-G87tOjRE"; status="Done" }        # MM-MOB-03
     @{ num=25; nid="I_kwDORVI-G87tOjTk"; status="Done" }        # MM-MOB-04
     @{ num=26; nid="I_kwDORVI-G87tOjWi"; status="Done" }        # MM-MOB-05
-    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="Blocked" } # MM-MOB-08
+    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="In Review" } # MM-MOB-08
     @{ num=64; nid="I_kwDORVI-G87tRGKo"; status="Done" }        # MM-BE-15
 
     # --- M3: Ingestion, Recurring, Reimbursements & Projections (all Done) ---
@@ -91,8 +91,8 @@ $issues = @(
     @{ num=59; nid="I_kwDORVI-G87tOmlT"; status="Done" }        # MM-MOB-07.2
     @{ num=60; nid="I_kwDORVI-G87tOmnF"; status="Done" }        # MM-MOB-07.3
     @{ num=61; nid="I_kwDORVI-G87tOmq3"; status="In Review" } # MM-QA-01
-    @{ num=62; nid="I_kwDORVI-G87tOmsd"; status="Not Started" } # MM-QA-02
-    @{ num=63; nid="I_kwDORVI-G87tOmtk"; status="Not Started" } # MM-QA-03
+    @{ num=62; nid="I_kwDORVI-G87tOmsd"; status="Done" } # MM-QA-02
+    @{ num=63; nid="I_kwDORVI-G87tOmtk"; status="Done" } # MM-QA-03
     @{ num=72; nid="I_kwDORVI-G87tkz1h"; status="Done" } # MM-BE-16
     @{ num=73; nid="I_kwDORVI-G87tkz5d"; status="Done" } # MM-BE-17
     @{ num=74; nid="I_kwDORVI-G87tk0AH"; status="Done" } # MM-BE-18
@@ -111,20 +111,20 @@ $issues = @(
     @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="In Review" } # MM-AI-12
 
     # --- M7: Identity, Household Access Control, and Account Ownership ---
-    @{ num=96; nid="I_kwDORVI-G87t4vjw"; status="In Review" } # MM-BE-19
-    @{ num=97; nid="I_kwDORVI-G87t4v__"; status="In Review" } # MM-BE-20
-    @{ num=98; nid="I_kwDORVI-G87t4wBe"; status="In Review" } # MM-BE-21
-    @{ num=99; nid="I_kwDORVI-G87t4wC-"; status="In Review" } # MM-BE-22
-    @{ num=100; nid="I_kwDORVI-G87t4wEW"; status="In Review" } # MM-BE-23
-    @{ num=101; nid="I_kwDORVI-G87t4wFe"; status="In Review" } # MM-BE-24
-    @{ num=102; nid="I_kwDORVI-G87t4wG4"; status="Not Started" } # MM-ASP-08
-    @{ num=103; nid="I_kwDORVI-G87t4wLb"; status="Not Started" } # MM-ASP-09
-    @{ num=104; nid="I_kwDORVI-G87t4wMv"; status="In Review" } # MM-FE-19
-    @{ num=105; nid="I_kwDORVI-G87t4wOX"; status="Not Started" } # MM-FE-20
-    @{ num=106; nid="I_kwDORVI-G87t4wP1"; status="Not Started" } # MM-FE-21
-    @{ num=107; nid="I_kwDORVI-G87t4wRp"; status="Not Started" } # MM-MOB-10
-    @{ num=108; nid="I_kwDORVI-G87t4wVU"; status="Not Started" } # MM-MOB-11
-    @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="Not Started" } # MM-MOB-12
+    @{ num=96; nid="I_kwDORVI-G87t4vjw"; status="Done" } # MM-BE-19
+    @{ num=97; nid="I_kwDORVI-G87t4v__"; status="Done" } # MM-BE-20
+    @{ num=98; nid="I_kwDORVI-G87t4wBe"; status="Done" } # MM-BE-21
+    @{ num=99; nid="I_kwDORVI-G87t4wC-"; status="Done" } # MM-BE-22
+    @{ num=100; nid="I_kwDORVI-G87t4wEW"; status="Done" } # MM-BE-23
+    @{ num=101; nid="I_kwDORVI-G87t4wFe"; status="Done" } # MM-BE-24
+    @{ num=102; nid="I_kwDORVI-G87t4wG4"; status="Done" } # MM-ASP-08
+    @{ num=103; nid="I_kwDORVI-G87t4wLb"; status="Done" } # MM-ASP-09
+    @{ num=104; nid="I_kwDORVI-G87t4wMv"; status="Done" } # MM-FE-19
+    @{ num=105; nid="I_kwDORVI-G87t4wOX"; status="In Review" } # MM-FE-20
+    @{ num=106; nid="I_kwDORVI-G87t4wP1"; status="In Review" } # MM-FE-21
+    @{ num=107; nid="I_kwDORVI-G87t4wRp"; status="Done" } # MM-MOB-10
+    @{ num=108; nid="I_kwDORVI-G87t4wVU"; status="In Review" } # MM-MOB-11
+    @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="In Review" } # MM-MOB-12
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="
@@ -199,3 +199,5 @@ Write-Host "`n=== Summary ==="
 Write-Host "Total issues: $($issues.Count)"
 Write-Host "Statuses set: $successCount"
 Write-Host "Failures: $failCount"
+
+

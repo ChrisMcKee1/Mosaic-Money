@@ -122,6 +122,10 @@ export function usePlaidLinkOnboarding(): PlaidLinkOnboardingState {
         },
       });
 
+      if (plaidSdk.destroy) {
+        await plaidSdk.destroy();
+      }
+
       await Promise.resolve(
         plaidSdk.create({
           token: issued.linkToken,

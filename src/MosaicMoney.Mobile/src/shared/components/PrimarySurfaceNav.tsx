@@ -10,6 +10,7 @@ const primaryRoutes = [
   { label: "Categories", route: "/categories" },
   { label: "Investments", route: "/investments" },
   { label: "Recurrings", route: "/recurrings" },
+  { label: "Settings", route: "/settings" },
 ];
 
 export function PrimarySurfaceNav() {

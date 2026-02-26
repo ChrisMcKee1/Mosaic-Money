@@ -16,6 +16,7 @@ This folder contains AI-agent-facing context and implementation policies.
 - `aspire-dotnet-integration-policy.md`: C# / EF / Aspire integration package policy.
 - `aspire-javascript-frontend-policy.md`: frontend JavaScript / Aspire orchestration policy.
 - `aspire-local-run-reliability.md`: deterministic local startup, recovery, and diagnostics workflow for AppHost resources.
+- `identity-claim-mapping-and-account-access-migration-playbook.md`: MM-ASP-08/MM-ASP-09 identity mapping contract and migration rollout/rollback runbook.
 - `secrets-and-configuration-playbook.md`: layered secret management and per-project configuration contract guidance.
 - `skills-catalog.md`: curated skill selection, installation model, and per-agent mappings.
 - `instructions-catalog.md`: curated custom-instructions selection, exclusions, and adaptation decisions.

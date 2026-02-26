@@ -138,6 +138,29 @@ When a PR adds or changes a secret/config key, verify all items:
 5. No real secret committed.
 6. No private values exposed via `NEXT_PUBLIC_*`.
 
+## Identity member-context mapping keys (MM-ASP-08)
+
+These keys support deterministic local and CI mapping for APIs that require household-member identity context.
+
+Required behavior notes:
+
+1. Values must be valid active `HouseholdUsers.Id` GUIDs when set.
+2. Values are environment-scoped and must not be hardcoded in source files.
+3. These are not credentials, but they are still operational identifiers and should be managed through local env files or CI secret/variable stores.
+
+Web key:
+
+1. `MOSAIC_HOUSEHOLD_USER_ID` (server-side env, optional)
+
+Mobile key:
+
+1. `EXPO_PUBLIC_MOSAIC_HOUSEHOLD_USER_ID` (optional)
+
+Notes:
+
+1. `EXPO_PUBLIC_*` values are public and must never carry secret material.
+2. Keep committed templates in `.env.example`; keep real values in untracked `.env.local` or CI environment configuration.
+
 ## Plaid local setup contract (Sandbox and Production)
 
 Plaid keys are always private and must be configured via AppHost parameters and user-secrets.

@@ -24,6 +24,7 @@ Current MVP target is iPhone, but this is still mobile application development (
 Mobile API calls require a non-secret public endpoint:
 
 - `EXPO_PUBLIC_API_BASE_URL`: Base URL for the Mosaic Money API.
+- `EXPO_PUBLIC_MOSAIC_HOUSEHOLD_USER_ID` (optional): Active `HouseholdUsers.Id` used for deterministic local/CI member-context mapping.
 
 Use `.env.example` as the contract template and keep real values in local-only env files.
 

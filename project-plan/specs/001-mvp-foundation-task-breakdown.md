@@ -85,12 +85,12 @@ All task tables use a `Status` column with the following values:
 | MM-BE-15 | Backend | Plaid product capability mapping research | MM-BE-12, MM-BE-13, MM-BE-14 | Cross-reference PRD scenarios to Plaid products/endpoints/webhooks and sandbox institution coverage, then publish an approved MVP product map, schema impact list, and implementation order before expanding beyond `transactions`. | Done |
 | MM-FE-04 | Web | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Ledger truth rendered with distinct `UserNote` and `AgentNote`; no client mutation of source amounts/dates. | Done |
 | MM-FE-05 | Web | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify actions call backend review endpoints with explicit user intent. | Done |
-| MM-FE-09 | Web | Plaid Link onboarding flow | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued `link_token` and posts `public_token` + metadata for backend exchange. | Blocked |
+| MM-FE-09 | Web | Plaid Link onboarding flow | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued `link_token` and posts `public_token` + metadata for backend exchange. | In Review |
 | MM-MOB-02 | Mobile | Offline-safe state/caching foundation | MM-MOB-01 | Mobile handles offline read and queued sync states safely. | Done |
 | MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. | Done |
 | MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. | Done |
 | MM-MOB-05 | Mobile | HITL approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Approve/reject actions route through backend and never bypass human approval requirements. | Done |
-| MM-MOB-08 | Mobile | Plaid Link SDK onboarding flow | MM-MOB-01, MM-BE-12, MM-BE-13 | Mobile uses React Native Link SDK with backend-issued `link_token` and server-side token exchange. | Blocked |
+| MM-MOB-08 | Mobile | Plaid Link SDK onboarding flow | MM-MOB-01, MM-BE-12, MM-BE-13 | Mobile uses React Native Link SDK with backend-issued `link_token` and server-side token exchange. | In Review |
 
 Update note (2026-02-23): Mobile scaffold created at `src/MosaicMoney.Mobile` (Expo TypeScript). `MM-MOB-03` and `MM-MOB-04` are unblocked and now in `In Review` after delegated implementation and typecheck pass.
 
@@ -112,6 +112,10 @@ Update note (2026-02-24): Planner backlog sweep unparked `MM-FE-09` and `MM-MOB-
 
 Update note (2026-02-25): Delegation attempts for `MM-FE-09` and `MM-MOB-08` to specialist subagents are currently blocked by upstream provider-capacity errors; tasks remain blocked pending specialist availability or a manual planner fallback implementation.
 
+Update note (2026-02-25): Planner resumed both onboarding tasks (`MM-FE-09`, `MM-MOB-08`) in an active parallel execution wave using frontend/mobile specialist delegation and manual fallback review paths where needed.
+
+Update note (2026-02-25): Initial implementation and local validation completed for `MM-FE-09` and `MM-MOB-08` (web build + targeted onboarding Playwright spec; mobile typecheck). Both tasks are promoted to `In Review` pending final sandbox interaction acceptance.
+
 Update note (2026-02-24): Planner review promoted `MM-AI-08` and `MM-AI-09` to `Done` after focused verification (`MafFallbackGraphServiceTests`, `AgentNoteSummaryPolicyTests`, and `AgenticEvalReleaseGateTests`). A follow-on backlog item (`MM-AI-12`) is added to integrate official `.NET` and Foundry evaluator stacks with a source-linked research replay pack for reproducible future reruns.
 
 Update note (2026-02-25): `MM-AI-12` implementation now emits an additional official evaluator replay artifact (`artifacts/release-gates/mm-ai-12/latest.json`) from the existing release-gate script while preserving deterministic `MM-AI-11` release-blocking criteria. Task is promoted to `In Review` after focused offline validation; cloud evaluator evidence is still required before `Done`.
@@ -123,6 +127,16 @@ Update note (2026-02-25): `MM-BE-06` implementation now wires explicit Plaid tra
 Update note (2026-02-25): New M7 identity/access milestone is added and documented in `project-plan/specs/008-m7-identity-household-access-and-account-ownership.md` to cover first-class app identity, household membership lifecycle, account-level ACL visibility (mine-only/spouse-only/joint/read-only), and migration edge cases. Tasks `MM-BE-19..24`, `MM-ASP-08..09`, `MM-FE-19..21`, and `MM-MOB-10..12` are now tracked as `Not Started` and synced to the GitHub Project board.
 
 Update note (2026-02-25): Planner kickoff delegated `MM-FE-18` (web semantic search/typeahead) and `MM-MOB-09` (mobile semantic search/pickers). After focused build/typecheck/test validation, both tasks are promoted to `In Review` pending final acceptance criteria check.
+
+Update note (2026-02-25): Planner promoted `MM-BE-19..24` to `Done` after focused M7 identity/ACL verification passed (`dotnet test ... --filter "IdentityMembershipModelContractTests|AccountAccessPolicyBackfillServiceTests|AccountAccessPolicyReviewQueueModelContractTests|AccountMemberAccessModelContractTests|TransactionProjectionMetadataQueryServiceTests"`: 15 passed, 0 failed).
+
+Update note (2026-02-25): Planner promoted `MM-MOB-10` to `Done` after verifying mobile member lifecycle and invite flows across settings screens with clean validation (`npm run typecheck` in `src/MosaicMoney.Mobile`).
+
+Update note (2026-02-25): Planner promoted `MM-FE-20` and `MM-FE-21` to `In Review` after adding confirmation UX for web visibility changes and validating with a clean `npm run build` in `src/MosaicMoney.Web`.
+
+Update note (2026-02-26): Planner promoted `MM-MOB-11` and `MM-MOB-12` to `In Review` after implementing household account-sharing API endpoints and replacing mobile deterministic ACL policy mocks with API-backed account access summaries plus sharing preset updates. Validation evidence: targeted household endpoint tests, API build, and mobile typecheck.
+
+Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dependency remediation and gate reruns. Security/config/dependency evidence is captured in `artifacts/release-gates/mm-qa-02/latest.md` (including `next` upgrade to `16.1.6` and clean audits), and release rehearsal/rollback evidence is captured in `artifacts/release-gates/mm-qa-03/latest.md` with healthy API/worker/web restart verification.
 
 ### M3 Ingestion, Recurring, Reimbursements, and Projection Metadata
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
@@ -179,20 +193,20 @@ Update note (2026-02-25): Planner kickoff delegated `MM-FE-18` (web semantic sea
 ### M7 Identity, Household Access Control, and Account Ownership
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-BE-19 | Backend | Add Mosaic user identity model | MM-BE-02, MM-BE-03 | `MosaicUsers` introduced with unique auth-subject mapping; household membership can bind to first-class app identities. | In Review |
-| MM-BE-20 | Backend | Evolve household membership model | MM-BE-19 | `HouseholdUsers` evolves into membership lifecycle (active/invited/removed) without breaking existing `NeedsReviewByUserId` references. | In Review |
-| MM-BE-21 | Backend | Add account ACL model | MM-BE-20 | Account-level access table supports `Owner`, `ReadOnly`, and hidden/no-access states for each household member. | In Review |
-| MM-BE-22 | Backend | Add Plaid account link mapping table | MM-BE-06, MM-BE-21 | Plaid item/account linkage is durable and unique, supports unlink/relink, and avoids duplicate account materialization. | In Review |
-| MM-BE-23 | Backend | Enforce membership-aware API authorization | MM-BE-21, MM-BE-04 | Transaction/account queries are filtered by member ACL visibility; direct account-id access without membership is denied. | In Review |
-| MM-BE-24 | Backend | Identity and ACL migration/backfill | MM-BE-19, MM-BE-20, MM-BE-21, MM-BE-22 | Existing households/accounts are backfilled fail-closed with explicit review queue for ambiguous sharing defaults. | In Review |
-| MM-ASP-08 | DevOps | Identity claim mapping configuration | MM-BE-19 | AppHost/API/Web/Mobile identity claim mapping is documented and reproducible across local and CI environments. | Not Started |
-| MM-ASP-09 | DevOps | Migration rollout and rollback playbook | MM-BE-24 | Step-by-step rollout, reconciliation checks, and rollback paths documented for account access migration. | Not Started |
-| MM-FE-19 | Web | Household member and invite management UI | MM-BE-20, MM-FE-10 | Web supports invite/accept/remove member workflows and membership status visibility. | In Review |
-| MM-FE-20 | Web | Account sharing controls UI | MM-BE-21, MM-FE-19 | Web supports per-account visibility/role assignment (mine-only, spouse-only, joint, read-only) with confirmation UX. | Not Started |
-| MM-FE-21 | Web | Account visibility filters and badges | MM-BE-23, MM-FE-20 | Account/transaction views expose `mine`, `joint`, `shared` filters and clear hidden/read-only badges. | Not Started |
-| MM-MOB-10 | Mobile | Membership and invite parity | MM-BE-20, MM-MOB-07 | Mobile supports member lifecycle views and invite acceptance with parity to web semantics. | Not Started |
-| MM-MOB-11 | Mobile | Account sharing controls parity | MM-BE-21, MM-MOB-10 | Mobile supports per-account sharing roles and visibility controls with safe defaults. | Not Started |
-| MM-MOB-12 | Mobile | ACL-aware account and transaction views | MM-BE-23, MM-MOB-11 | Mobile renders member-scoped account/transaction lists with hidden/read-only behavior matching backend authorization. | Not Started |
+| MM-BE-19 | Backend | Add Mosaic user identity model | MM-BE-02, MM-BE-03 | `MosaicUsers` introduced with unique auth-subject mapping; household membership can bind to first-class app identities. | Done |
+| MM-BE-20 | Backend | Evolve household membership model | MM-BE-19 | `HouseholdUsers` evolves into membership lifecycle (active/invited/removed) without breaking existing `NeedsReviewByUserId` references. | Done |
+| MM-BE-21 | Backend | Add account ACL model | MM-BE-20 | Account-level access table supports `Owner`, `ReadOnly`, and hidden/no-access states for each household member. | Done |
+| MM-BE-22 | Backend | Add Plaid account link mapping table | MM-BE-06, MM-BE-21 | Plaid item/account linkage is durable and unique, supports unlink/relink, and avoids duplicate account materialization. | Done |
+| MM-BE-23 | Backend | Enforce membership-aware API authorization | MM-BE-21, MM-BE-04 | Transaction/account queries are filtered by member ACL visibility; direct account-id access without membership is denied. | Done |
+| MM-BE-24 | Backend | Identity and ACL migration/backfill | MM-BE-19, MM-BE-20, MM-BE-21, MM-BE-22 | Existing households/accounts are backfilled fail-closed with explicit review queue for ambiguous sharing defaults. | Done |
+| MM-ASP-08 | DevOps | Identity claim mapping configuration | MM-BE-19 | AppHost/API/Web/Mobile identity claim mapping is documented and reproducible across local and CI environments. | Done |
+| MM-ASP-09 | DevOps | Migration rollout and rollback playbook | MM-BE-24 | Step-by-step rollout, reconciliation checks, and rollback paths documented for account access migration. | Done |
+| MM-FE-19 | Web | Household member and invite management UI | MM-BE-20, MM-FE-10 | Web supports invite/accept/remove member workflows and membership status visibility. | Done |
+| MM-FE-20 | Web | Account sharing controls UI | MM-BE-21, MM-FE-19 | Web supports per-account visibility/role assignment (mine-only, spouse-only, joint, read-only) with confirmation UX. | In Review |
+| MM-FE-21 | Web | Account visibility filters and badges | MM-BE-23, MM-FE-20 | Account/transaction views expose `mine`, `joint`, `shared` filters and clear hidden/read-only badges. | In Review |
+| MM-MOB-10 | Mobile | Membership and invite parity | MM-BE-20, MM-MOB-07 | Mobile supports member lifecycle views and invite acceptance with parity to web semantics. | Done |
+| MM-MOB-11 | Mobile | Account sharing controls parity | MM-BE-21, MM-MOB-10 | Mobile supports per-account sharing roles and visibility controls with safe defaults. | In Review |
+| MM-MOB-12 | Mobile | ACL-aware account and transaction views | MM-BE-23, MM-MOB-11 | Mobile renders member-scoped account/transaction lists with hidden/read-only behavior matching backend authorization. | In Review |
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:
@@ -222,3 +236,6 @@ This creates a complete human-reviewed transaction loop before advanced forecast
 - Branch: `feature/spec-001-mvp-foundation-breakdown`
 - Commit 1: `docs(spec): add spec 001 mvp foundation dependency breakdown`
 - Commit 2: `docs(spec): add first implementation slice and verification gates`
+
+
+

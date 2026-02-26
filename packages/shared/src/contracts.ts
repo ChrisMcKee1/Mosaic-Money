@@ -233,3 +233,58 @@ export interface ReimbursementDecisionRequest {
   userNote?: string;
   agentNote?: string;
 }
+
+export interface HouseholdDto {
+  id: string;
+  name: string;
+  createdAtUtc: string;
+}
+
+export interface HouseholdMemberDto {
+  id: string;
+  householdId: string;
+  displayName: string;
+  externalUserKey?: string;
+  membershipStatus: string;
+  role: string;
+  invitedAtUtc?: string;
+  activatedAtUtc?: string;
+  removedAtUtc?: string;
+}
+
+export interface HouseholdInviteDto {
+  id: string;
+  householdId: string;
+  email: string;
+  role: string;
+  membershipStatus: string;
+  invitedAtUtc?: string;
+  removedAtUtc?: string;
+}
+
+export interface CreateHouseholdInviteRequest {
+  email: string;
+  role: string;
+}
+
+export interface AcceptHouseholdInviteRequest {
+  displayName?: string;
+}
+
+export type AccountSharingPreset = "Mine" | "Joint" | "Shared";
+
+export interface HouseholdAccountAccessSummaryDto {
+  accountId: string;
+  householdId: string;
+  accountName: string;
+  institutionName?: string;
+  isActive: boolean;
+  currentMemberAccessRole: string;
+  currentMemberVisibility: string;
+  sharingPreset: string;
+  lastModifiedAtUtc: string;
+}
+
+export interface UpdateAccountSharingPresetRequest {
+  preset: AccountSharingPreset;
+}

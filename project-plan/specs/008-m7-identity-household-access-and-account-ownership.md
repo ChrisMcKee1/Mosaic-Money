@@ -140,23 +140,46 @@ flowchart TD
 ## Delivery Tasks
 | ID | Task | Status |
 |---|---|---|
-| MM-BE-19 | Add Mosaic user identity model | In Review |
-| MM-BE-20 | Evolve household membership model | In Review |
-| MM-BE-21 | Add account ACL model | In Review |
-| MM-BE-22 | Add Plaid account-link mapping table | In Review |
-| MM-BE-23 | Enforce membership-aware API authorization | In Review |
-| MM-BE-24 | Identity and ACL migration/backfill | In Review |
-| MM-ASP-08 | Identity claim mapping configuration | Not Started |
-| MM-ASP-09 | Migration rollout and rollback playbook | Not Started |
-| MM-FE-19 | Household member and invite management UI | In Review |
-| MM-FE-20 | Account sharing controls UI | Not Started |
-| MM-FE-21 | Account visibility filters and badges | Not Started |
-| MM-MOB-10 | Membership and invite parity | Not Started |
-| MM-MOB-11 | Account sharing controls parity | Not Started |
-| MM-MOB-12 | ACL-aware account and transaction views | Not Started |
+| MM-BE-19 | Add Mosaic user identity model | Done |
+| MM-BE-20 | Evolve household membership model | Done |
+| MM-BE-21 | Add account ACL model | Done |
+| MM-BE-22 | Add Plaid account-link mapping table | Done |
+| MM-BE-23 | Enforce membership-aware API authorization | Done |
+| MM-BE-24 | Identity and ACL migration/backfill | Done |
+| MM-ASP-08 | Identity claim mapping configuration | Done |
+| MM-ASP-09 | Migration rollout and rollback playbook | Done |
+| MM-FE-19 | Household member and invite management UI | Done |
+| MM-FE-20 | Account sharing controls UI | In Review |
+| MM-FE-21 | Account visibility filters and badges | In Review |
+| MM-MOB-10 | Membership and invite parity | Done |
+| MM-MOB-11 | Account sharing controls parity | In Review |
+| MM-MOB-12 | ACL-aware account and transaction views | In Review |
 
 ## Acceptance Criteria
 - Model supports mine-only, spouse-only, and joint account visibility simultaneously.
 - No unauthorized account/transaction read is possible via direct account ID access.
 - Plaid ingestion remains idempotent with existing duplicate-prevention guarantees.
 - Migration has explicit fail-closed handling for ambiguous ownership/visibility records.
+
+Update note (2026-02-25): Planner verification promoted `MM-BE-19..24` to `Done` after focused identity/ACL regression evidence passed:
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~IdentityMembershipModelContractTests|FullyQualifiedName~AccountAccessPolicyBackfillServiceTests|FullyQualifiedName~AccountAccessPolicyReviewQueueModelContractTests|FullyQualifiedName~AccountMemberAccessModelContractTests|FullyQualifiedName~TransactionProjectionMetadataQueryServiceTests"`
+- Result: 15 passed, 0 failed.
+
+Update note (2026-02-25): Planner promoted `MM-ASP-08` and `MM-ASP-09` to `Done` after reviewing the new identity claim mapping and migration rollout/rollback runbook (`docs/agent-context/identity-claim-mapping-and-account-access-migration-playbook.md`) and validating related config/doc updates.
+
+Update note (2026-02-25): `MM-MOB-10` implementation is completed and moved to `In Review` after mobile settings + household membership/invite UI/hook wiring landed with clean typecheck evidence.
+
+Update note (2026-02-25): Planner promotion checkpoint advanced `MM-MOB-10` to `Done` after acceptance review of membership lifecycle + invite parity behavior against M7 criteria with clean `npm run typecheck` evidence in `src/MosaicMoney.Mobile`.
+
+Update note (2026-02-25): Planner promoted `MM-FE-19` to `Done` after verifying household web flows include invite creation, invite acceptance/cancellation, member removal, and membership status visibility (`src/MosaicMoney.Web/app/settings/household/*`).
+
+Update note (2026-02-25): MM-ASP-08 and MM-ASP-09 implementation runbook is now documented at `docs/agent-context/identity-claim-mapping-and-account-access-migration-playbook.md`, including:
+- AppHost/API/Web/Mobile member-context claim/header mapping contract and local/CI environment keys.
+- Step-by-step migration rollout checkpoints tied to `__EFMigrationsHistory`, ACL/review queue SQL verification, and API fail-closed checks.
+- Explicit rollback commands using migration boundaries (`20260225194514_AddPlaidAccountLinkMapping` and `20260224211700_AddInvestmentsAndRecurringEnrichment`).
+
+Update note (2026-02-25): Planner promoted `MM-FE-20` and `MM-FE-21` to `In Review` after adding confirmation UX for web visibility changes and validating with a clean `npm run build` in `src/MosaicMoney.Web`.
+
+Update note (2026-02-26): Planner promoted `MM-MOB-11` and `MM-MOB-12` to `In Review` after shipping household account-access APIs (`GET /api/v1/households/{id}/account-access`, `PUT /api/v1/households/{id}/accounts/{accountId}/sharing-preset`) and replacing mobile deterministic ACL mocks with API-backed policies in parity, detail, and household settings screens. Validation evidence: `dotnet test ... --filter "FullyQualifiedName~HouseholdEndpointsValidationTests"`, `dotnet build src/MosaicMoney.Api/MosaicMoney.Api.csproj`, and `npm run typecheck` in `src/MosaicMoney.Mobile`.
+
+

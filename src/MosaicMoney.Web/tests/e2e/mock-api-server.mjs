@@ -222,6 +222,16 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname.startsWith("/api/v1/households/") && pathname.endsWith("/members")) {
+    json(res, 200, []);
+    return;
+  }
+
+  if (req.method === "GET" && pathname.startsWith("/api/v1/households/") && pathname.endsWith("/invites")) {
+    json(res, 200, []);
+    return;
+  }
+
   if (req.method === "GET" && pathname === "/api/v1/dashboard/metrics") {
     json(res, 200, {});
     return;
@@ -243,6 +253,21 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "GET" && pathname === "/api/v1/reimbursements") {
     json(res, 200, state.data.reimbursements);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/v1/net-worth/history") {
+    json(res, 200, []);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/v1/investments/accounts") {
+    json(res, 200, []);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/v1/liabilities/accounts") {
+    json(res, 200, []);
     return;
   }
 

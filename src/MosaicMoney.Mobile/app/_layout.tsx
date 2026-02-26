@@ -77,6 +77,20 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="settings/index"
+          options={{
+            title: "Settings",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
+          name="settings/household"
+          options={{
+            title: "Household",
+            headerLargeTitle: true,
+          }}
+        />
+        <Stack.Screen
           name="onboarding/plaid"
           options={{
             title: "Connect Bank",

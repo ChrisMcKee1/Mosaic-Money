@@ -7,9 +7,11 @@ import { formatCurrency, formatLedgerDate } from "../../transactions/utils/forma
 import { StatePanel } from "../../transactions/components/StatePanel";
 import { searchTransactions } from "../../transactions/services/mobileTransactionsApi";
 import type { TransactionDto } from "../../transactions/contracts";
+import { useHouseholdAccountAccess } from "../../settings/hooks/useAccountAccess";
 
 export function TransactionsOverviewScreen() {
   const { items, isLoading, isRefreshing, isRetrying, error, refresh, retry } = useProjectionMetadata({ pageSize: 100 });
+  const { getAccountAccessPolicy, isLoadingAccess, refresh: refreshAccess } = useHouseholdAccountAccess();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<TransactionDto[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -46,18 +48,28 @@ export function TransactionsOverviewScreen() {
 
   const sortedItems = useMemo(() => {
     if (searchResults !== null) {
-      return searchResults.map(tx => ({
-        id: tx.id,
-        description: tx.description,
-        rawAmount: tx.amount,
-        rawTransactionDate: tx.transactionDate,
-        reviewStatus: tx.reviewStatus,
-      }));
+      return searchResults
+        .filter(tx => {
+          const policy = getAccountAccessPolicy(tx.accountId);
+          return policy.visibility !== "Hidden" && policy.role !== "None";
+        })
+        .map(tx => ({
+          id: tx.id,
+          description: tx.description,
+          rawAmount: tx.amount,
+          rawTransactionDate: tx.transactionDate,
+          reviewStatus: tx.reviewStatus,
+        }));
     }
-    return [...items].sort((a, b) => (a.rawTransactionDate < b.rawTransactionDate ? 1 : -1));
-  }, [items, searchResults]);
+    return [...items]
+      .filter(item => {
+        const policy = getAccountAccessPolicy(item.accountId);
+        return policy.visibility !== "Hidden" && policy.role !== "None";
+      })
+      .sort((a, b) => (a.rawTransactionDate < b.rawTransactionDate ? 1 : -1));
+  }, [getAccountAccessPolicy, items, searchResults]);
 
-  if (isLoading && items.length === 0) {
+  if ((isLoading || isLoadingAccess) && items.length === 0) {
     return (
       <SafeAreaView style={styles.page}>
         <View style={styles.centered}>
@@ -88,7 +100,7 @@ export function TransactionsOverviewScreen() {
     <SafeAreaView style={styles.page}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void refresh()} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing || isLoadingAccess} onRefresh={() => void Promise.all([refresh(), refreshAccess()])} />}
       >
         <Text style={styles.heading}>Transactions</Text>
         <Text style={styles.subheading}>Projection-backed transaction feed with mobile parity to web surface.</Text>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PageLayout } from "../../components/layout/PageLayout";
-import { Search, Filter, ArrowDownRight, ArrowUpRight, Tag, Calendar, FileText, MessageSquare } from "lucide-react";
+import { Search, Filter, ArrowDownRight, ArrowUpRight, Tag, Calendar, FileText, MessageSquare, Users, User, Eye } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -13,6 +13,25 @@ import { searchTransactions } from "../actions";
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
+
+const VisibilityBadge = ({ visibility }) => {
+  if (!visibility) return null;
+  
+  const config = {
+    "Joint": { icon: Users, className: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    "Mine": { icon: User, className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+    "Shared": { icon: Eye, className: "bg-purple-500/10 text-purple-400 border-purple-500/20" }
+  };
+  
+  const { icon: Icon, className } = config[visibility] || config["Mine"];
+  
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${className}`}>
+      <Icon className="w-3 h-3" />
+      {visibility}
+    </span>
+  );
+};
 
 export function TransactionsClient({
   initialTransactions,
@@ -29,6 +48,16 @@ export function TransactionsClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [visibilityFilter, setVisibilityFilter] = useState("All"); // All, Mine, Joint, Shared
+
+  // Mock visibility for transactions based on accountId for demonstration
+  const getMockVisibility = (accountId) => {
+    if (!accountId) return "Mine";
+    const lastChar = accountId.toString().slice(-1);
+    if (['0', '1', '2'].includes(lastChar)) return "Joint";
+    if (['3', '4'].includes(lastChar)) return "Shared";
+    return "Mine";
+  };
 
   useEffect(() => {
     const normalizedQuery = searchQuery.trim();
@@ -62,11 +91,14 @@ export function TransactionsClient({
   }, [searchQuery]);
 
   const filteredTransactions = useMemo(() => {
-    if (searchResults !== null) {
-      return searchResults;
+    let txs = searchResults !== null ? searchResults : initialTransactions;
+    
+    if (visibilityFilter !== "All") {
+      txs = txs.filter(tx => getMockVisibility(tx.accountId) === visibilityFilter);
     }
-    return initialTransactions;
-  }, [initialTransactions, searchResults]);
+    
+    return txs;
+  }, [initialTransactions, searchResults, visibilityFilter]);
 
   const groupedTransactions = useMemo(() => filteredTransactions.reduce((acc, tx) => {
     const date = tx.rawTransactionDate || "Unknown Date";
@@ -125,6 +157,7 @@ export function TransactionsClient({
                 Business
               </span>
             )}
+            <VisibilityBadge visibility={getMockVisibility(selectedTx.accountId)} />
           </div>
         </div>
 
@@ -198,10 +231,19 @@ export function TransactionsClient({
             <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
           )}
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-sm font-medium text-white hover:bg-[var(--color-surface-hover)] transition-colors">
-          <Filter className="w-4 h-4" />
-          Filter (coming soon)
-        </button>
+        <div className="relative">
+          <select
+            value={visibilityFilter}
+            onChange={(e) => setVisibilityFilter(e.target.value)}
+            className="appearance-none flex items-center gap-2 px-4 py-2 pr-10 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-sm font-medium text-white hover:bg-[var(--color-surface-hover)] transition-colors focus:outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+          >
+            <option value="All">All Accounts</option>
+            <option value="Mine">Mine Only</option>
+            <option value="Joint">Joint Accounts</option>
+            <option value="Shared">Shared (Read-only)</option>
+          </select>
+          <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+        </div>
       </div>
 
       <div className="mb-6 flex items-center justify-between gap-4">
@@ -274,6 +316,7 @@ export function TransactionsClient({
                               Business
                             </span>
                           )}
+                          <VisibilityBadge visibility={getMockVisibility(tx.accountId)} />
                         </div>
                       </div>
                     </div>

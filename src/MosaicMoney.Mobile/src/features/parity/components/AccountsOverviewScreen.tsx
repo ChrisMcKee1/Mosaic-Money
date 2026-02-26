@@ -3,26 +3,39 @@ import { useMemo } from "react";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 import { useProjectionMetadata } from "../../projections/hooks/useProjectionMetadata";
+import { useHouseholdAccountAccess } from "../../settings/hooks/useAccountAccess";
 import { formatCurrency } from "../../transactions/utils/formatters";
 import { StatePanel } from "../../transactions/components/StatePanel";
 
 export function AccountsOverviewScreen() {
   const { items, isLoading, isRefreshing, isRetrying, error, refresh, retry } = useProjectionMetadata({ pageSize: 100 });
+  const { getAccountAccessPolicy, isLoadingAccess, refresh: refreshAccess } = useHouseholdAccountAccess();
 
   const accountSummaries = useMemo(() => {
-    const buckets = new Map<string, { accountId: string; txCount: number; netAmount: number }>();
+    const buckets = new Map<string, { accountId: string; txCount: number; netAmount: number; isReadOnly: boolean; isHidden: boolean }>();
 
     for (const item of items) {
-      const existing = buckets.get(item.accountId) ?? { accountId: item.accountId, txCount: 0, netAmount: 0 };
+      const policy = getAccountAccessPolicy(item.accountId);
+      const isHidden = policy.visibility === "Hidden" || policy.role === "None";
+      
+      if (isHidden) continue;
+
+      const existing = buckets.get(item.accountId) ?? { 
+        accountId: item.accountId, 
+        txCount: 0, 
+        netAmount: 0,
+        isReadOnly: policy.role === "ReadOnly",
+        isHidden: false
+      };
       existing.txCount += 1;
       existing.netAmount += item.rawAmount;
       buckets.set(item.accountId, existing);
     }
 
     return [...buckets.values()].sort((a, b) => Math.abs(b.netAmount) - Math.abs(a.netAmount));
-  }, [items]);
+  }, [getAccountAccessPolicy, items]);
 
-  if (isLoading && items.length === 0) {
+  if ((isLoading || isLoadingAccess) && items.length === 0) {
     return (
       <SafeAreaView style={styles.page}>
         <View style={styles.centered}>
@@ -53,7 +66,7 @@ export function AccountsOverviewScreen() {
     <SafeAreaView style={styles.page}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void refresh()} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing || isLoadingAccess} onRefresh={() => void Promise.all([refresh(), refreshAccess()])} />}
       >
         <Text style={styles.heading}>Accounts</Text>
         <Text style={styles.subheading}>Projection-derived account rollups matching web account summary intent.</Text>
@@ -64,7 +77,14 @@ export function AccountsOverviewScreen() {
         ) : (
           accountSummaries.map((account) => (
             <View key={account.accountId} style={styles.card}>
-              <Text style={styles.accountLabel}>Account {account.accountId.slice(0, 8)}</Text>
+              <View style={styles.cardHeader}>
+                <Text style={styles.accountLabel}>Account {account.accountId.slice(0, 8)}</Text>
+                {account.isReadOnly && (
+                  <View style={styles.readOnlyBadge}>
+                    <Text style={styles.readOnlyText}>Read-Only</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.accountMeta}>{account.txCount} transactions loaded</Text>
               <Text style={[styles.balance, account.netAmount < 0 ? styles.negative : styles.positive]}>
                 {formatCurrency(account.netAmount)}
@@ -115,10 +135,29 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 14,
   },
+  cardHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
   accountLabel: {
     color: theme.colors.textMain,
     fontSize: 15,
     fontWeight: "700",
+  },
+  readOnlyBadge: {
+    backgroundColor: theme.colors.surfaceHover,
+    borderColor: theme.colors.border,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  readOnlyText: {
+    color: theme.colors.textMuted,
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
   },
   accountMeta: {
     color: theme.colors.textMuted,

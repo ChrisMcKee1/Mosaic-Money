@@ -26,16 +26,22 @@ export function getApiBaseUrl() {
 export async function fetchApi(path, options = {}) {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  const householdUserId = process.env.MOSAIC_HOUSEHOLD_USER_ID?.trim();
+  const identityHeader = householdUserId
+    ? { "X-Mosaic-Household-User-Id": householdUserId }
+    : {};
 
   const response = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...identityHeader,
       ...options.headers,
     },
   });
 
   if (!response.ok) {
+    console.error(`API fetch failed for ${url}: ${response.status} ${response.statusText}`);
     throw new Error(`API fetch failed: ${response.status} ${response.statusText}`);
   }
 

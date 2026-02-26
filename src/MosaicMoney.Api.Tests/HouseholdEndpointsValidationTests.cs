@@ -51,4 +51,34 @@ public sealed class HouseholdEndpointsValidationTests
 
         Assert.Contains(errors, x => x.Field == nameof(CreateHouseholdInviteRequest.Email));
     }
+
+    [Theory]
+    [InlineData("Mine")]
+    [InlineData("Joint")]
+    [InlineData("Shared")]
+    [InlineData(" shared ")]
+    public void ValidateUpdateAccountSharingPresetRequest_AcceptsSupportedPresets(string preset)
+    {
+        var request = new UpdateAccountSharingPresetRequest
+        {
+            Preset = preset,
+        };
+
+        var errors = HouseholdEndpoints.ValidateUpdateAccountSharingPresetRequest(request);
+
+        Assert.DoesNotContain(errors, x => x.Field == nameof(UpdateAccountSharingPresetRequest.Preset));
+    }
+
+    [Fact]
+    public void ValidateUpdateAccountSharingPresetRequest_RejectsUnknownPreset()
+    {
+        var request = new UpdateAccountSharingPresetRequest
+        {
+            Preset = "HouseholdWide",
+        };
+
+        var errors = HouseholdEndpoints.ValidateUpdateAccountSharingPresetRequest(request);
+
+        Assert.Contains(errors, x => x.Field == nameof(UpdateAccountSharingPresetRequest.Preset));
+    }
 }

@@ -64,8 +64,8 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Done |
 | MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | Done |
 | MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | In Review |
-| MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Not Started |
-| MM-QA-03 | QA | Release rehearsal and rollback drill | MM-QA-01, MM-QA-02 | Rehearsed release with validated rollback path and go/no-go artifact. | Not Started |
+| MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Done |
+| MM-QA-03 | QA | Release rehearsal and rollback drill | MM-QA-01, MM-QA-02 | Rehearsed release with validated rollback path and go/no-go artifact. | Done |
 | MM-BE-16 | Backend | Plaid Investments Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/investments/holdings/get`. | Done |
 | MM-BE-17 | Backend | Plaid Recurring Transactions Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/transactions/recurring/get`. | Done |
 | MM-BE-18 | Backend | Net Worth History Aggregation API | MM-BE-15 | API endpoint to aggregate historical balances across all account types. | Done |
@@ -100,6 +100,16 @@ Implementation note (2026-02-25): `MM-QA-01` triage matrix execution completed a
 - Priority defects identified: `P1` web selector/navigation contract failures and `P1` API startup DB connectivity instability; `P2` AppHost/web lock contention during Playwright execution.
 
 Implementation note (2026-02-24): Planner review promoted `MM-ASP-06` to `Done` after standardizing diagnostics workflow on detached non-isolated startup (`aspire run --project src/apphost.cs --detach`) and validating trace/log capture (`aspire telemetry traces --project src/apphost.cs --limit <n>` plus resource-filtered API traces). Current CLI nuance is documented: `aspire telemetry traces web ...` may return `Resource 'web' not found` for JavaScript executable resources, so cross-resource trace capture uses unfiltered traces command.
+
+Implementation note (2026-02-26): `MM-QA-02` is now `Blocked` and `MM-QA-03` is blocked by dependency after running release gates. Evidence:
+- Security/config/dependency artifact: `artifacts/release-gates/mm-qa-02/latest.md`
+- Rehearsal/rollback artifact: `artifacts/release-gates/mm-qa-03/latest.md`
+- Blocking finding: `src/MosaicMoney.Web` dependency audit reports critical `next` advisories (`npm audit --audit-level=high --omit=dev` exit code 1).
+
+Implementation note (2026-02-26): Planner reran QA gates after remediation and promoted both QA tasks to `Done`.
+- Dependency remediation: upgraded `src/MosaicMoney.Web` dependency `next` to `16.1.6` and re-ran `npm audit --audit-level=high --omit=dev` with `0 vulnerabilities`.
+- QA-02 evidence refresh: `artifacts/release-gates/mm-qa-02/latest.md`.
+- QA-03 evidence refresh: full stop/build/start/wait/resources release rehearsal and rollback restart sequence passed again with healthy API/worker/web resources (`artifacts/release-gates/mm-qa-03/latest.md`).
 
 ## Verification Matrix
 | Area | Validation | Pass Criteria |

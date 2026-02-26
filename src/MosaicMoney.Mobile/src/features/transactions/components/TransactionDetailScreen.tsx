@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { useTransactionDetail } from "../hooks/useTransactionDetail";
+import { useAccountAccess } from "../../settings/hooks/useAccountAccess";
 import { formatCurrency, formatLedgerDate, formatUtcDateTime } from "../utils/formatters";
 import { ReviewActionPanel } from "./ReviewActionPanel";
 import { StatePanel } from "./StatePanel";
@@ -37,12 +38,22 @@ function NoteSection({ title, content, accentColor }: { title: string; content?:
 
 export function TransactionDetailScreen({ transactionId }: TransactionDetailScreenProps) {
   const { transaction, isLoading, isRefreshing, isNotFound, error, refresh, retry } = useTransactionDetail(transactionId);
+  const { isReadOnly, isHidden, isLoadingAccess, refresh: refreshAccess } = useAccountAccess(transaction?.accountId);
 
   if (isLoading && !transaction) {
     return (
       <SafeAreaView style={styles.centeredPage}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading transaction detail...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (transaction && isLoadingAccess) {
+    return (
+      <SafeAreaView style={styles.centeredPage}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.loadingText}>Resolving account access...</Text>
       </SafeAreaView>
     );
   }
@@ -85,11 +96,19 @@ export function TransactionDetailScreen({ transactionId }: TransactionDetailScre
     );
   }
 
+  if (isHidden) {
+    return (
+      <SafeAreaView style={styles.page}>
+        <StatePanel title="Access Denied" body="You do not have permission to view this transaction." />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.page}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={() => void refresh()} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing || isLoadingAccess} onRefresh={() => void Promise.all([refresh(), refreshAccess()])} />}
       >
         <View style={styles.headerCard}>
           <Text style={styles.title}>{transaction.description}</Text>
@@ -119,7 +138,16 @@ export function TransactionDetailScreen({ transactionId }: TransactionDetailScre
           <NoteSection title="AgentNote" content={transaction.agentNote} accentColor={theme.colors.positive} />
         </View>
 
-        <ReviewActionPanel transaction={transaction} onActionSynced={refresh} />
+        {isReadOnly ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Read-Only Account</Text>
+            <Text style={styles.readOnlyHint}>
+              You have read-only access to this account. Review actions are disabled.
+            </Text>
+          </View>
+        ) : (
+          <ReviewActionPanel transaction={transaction} onActionSynced={refresh} />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

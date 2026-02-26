@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { createLinkToken, logLinkSessionEvent, exchangePublicToken } from "./actions";
+import PlaidLinkButton from "./PlaidLinkButton";
 
 export default function PlaidOnboardingPage() {
   const [status, setStatus] = useState("idle"); // idle, loading_token, ready, simulating_link, exchanging_token, success, error
@@ -9,6 +10,41 @@ export default function PlaidOnboardingPage() {
   const [linkSessionId, setLinkSessionId] = useState(null);
   const [linkToken, setLinkToken] = useState(null);
   const [exchangeResult, setExchangeResult] = useState(null);
+
+  const handlePlaidSuccess = useCallback(async (publicToken, metadata) => {
+    setStatus("exchanging_token");
+    
+    // Log SUCCESS event
+    await logLinkSessionEvent(linkSessionId, "SUCCESS", "web", metadata);
+    
+    const institutionId = metadata?.institution?.institution_id || null;
+    
+    const result = await exchangePublicToken(publicToken, linkSessionId, institutionId, metadata);
+    
+    if (result.success) {
+      setExchangeResult(result.data);
+      setStatus("success");
+    } else {
+      // Log ERROR event
+      await logLinkSessionEvent(linkSessionId, "ERROR", "web", { error_message: result.error });
+      setErrorMessage(result.error || "Failed to exchange public token");
+      setStatus("error");
+    }
+  }, [linkSessionId]);
+
+  const handlePlaidExit = useCallback(async (err, metadata) => {
+    await logLinkSessionEvent(linkSessionId, "EXIT", "web", { error: err, ...metadata });
+    if (err) {
+      setErrorMessage(err.display_message || err.error_message || "An error occurred in Plaid Link");
+      setStatus("error");
+    } else {
+      setStatus("ready");
+    }
+  }, [linkSessionId]);
+
+  const handlePlaidEvent = useCallback(async (eventName, metadata) => {
+    await logLinkSessionEvent(linkSessionId, eventName, "web", metadata);
+  }, [linkSessionId]);
 
   const handleStart = async () => {
     setStatus("loading_token");
@@ -25,46 +61,6 @@ export default function PlaidOnboardingPage() {
       setStatus("ready");
     } else {
       setErrorMessage(result.error || "Failed to create link token");
-      setStatus("error");
-    }
-  };
-
-  const handleOpenLink = async () => {
-    setStatus("simulating_link");
-    
-    // Log OPEN event
-    await logLinkSessionEvent(linkSessionId, "OPEN", "web_demo");
-
-    // Simulate user interacting with Plaid Link
-    setTimeout(async () => {
-      // Simulate SUCCESS event
-      await logLinkSessionEvent(linkSessionId, "SUCCESS", "web_demo", { institution_name: "Chase" });
-      
-      // Simulate receiving a public token from Plaid Link onSuccess callback
-      const simulatedPublicToken = "public-sandbox-" + crypto.randomUUID();
-      const simulatedInstitutionId = "ins_1"; // Chase
-      
-      handleExchange(simulatedPublicToken, simulatedInstitutionId);
-    }, 2000);
-  };
-
-  const handleCancelLink = async () => {
-    await logLinkSessionEvent(linkSessionId, "EXIT", "web_demo", { reason: "user_cancelled" });
-    setStatus("ready");
-  };
-
-  const handleExchange = async (publicToken, institutionId) => {
-    setStatus("exchanging_token");
-    
-    const result = await exchangePublicToken(publicToken, linkSessionId, institutionId);
-    
-    if (result.success) {
-      setExchangeResult(result.data);
-      setStatus("success");
-    } else {
-      // Log ERROR event
-      await logLinkSessionEvent(linkSessionId, "ERROR", "web_demo", { error_message: result.error });
-      setErrorMessage(result.error || "Failed to exchange public token");
       setStatus("error");
     }
   };
@@ -101,39 +97,21 @@ export default function PlaidOnboardingPage() {
               Secure session established. Ready to connect.
             </div>
             
-            {/* DEFERRED: Real Plaid SDK integration */}
-            <div className="border-2 border-dashed border-gray-300 p-6 rounded-lg mb-6 bg-gray-50">
-              <h3 className="font-medium text-gray-700 mb-2">Demo Mode: Simulated Plaid Link</h3>
+            <div className="p-6 rounded-lg mb-6 bg-gray-50">
+              <h3 className="font-medium text-gray-700 mb-2">Connect with Plaid</h3>
               <p className="text-sm text-gray-500 mb-4">
-                The real Plaid SDK is deferred. Clicking below will simulate a successful bank connection 
-                using the backend contracts.
+                Click below to securely connect your bank account using Plaid.
               </p>
               <div className="flex justify-center gap-4">
-                <button 
-                  onClick={handleCancelLink}
-                  className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded transition-colors"
-                >
-                  Simulate Cancel
-                </button>
-                <button 
-                  onClick={handleOpenLink}
-                  className="bg-black hover:bg-gray-800 text-[var(--color-button-ink)] font-medium py-2 px-4 rounded transition-colors"
-                >
-                  Simulate Success
-                </button>
+                <PlaidLinkButton 
+                  linkToken={linkToken}
+                  linkSessionId={linkSessionId}
+                  onSuccess={handlePlaidSuccess}
+                  onExit={handlePlaidExit}
+                  onEvent={handlePlaidEvent}
+                />
               </div>
             </div>
-          </div>
-        )}
-
-        {status === "simulating_link" && (
-          <div className="text-center py-8">
-            <div className="animate-pulse flex space-x-4 justify-center mb-4">
-              <div className="h-3 w-3 bg-gray-400 rounded-full"></div>
-              <div className="h-3 w-3 bg-gray-400 rounded-full"></div>
-              <div className="h-3 w-3 bg-gray-400 rounded-full"></div>
-            </div>
-            <p className="text-gray-600">User is interacting with Plaid Link...</p>
           </div>
         )}
 

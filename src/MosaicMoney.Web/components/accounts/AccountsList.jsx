@@ -1,6 +1,6 @@
 "use client";
 
-import { Wallet, CreditCard, Building, Landmark, TrendingUp, MoreHorizontal } from "lucide-react";
+import { Wallet, CreditCard, Building, Landmark, TrendingUp, MoreHorizontal, Users, User, Eye } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { CurrencyDisplay } from "../ui/CurrencyDisplay";
 
@@ -10,7 +10,26 @@ const generateSparklineData = (base, isPositive) => {
   }));
 };
 
-export function AccountsList({ accounts }) {
+const VisibilityBadge = ({ visibility }) => {
+  if (!visibility) return null;
+  
+  const config = {
+    "Joint": { icon: Users, className: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+    "Mine": { icon: User, className: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" },
+    "Shared": { icon: Eye, className: "bg-purple-500/10 text-purple-400 border-purple-500/20" }
+  };
+  
+  const { icon: Icon, className } = config[visibility] || config["Mine"];
+  
+  return (
+    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${className}`}>
+      <Icon className="w-3 h-3" />
+      {visibility}
+    </span>
+  );
+};
+
+export function AccountsList({ accounts, onSelectAccount, selectedAccountId }) {
   const groupedAccounts = accounts.reduce((acc, account) => {
     if (!acc[account.type]) acc[account.type] = [];
     acc[account.type].push(account);
@@ -51,13 +70,20 @@ export function AccountsList({ accounts }) {
                   const sparklineData = generateSparklineData(Math.abs(account.balance), isAccPositive);
                   
                   return (
-                    <div key={account.id} className="p-4 flex items-center justify-between hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer group">
+                    <div 
+                      key={account.id} 
+                      onClick={() => onSelectAccount?.(account)}
+                      className={`p-4 flex items-center justify-between hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer group border-l-2 ${selectedAccountId === account.id ? 'bg-[var(--color-surface-hover)] border-l-[var(--color-primary)]' : 'border-l-transparent'}`}
+                    >
                       <div className="flex items-center gap-4 flex-1">
                         <div className="w-10 h-10 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center text-white font-bold border border-[var(--color-border)]">
                           {account.institution.charAt(0)}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white group-hover:text-[var(--color-primary)] transition-colors">{account.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-white group-hover:text-[var(--color-primary)] transition-colors">{account.name}</p>
+                            <VisibilityBadge visibility={account.visibility} />
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-[var(--color-text-muted)]">{account.institution}</span>
                             {account.mask && (

@@ -848,6 +848,13 @@ public sealed class AcceptHouseholdInviteRequest
     public string? DisplayName { get; init; }
 }
 
+public sealed class UpdateAccountSharingPresetRequest
+{
+    [Required]
+    [MaxLength(16)]
+    public string Preset { get; init; } = "Mine";
+}
+
 public sealed record HouseholdMemberDto(
     Guid Id,
     Guid HouseholdId,
@@ -867,3 +874,14 @@ public sealed record HouseholdInviteDto(
     string MembershipStatus,
     DateTime? InvitedAtUtc,
     DateTime? RemovedAtUtc);
+
+public sealed record HouseholdAccountAccessSummaryDto(
+    Guid AccountId,
+    Guid HouseholdId,
+    string AccountName,
+    string? InstitutionName,
+    bool IsActive,
+    string CurrentMemberAccessRole,
+    string CurrentMemberVisibility,
+    string SharingPreset,
+    DateTime LastModifiedAtUtc);

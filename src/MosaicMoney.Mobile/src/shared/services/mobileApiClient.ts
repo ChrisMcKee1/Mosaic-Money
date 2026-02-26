@@ -1,5 +1,7 @@
 import { getApiBaseUrl } from "../../features/transactions/services/apiConfig";
 
+const configuredHouseholdUserId = process.env.EXPO_PUBLIC_MOSAIC_HOUSEHOLD_USER_ID?.trim();
+
 interface ApiErrorEnvelope {
   code: string;
   message: string;
@@ -72,6 +74,9 @@ export async function requestJson<TParsed, TBody = unknown>(
     method,
     headers: {
       Accept: "application/json",
+      ...(configuredHouseholdUserId
+        ? { "X-Mosaic-Household-User-Id": configuredHouseholdUserId }
+        : {}),
       ...(hasRequestBody(method) ? { "Content-Type": "application/json" } : {}),
     },
     body: hasRequestBody(method) && options.body !== undefined ? JSON.stringify(options.body) : undefined,

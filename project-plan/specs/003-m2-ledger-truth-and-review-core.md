@@ -43,12 +43,12 @@ Deliver the first complete human-reviewed ledger loop: Plaid account-link onboar
 | MM-BE-15 | Plaid product capability mapping research | MM-BE-12, MM-BE-13, MM-BE-14 | Cross-reference PRD capabilities to Plaid products/endpoints/webhooks, validate sandbox simulation coverage, and publish MVP product decisions with schema + ingestion implications. | Done |
 | MM-FE-04 | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Web list view with separated dual notes and no ledger mutation controls. | Done |
 | MM-FE-05 | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify user actions integrated with backend review endpoints. | Done |
-| MM-FE-09 | Plaid Link onboarding flow (web) | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued token and posts `public_token` + metadata to backend exchange endpoint. | Blocked |
+| MM-FE-09 | Plaid Link onboarding flow (web) | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued token and posts `public_token` + metadata to backend exchange endpoint. | In Review |
 | MM-MOB-02 | Offline-safe state/caching foundation | MM-MOB-01 | Queue-friendly offline cache and sync baseline. | Done |
 | MM-MOB-03 | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile review inbox with clear pending statuses. | Done |
 | MM-MOB-04 | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Clear distinction of `UserNote` and `AgentNote` in mobile detail view. | Done |
 | MM-MOB-05 | Human-in-the-loop approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Mobile approve/reject actions with explicit user confirmation and sync behavior. | Done |
-| MM-MOB-08 | Plaid Link onboarding flow (mobile) | MM-MOB-01, MM-BE-12, MM-BE-13 | React Native Link SDK flow submits `public_token` for backend exchange and does not expose Plaid secrets on-device. | Blocked |
+| MM-MOB-08 | Plaid Link onboarding flow (mobile) | MM-MOB-01, MM-BE-12, MM-BE-13 | React Native Link SDK flow submits `public_token` for backend exchange and does not expose Plaid secrets on-device. | In Review |
 
 Update note (2026-02-23): `src/MosaicMoney.Mobile` scaffold now exists, so `MM-MOB-03` and `MM-MOB-04` are unblocked and now in `In Review` after delegated implementation and typecheck pass.
 
@@ -71,6 +71,10 @@ Update note (2026-02-24): Frontend execution is intentionally paused due fronten
 Update note (2026-02-24): Planner backlog sweep unparked `MM-FE-09` and `MM-MOB-08` to `Not Started` after backend Plaid readiness gates were closed and local execution capacity was re-verified.
 
 Update note (2026-02-25): Delegation attempts for `MM-FE-09` and `MM-MOB-08` are blocked by upstream specialist provider-capacity errors; tasks remain blocked pending frontend/mobile specialist availability or a manual planner fallback implementation.
+
+Update note (2026-02-25): Planner restarted `MM-FE-09` and `MM-MOB-08` in a parallel execution wave with specialist delegation plus planner-led review against onboarding acceptance criteria.
+
+Update note (2026-02-25): `MM-FE-09` and `MM-MOB-08` now include active Link SDK integration paths and local validation evidence, and are moved to `In Review` pending final sandbox interaction confirmation.
 
 Update note (2026-02-25): `MM-BE-06` is reopened for a targeted Plaid transactions-history enhancement to request and ingest the maximum available historical range (up to 24 months) during onboarding/sync initialization while maintaining idempotent raw-to-enriched behavior.
 
