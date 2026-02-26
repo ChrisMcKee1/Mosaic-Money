@@ -17,6 +17,7 @@ Detailed architecture docs:
 - Web: Next.js 16 with React 19 and Tailwind CSS.
 - Mobile: React Native via Expo SDK 55 for mobile apps, with iPhone-first MVP release focus and Windows dev host + physical phone testing workflow.
 - Data: PostgreSQL 18 with `azure_ai` extension and `pgvector`.
+- Authentication: Clerk for web/mobile sign-in and session management, with API-side JWT validation and deny-by-default authorization policies.
 - Azure PostgreSQL baseline from current Aspire publish: PostgreSQL 16, Burstable `Standard_B1ms`, 32 GB storage, HA disabled; tune via `ConfigureInfrastructure(...)` for production.
 - Naming convention for PostgreSQL resources: server resource name `mosaic-postgres`, database/connection name `mosaicmoneydb`, and secret parameter keys prefixed with `mosaic-postgres-*`.
 - AI: Microsoft Agent Framework 1.0 RC plus `Microsoft.Extensions.AI`.
@@ -24,6 +25,7 @@ Detailed architecture docs:
 ## Architectural Rules
 - Keep Copilot as UI and coding assistant, not runtime orchestration.
 - Keep deterministic and in-database AI paths primary for cost and latency control.
+- Treat API as resource server: validate Clerk JWTs, map `sub` to Mosaic identity, and enforce protected endpoints via authorization policy.
 - Escalation order is deterministic -> semantic retrieval -> MAF fallback.
 - For Azure rollout requiring only database provisioning, deploy `src/apphost.database/apphost.cs` with Aspire CLI because `aspire deploy` does not currently provide per-resource filtering.
 - DB-only rollout recommendation: run `aspire do provision-mosaic-postgres-kv` first, tag the vault (`mosaic=true`, `workload=mosaic-money`), then continue database provisioning.

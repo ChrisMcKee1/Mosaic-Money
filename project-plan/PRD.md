@@ -63,3 +63,25 @@ Mosaic Money is a cloud-first, single-entry personal finance system for a two-us
 - Specs and project board status must stay synchronized.
 - M5/M6/M7 docs must reference current acceptance evidence and known remaining gaps.
 - Architecture diagrams and data models are maintained in split documents under `docs/architecture/` and `docs/data-models/`.
+
+## 7. Authentication and Authorization (Clerk)
+
+### Strategic Value
+- Developer velocity: offload cryptography, session lifecycle, and auth UI primitives to Clerk so Mosaic Money engineering time stays focused on financial workflows.
+- Frictionless lab access: prioritize Microsoft SSO so household users can sign in quickly with existing accounts.
+- Future-proofing: keep an OIDC-standard path so adding providers (Google/LinkedIn) is configuration-first, not schema-rewrite work.
+- Security baseline: support passkeys/WebAuthn through Clerk-native flows instead of custom auth implementations.
+
+### Product Requirements
+- Web and mobile must both support Clerk sign-in/session handling.
+- Backend must validate Clerk-issued JWTs and enforce deny-by-default authorization for protected APIs.
+- Authenticated identity (`sub`) must map to first-class Mosaic user identity for household ACL enforcement.
+- API operations that impact household/account visibility remain human-reviewed and policy-gated.
+
+### UX Requirements
+- Web must expose discoverable account-link entry points on Accounts and Settings surfaces.
+- Plaid onboarding should be treated as a contextual linking flow, not a primary app navigation destination.
+- Settings should centralize configuration concerns (appearance/theming, account linking, security/session controls).
+
+### Delivery Gate
+Clerk auth work is tracked in milestone spec `project-plan/specs/009-m8-authentication-and-authorization-clerk.md` and must meet all authn/authz verification gates before promotion to `Done`.

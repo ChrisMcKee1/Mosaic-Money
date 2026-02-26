@@ -1,4 +1,5 @@
 import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { ClerkProvider } from '@clerk/nextjs';
 import "./globals.css";
 import { Shell } from "../components/layout/Shell";
 
@@ -26,7 +27,9 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  return (
+  const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  const content = (
     <html
       lang="en"
       data-theme="dark"
@@ -56,5 +59,15 @@ export default function RootLayout({ children }) {
         <Shell>{children}</Shell>
       </body>
     </html>
+  );
+
+  if (!isClerkConfigured) {
+    return content;
+  }
+
+  return (
+    <ClerkProvider appearance={{ cssLayerName: 'clerk' }}>
+      {content}
+    </ClerkProvider>
   );
 }

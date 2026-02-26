@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
@@ -8,10 +7,6 @@ namespace MosaicMoney.Api.Apis;
 
 public static class HouseholdEndpoints
 {
-    private const string HouseholdUserIdHeaderName = "X-Mosaic-Household-User-Id";
-    private const string MosaicHouseholdUserIdClaimType = "mosaic_household_user_id";
-    private const string HouseholdUserIdClaimType = "household_user_id";
-
     private static readonly HashSet<string> AllowedInviteRoles = new(StringComparer.OrdinalIgnoreCase)
     {
         "Member",
@@ -408,7 +403,12 @@ public static class HouseholdEndpoints
             Guid id,
             CancellationToken cancellationToken) =>
         {
-            var memberScope = await ResolveActiveHouseholdMemberScopeAsync(httpContext, dbContext, id, cancellationToken);
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot access this household.",
+                cancellationToken);
             if (memberScope.ErrorResult is not null)
             {
                 return memberScope.ErrorResult;
@@ -511,7 +511,12 @@ public static class HouseholdEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
-            var memberScope = await ResolveActiveHouseholdMemberScopeAsync(httpContext, dbContext, id, cancellationToken);
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot access this household.",
+                cancellationToken);
             if (memberScope.ErrorResult is not null)
             {
                 return memberScope.ErrorResult;
@@ -722,63 +727,6 @@ public static class HouseholdEndpoints
         }
     }
 
-    private static async Task<HouseholdMemberScope> ResolveActiveHouseholdMemberScopeAsync(
-        HttpContext httpContext,
-        MosaicMoneyDbContext dbContext,
-        Guid householdId,
-        CancellationToken cancellationToken)
-    {
-        var principalValue = httpContext.User.FindFirstValue(MosaicHouseholdUserIdClaimType)
-            ?? httpContext.User.FindFirstValue(HouseholdUserIdClaimType);
-
-        if (string.IsNullOrWhiteSpace(principalValue)
-            && httpContext.Request.Headers.TryGetValue(HouseholdUserIdHeaderName, out var headerValues))
-        {
-            principalValue = headerValues.FirstOrDefault();
-        }
-
-        if (string.IsNullOrWhiteSpace(principalValue))
-        {
-            return new HouseholdMemberScope(
-                Guid.Empty,
-                ApiValidation.ToUnauthorizedResult(
-                    httpContext,
-                    "member_context_required",
-                    "A household member context claim or X-Mosaic-Household-User-Id header is required."));
-        }
-
-        if (!Guid.TryParse(principalValue, out var householdUserId))
-        {
-            return new HouseholdMemberScope(
-                Guid.Empty,
-                ApiValidation.ToUnauthorizedResult(
-                    httpContext,
-                    "member_context_invalid",
-                    "The household member context value must be a valid GUID."));
-        }
-
-        var activeMembershipExists = await dbContext.HouseholdUsers
-            .AsNoTracking()
-            .AnyAsync(
-                x =>
-                    x.Id == householdUserId
-                    && x.HouseholdId == householdId
-                    && x.MembershipStatus == HouseholdMembershipStatus.Active,
-                cancellationToken);
-
-        if (!activeMembershipExists)
-        {
-            return new HouseholdMemberScope(
-                Guid.Empty,
-                ApiValidation.ToForbiddenResult(
-                    httpContext,
-                    "membership_access_denied",
-                    "The household member is not active and cannot access this household."));
-        }
-
-        return new HouseholdMemberScope(householdUserId, null);
-    }
-
     private static string BuildDefaultDisplayName(string emailOrName)
     {
         var trimmed = emailOrName.Trim();
@@ -797,6 +745,4 @@ public static class HouseholdEndpoints
         AccountAccessRole AccessRole,
         AccountAccessVisibility Visibility,
         DateTime LastModifiedAtUtc);
-
-    private sealed record HouseholdMemberScope(Guid HouseholdUserId, IResult? ErrorResult);
 }

@@ -53,6 +53,7 @@ All task tables use a `Status` column with the following values:
 5. M5 Verification, Release Gates, and Dashboard Data Wiring
 6. M6 UI Redesign and Theming
 7. M7 Identity, Household Access Control, and Account Ownership
+8. M8 Authentication and Authorization (Clerk)
 
 ## Cross-Domain Dependency DAG (Small Tasks)
 
@@ -207,6 +208,32 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | MM-MOB-10 | Mobile | Membership and invite parity | MM-BE-20, MM-MOB-07 | Mobile supports member lifecycle views and invite acceptance with parity to web semantics. | Done |
 | MM-MOB-11 | Mobile | Account sharing controls parity | MM-BE-21, MM-MOB-10 | Mobile supports per-account sharing roles and visibility controls with safe defaults. | In Review |
 | MM-MOB-12 | Mobile | ACL-aware account and transaction views | MM-BE-23, MM-MOB-11 | Mobile renders member-scoped account/transaction lists with hidden/read-only behavior matching backend authorization. | In Review |
+
+### M8 Authentication and Authorization (Clerk)
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-ASP-10 | DevOps | Clerk runtime secret and issuer wiring | MM-ASP-03, MM-ASP-04 | AppHost/API/Web/Mobile receive Clerk keys/issuer via env + user-secrets contract with no hardcoded credentials. | In Review |
+| MM-ASP-11 | DevOps | Clerk tenant/provider configuration runbook | MM-ASP-10 | Source-linked runbook covers Clerk app creation, Microsoft SSO setup, and passkey enablement for local/CI use. | In Review |
+| MM-BE-25 | Backend | API JWT validation and fallback auth policy | MM-ASP-10, MM-BE-19 | API validates Clerk JWTs and applies deny-by-default authorization for protected routes. | In Review |
+| MM-BE-26 | Backend | Auth subject to Mosaic identity mapping | MM-BE-25, MM-BE-19, MM-BE-20 | `sub` claim maps to `MosaicUsers` and household membership context used for ACL-scoped reads/writes. | In Review |
+| MM-FE-22 | Web | Clerk web integration and protected routes | MM-ASP-10 | Web app uses Clerk provider, sign-in/sign-up routes, and guarded app-shell navigation. | In Review |
+| MM-FE-23 | Web | Accounts add-account CTA and Plaid entry path | MM-FE-22, MM-FE-12, MM-FE-09 | Accounts screen exposes clear Add Account/Plaid link entry point (top-level CTA) into onboarding flow. | In Review |
+| MM-FE-24 | Web | Settings IA for appearance and security | MM-FE-10, MM-FE-22 | Settings includes Appearance/Theming and Security sections, preserving existing design language. | Done |
+| MM-MOB-13 | Mobile | Clerk Expo integration and sign-in flow | MM-ASP-10 | Mobile uses `@clerk/clerk-expo` + `expo-secure-store` token cache and custom sign-in flow with Microsoft option. | In Review |
+| MM-MOB-14 | Mobile | Settings and account-link entrypoint parity | MM-MOB-13, MM-MOB-10 | Mobile settings includes appearance/security entry points and Add Account path parity with web intent. | Done |
+| MM-QA-04 | QA | Auth and access regression gate | MM-BE-26, MM-FE-24, MM-MOB-14 | Auth flows, protected endpoint behavior, and account-link navigation pass web/mobile/API validation matrix. | In Review |
+
+Update note (2026-02-25): Planner kickoff for M8 is created from Clerk authentication requirements. Initial implementation slice tasks (`MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-FE-22`, `MM-FE-23`, `MM-MOB-13`) are set to `In Progress` prior to specialist delegation.
+
+Update note (2026-02-25): `MM-ASP-10` and `MM-ASP-11` implementation slice now includes AppHost Clerk parameter/env wiring for API and web, placeholder contract updates (`appsettings.json`, web/mobile `.env.example`), and a new source-linked Clerk tenant/provider runbook at `docs/agent-context/clerk-tenant-provider-runbook.md`. Task statuses remain `In Progress` pending planner review.
+
+Update note (2026-02-25): `MM-BE-26` moved to `In Review` after implementing shared household member context resolution that maps authenticated subject claims to `MosaicUsers` and active `HouseholdUsers` membership context, with ambiguity and subject-mismatch guards covered by `ApiAuthorizationTests`.
+
+Update note (2026-02-26): `MM-FE-24` and `MM-MOB-14` moved to `In Progress` for coordinated web/mobile settings and account-link parity implementation.
+
+Update note (2026-02-26): `MM-FE-24` and `MM-MOB-14` are now `Done` after shipping web/mobile settings parity and account-link CTAs with validation evidence (`npm run build`, targeted web Playwright auth/account/settings specs, mobile typecheck, and focused mobile vitest suites).
+
+Update note (2026-02-26): `MM-QA-04` moved to `In Review` after running API auth regression (`ApiAuthorizationTests`), web auth/account-link route checks, and mobile compile/regression validations.
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

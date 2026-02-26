@@ -24,6 +24,25 @@ export default function SettingsPage() {
         </div>
 
         <div className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-4 md:p-5">
+          <h2 className="text-lg font-semibold text-[var(--color-text-main)] mb-2">Security & Authentication</h2>
+          <p className="text-sm text-[var(--color-text-muted)] mb-4">
+            Manage your account, password, and active sessions.
+          </p>
+          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
+            <Link 
+              href="/settings/security" 
+              className="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--color-background)] hover:bg-[var(--color-primary-hover)] transition-colors"
+            >
+              Manage Security
+            </Link>
+          ) : (
+            <div className="inline-flex items-center justify-center rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text-muted)] cursor-not-allowed">
+              Authentication Disabled
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-4 md:p-5">
           <h2 className="text-lg font-semibold text-[var(--color-text-main)] mb-2">Household</h2>
           <p className="text-sm text-[var(--color-text-muted)] mb-4">
             Manage members, invites, and access to your household accounts.

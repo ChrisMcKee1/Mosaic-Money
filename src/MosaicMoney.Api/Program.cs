@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MosaicMoney.Api.Apis;
+using MosaicMoney.Api.Authentication;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.AccessPolicy;
@@ -18,6 +19,7 @@ builder.AddNpgsqlDbContext<MosaicMoneyDbContext>(
     connectionName: "mosaicmoneydb",
     configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
 builder.Services.AddDataProtection();
+builder.Services.AddClerkJwtAuthentication(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AccountAccessPolicyBackfillService>();
 builder.Services.Configure<PlaidOptions>(builder.Configuration.GetSection(PlaidOptions.SectionName));
@@ -89,6 +91,9 @@ if (allowedCorsOrigins.Length > 0)
 {
     app.UseCors();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapDefaultEndpoints();
 app.MapMosaicMoneyApi();

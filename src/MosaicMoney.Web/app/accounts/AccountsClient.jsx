@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { PageLayout } from "../../components/layout/PageLayout";
 import { AccountsList } from "../../components/accounts/AccountsList";
-import { PieChart, Shield, Users, User, Eye, Settings } from "lucide-react";
+import { PieChart, Shield, Users, User, Eye, Settings, Plus } from "lucide-react";
 import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
 
 export function AccountsClient({ initialAccounts }) {
@@ -190,6 +191,15 @@ export function AccountsClient({ initialAccounts }) {
       title="Accounts" 
       subtitle="Manage your connected institutions and manual accounts."
       rightPanel={rightPanel}
+      actions={
+        <Link 
+          href="/onboarding/plaid"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Add Account
+        </Link>
+      }
     >
       <AccountsList accounts={accounts} onSelectAccount={setSelectedAccount} selectedAccountId={selectedAccount?.id} />
     </PageLayout>

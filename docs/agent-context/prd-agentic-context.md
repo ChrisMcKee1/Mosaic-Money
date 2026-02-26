@@ -24,6 +24,8 @@ Related detail docs:
 - Business-expense isolation from household budget burn.
 - Semantic retrieval over local PostgreSQL embeddings.
 - Household identity and account access policy controls.
+- Clerk-based authentication and authorization across web/mobile/API with Microsoft SSO and passkey readiness.
+- Discoverable settings and account-linking UX entry points (appearance, security, and Plaid linking).
 - Release-gate evidence for AI quality before production promotion.
 
 ## AI Escalation Order

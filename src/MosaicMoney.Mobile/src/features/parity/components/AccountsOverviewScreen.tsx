@@ -1,5 +1,6 @@
-import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo } from "react";
+import { useRouter } from "expo-router";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 import { useProjectionMetadata } from "../../projections/hooks/useProjectionMetadata";
@@ -8,6 +9,7 @@ import { formatCurrency } from "../../transactions/utils/formatters";
 import { StatePanel } from "../../transactions/components/StatePanel";
 
 export function AccountsOverviewScreen() {
+  const router = useRouter();
   const { items, isLoading, isRefreshing, isRetrying, error, refresh, retry } = useProjectionMetadata({ pageSize: 100 });
   const { getAccountAccessPolicy, isLoadingAccess, refresh: refreshAccess } = useHouseholdAccountAccess();
 
@@ -71,6 +73,13 @@ export function AccountsOverviewScreen() {
         <Text style={styles.heading}>Accounts</Text>
         <Text style={styles.subheading}>Projection-derived account rollups matching web account summary intent.</Text>
         <PrimarySurfaceNav />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/onboarding/plaid")}
+          style={({ pressed }) => [styles.addAccountButton, pressed && styles.addAccountButtonPressed]}
+        >
+          <Text style={styles.addAccountButtonText}>Add Account (Plaid)</Text>
+        </Pressable>
 
         {accountSummaries.length === 0 ? (
           <StatePanel title="No accounts" body="No account-linked transaction projections are available." />
@@ -126,6 +135,24 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 14,
     marginTop: 6,
+  },
+  addAccountButton: {
+    alignSelf: "flex-start",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  addAccountButtonPressed: {
+    backgroundColor: theme.colors.surfaceHover,
+  },
+  addAccountButtonText: {
+    color: theme.colors.primary,
+    fontSize: 13,
+    fontWeight: "700",
   },
   card: {
     backgroundColor: theme.colors.surface,

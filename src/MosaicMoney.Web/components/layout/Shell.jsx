@@ -14,6 +14,7 @@ import {
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { ThemeSwitcher } from "../theme/ThemeSwitcher";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -79,6 +80,23 @@ export function Shell({ children }) {
         </nav>
 
         <div className="p-4 border-t border-[var(--color-border)] space-y-3">
+          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && (
+            <div className="px-3 py-2">
+              <SignedIn>
+                <div className="flex items-center gap-3">
+                  <UserButton afterSignOutUrl="/" />
+                  <span className="text-sm font-medium text-[var(--color-text-main)]">Account</span>
+                </div>
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">
+                    Sign In
+                  </button>
+                </SignInButton>
+              </SignedOut>
+            </div>
+          )}
           <ThemeSwitcher compact />
           <Link
             href="/settings"

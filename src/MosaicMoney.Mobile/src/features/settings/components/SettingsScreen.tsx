@@ -3,6 +3,8 @@ import { useRouter } from "expo-router";
 import { theme } from "../../../theme/tokens";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 
+const isClerkConfigured = !!process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
 export function SettingsScreen() {
   const router = useRouter();
 
@@ -15,6 +17,38 @@ export function SettingsScreen() {
       </View>
 
       <View style={styles.content}>
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push("/settings/appearance")}
+        >
+          <Text style={styles.cardTitle}>Appearance</Text>
+          <Text style={styles.cardDescription}>
+            Preview the current visual theme and understand how the mobile UI is styled.
+          </Text>
+        </Pressable>
+
+        <Pressable
+          disabled={!isClerkConfigured}
+          style={({ pressed }) => [styles.card, !isClerkConfigured && styles.cardDisabled, pressed && isClerkConfigured && styles.cardPressed]}
+          onPress={() => router.push("/settings/security")}
+        >
+          <Text style={styles.cardTitle}>Security & Authentication</Text>
+          <Text style={styles.cardDescription}>
+            Manage your sign-in session and authentication options.
+          </Text>
+          {!isClerkConfigured ? <Text style={styles.cardHint}>Authentication is disabled in this environment.</Text> : null}
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push("/onboarding/plaid")}
+        >
+          <Text style={styles.cardTitle}>Add Account</Text>
+          <Text style={styles.cardDescription}>
+            Connect a bank account through Plaid to load transactions.
+          </Text>
+        </Pressable>
+
         <Pressable
           style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
           onPress={() => router.push("/settings/household")}
@@ -54,6 +88,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   content: {
+    gap: 12,
     padding: 16,
   },
   card: {
@@ -62,6 +97,9 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.lg,
     borderWidth: 1,
     padding: 16,
+  },
+  cardDisabled: {
+    opacity: 0.7,
   },
   cardPressed: {
     backgroundColor: theme.colors.surfaceHover,
@@ -75,5 +113,10 @@ const styles = StyleSheet.create({
   cardDescription: {
     color: theme.colors.textMuted,
     fontSize: 14,
+  },
+  cardHint: {
+    color: theme.colors.warning,
+    fontSize: 12,
+    marginTop: 8,
   },
 });

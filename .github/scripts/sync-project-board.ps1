@@ -4,6 +4,9 @@
 
 $ErrorActionPreference = "Continue"
 $PROJECT_ID = "PVT_kwHOAYj6Kc4BP962"
+$PROJECT_OWNER = "ChrisMcKee1"
+$PROJECT_NUMBER = 1
+$REPO = "ChrisMcKee1/Mosaic-Money"
 $FIELD_ID = "PVTSSF_lAHOAYj6Kc4BP962zg-OQcQ"
 
 # Status option IDs (from the Status field we just configured)
@@ -125,33 +128,46 @@ $issues = @(
     @{ num=107; nid="I_kwDORVI-G87t4wRp"; status="Done" } # MM-MOB-10
     @{ num=108; nid="I_kwDORVI-G87t4wVU"; status="In Review" } # MM-MOB-11
     @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="In Review" } # MM-MOB-12
+
+    # --- M8: Authentication and Authorization (Clerk) ---
+    @{ num=110; nid="I_kwDORVI-G87t_pbX"; status="In Review" } # MM-ASP-10
+    @{ num=111; nid="I_kwDORVI-G87t_pco"; status="In Review" } # MM-ASP-11
+    @{ num=112; nid="I_kwDORVI-G87t_pd7"; status="In Review" } # MM-BE-25
+    @{ num=113; nid="I_kwDORVI-G87t_pfA"; status="In Review" } # MM-BE-26
+    @{ num=114; nid="I_kwDORVI-G87t_pf2"; status="In Review" } # MM-FE-22
+    @{ num=115; nid="I_kwDORVI-G87t_pg7"; status="In Review" } # MM-FE-23
+    @{ num=116; nid="I_kwDORVI-G87t_phz"; status="Done" } # MM-FE-24
+    @{ num=117; nid="I_kwDORVI-G87t_pi5"; status="In Review" } # MM-MOB-13
+    @{ num=118; nid="I_kwDORVI-G87t_pjw"; status="Done" } # MM-MOB-14
+    @{ num=119; nid="I_kwDORVI-G87t_pk_"; status="In Review" } # MM-QA-04
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="
-$itemMap = @{} # issue number -> project item ID
 
 foreach ($issue in $issues) {
-    $nid = $issue.nid
-    $addQuery = @"
-mutation {
-  addProjectV2ItemById(input: {projectId: "$PROJECT_ID", contentId: "$nid"}) {
-    item { id }
-  }
-}
-"@
-    $raw = gh api graphql -f query=$addQuery 2>&1
-    try {
-        $result = $raw | ConvertFrom-Json
-        if ($result.data) {
-            $itemId = $result.data.addProjectV2ItemById.item.id
-            $itemMap[$issue.num] = $itemId
-            Write-Host "  #$($issue.num): $itemId (added/confirmed)"
-        } else {
-            Write-Host "  #$($issue.num): ERROR - $raw" -ForegroundColor Red
-        }
-    } catch {
-        Write-Host "  #$($issue.num): PARSE ERROR - $raw" -ForegroundColor Red
+    $issueUrl = "https://github.com/$REPO/issues/$($issue.num)"
+    $raw = gh project item-add $PROJECT_NUMBER --owner $PROJECT_OWNER --url $issueUrl --format json 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "  #$($issue.num): added/confirmed"
+    } else {
+        # Existing items often return a conflict message; continue and resolve IDs from item-list.
+        Write-Host "  #$($issue.num): add warning - $raw" -ForegroundColor Yellow
     }
+}
+
+Write-Host "`n=== Phase 1b: Build item ID map from project board ==="
+$itemMap = @{} # issue number -> project item ID
+$projectRaw = gh project item-list $PROJECT_NUMBER --owner $PROJECT_OWNER --format json --limit 500 2>&1
+try {
+    $projectResult = $projectRaw | ConvertFrom-Json
+    foreach ($item in $projectResult.items) {
+        if ($item.content -and $item.content.type -eq "Issue" -and $item.content.number) {
+            $itemMap[[int]$item.content.number] = $item.id
+        }
+    }
+    Write-Host "  Loaded $($itemMap.Count) issue item IDs from project board."
+} catch {
+    Write-Host "  ERROR: Unable to parse project item list. $projectRaw" -ForegroundColor Red
 }
 
 Write-Host "`n=== Phase 2: Set correct statuses for all $($itemMap.Count) items ==="
@@ -167,30 +183,29 @@ foreach ($issue in $issues) {
     }
 
     $optionId = $OPT[$issue.status]
-    $statusQuery = @"
-mutation {
-  updateProjectV2ItemFieldValue(input: {
-    projectId: "$PROJECT_ID"
-    itemId: "$itemId"
-    fieldId: "$FIELD_ID"
-    value: { singleSelectOptionId: "$optionId" }
-  }) {
-    projectV2Item { id }
-  }
-}
-"@
-    $raw = gh api graphql -f query=$statusQuery 2>&1
-    try {
-        $result = $raw | ConvertFrom-Json
-        if ($result.data) {
-            Write-Host "  #$($issue.num) -> $($issue.status)" -ForegroundColor Green
-            $successCount++
-        } else {
-            Write-Host "  #$($issue.num): STATUS ERROR - $raw" -ForegroundColor Red
-            $failCount++
+    $maxAttempts = 3
+    $attempt = 0
+    $updated = $false
+    $raw = ""
+
+    while (-not $updated -and $attempt -lt $maxAttempts) {
+        $attempt++
+        $raw = gh project item-edit --id $itemId --project-id $PROJECT_ID --field-id $FIELD_ID --single-select-option-id $optionId 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            $updated = $true
+            break
         }
-    } catch {
-        Write-Host "  #$($issue.num): PARSE ERROR - $raw" -ForegroundColor Red
+
+        if ($attempt -lt $maxAttempts) {
+            Start-Sleep -Seconds (2 * $attempt)
+        }
+    }
+
+    if ($updated) {
+        Write-Host "  #$($issue.num) -> $($issue.status)" -ForegroundColor Green
+        $successCount++
+    } else {
+        Write-Host "  #$($issue.num): STATUS ERROR after $attempt attempts - $raw" -ForegroundColor Red
         $failCount++
     }
 }

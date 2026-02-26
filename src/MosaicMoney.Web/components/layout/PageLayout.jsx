@@ -5,16 +5,23 @@ function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export function PageLayout({ children, rightPanel, title, subtitle }) {
+export function PageLayout({ children, rightPanel, title, subtitle, actions }) {
   return (
     <div className="flex-1 flex w-full h-full overflow-hidden">
       {/* Center Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-y-auto">
         <div className="px-8 py-8 max-w-5xl mx-auto w-full flex-1">
-          {(title || subtitle) && (
-            <div className="mb-8">
-              {title && <h1 className="text-3xl font-display font-bold text-white tracking-tight">{title}</h1>}
-              {subtitle && <p className="mt-2 text-sm text-[var(--color-text-muted)]">{subtitle}</p>}
+          {(title || subtitle || actions) && (
+            <div className="mb-8 flex items-start justify-between">
+              <div>
+                {title && <h1 className="text-3xl font-display font-bold text-white tracking-tight">{title}</h1>}
+                {subtitle && <p className="mt-2 text-sm text-[var(--color-text-muted)]">{subtitle}</p>}
+              </div>
+              {actions && (
+                <div className="flex items-center gap-3">
+                  {actions}
+                </div>
+              )}
             </div>
           )}
           {children}

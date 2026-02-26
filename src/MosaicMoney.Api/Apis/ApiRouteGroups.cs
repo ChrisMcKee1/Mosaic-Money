@@ -6,10 +6,10 @@ public static class ApiRouteGroups
 {
     public static WebApplication MapMosaicMoneyApi(this WebApplication app)
     {
-        app.MapGet("/", () => "Mosaic Money API");
-        app.MapGet("/api/health", () => new { Status = "ok", Timestamp = DateTime.UtcNow });
+        app.MapGet("/", () => "Mosaic Money API").AllowAnonymous();
+        app.MapGet("/api/health", () => new { Status = "ok", Timestamp = DateTime.UtcNow }).AllowAnonymous();
 
-        var v1 = app.MapGroup("/api/v1");
+        var v1 = app.MapGroup("/api/v1").RequireAuthorization();
         v1.MapTransactionEndpoints();
         v1.MapPlaidIngestionEndpoints();
         v1.MapPlaidLinkLifecycleEndpoints();

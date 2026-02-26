@@ -196,6 +196,65 @@ Notes:
 - Plaid Link `public_token` is ephemeral and must be exchanged server-side.
 - Persist `access_token` and `item_id` only in backend secure storage paths.
 
+## Clerk local setup contract (M8 authentication)
+
+Clerk values are defined at AppHost level and injected into API/Web at runtime.
+
+Required AppHost parameter keys:
+
+1. `Parameters:clerk-publishable-key` (public)
+2. `Parameters:clerk-secret-key` (secret)
+3. `Parameters:clerk-issuer` (public configuration)
+
+Injected runtime keys:
+
+1. API:
+  - `Authentication__Clerk__Issuer`
+  - `Authentication__Clerk__SecretKey`
+2. Web:
+  - `CLERK_PUBLISHABLE_KEY`
+  - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+  - `CLERK_SECRET_KEY`
+3. Mobile:
+  - Mobile is not currently AppHost-launched in this repo. Keep `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` in local/untracked mobile env files based on `src/MosaicMoney.Mobile/.env.example`.
+
+Project-based AppHost commands:
+
+```bash
+dotnet user-secrets init --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:clerk-publishable-key" "<pk_test_...>" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:clerk-secret-key" "<sk_test_...>" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:clerk-issuer" "https://<your-instance>" --project <path-to-apphost-csproj>
+dotnet user-secrets list --project <path-to-apphost-csproj>
+```
+
+File-based AppHost commands (this repository):
+
+```bash
+dotnet user-secrets set "Parameters:clerk-publishable-key" "<pk_test_...>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:clerk-secret-key" "<sk_test_...>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:clerk-issuer" "https://<your-instance>" --file src/apphost.cs
+dotnet user-secrets list --file src/apphost.cs
+```
+
+Required contract placeholders:
+
+1. `src/MosaicMoney.Api/appsettings.json`
+  - `Authentication:Clerk:Issuer`
+  - `Authentication:Clerk:SecretKey`
+  - `Authentication:Clerk:Audience`
+2. `src/MosaicMoney.Web/.env.example`
+  - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+  - `CLERK_SECRET_KEY`
+3. `src/MosaicMoney.Mobile/.env.example`
+  - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`
+
+Notes:
+
+- Do not commit Clerk secret key values.
+- Treat `NEXT_PUBLIC_*` and `EXPO_PUBLIC_*` values as public.
+- For complete tenant/provider steps (Microsoft SSO and passkeys), follow `docs/agent-context/clerk-tenant-provider-runbook.md`.
+
 ## Azure AI Foundry and Azure OpenAI local setup contract
 
 Mosaic Money keeps AI model routing keys in AppHost user-secrets and injects them into API/worker through `WithEnvironment(...)`.

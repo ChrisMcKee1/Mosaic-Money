@@ -30,6 +30,9 @@ else
 }
 var plaidClientId = builder.AddParameter("plaid-client-id", secret: true);
 var plaidSecret = builder.AddParameter("plaid-secret", secret: true);
+var clerkPublishableKey = builder.AddParameter("clerk-publishable-key");
+var clerkSecretKey = builder.AddParameter("clerk-secret-key", secret: true);
+var clerkIssuer = builder.AddParameter("clerk-issuer");
 var azureOpenAiEndpoint = builder.AddParameter("azure-openai-endpoint");
 var azureOpenAiApiKey = builder.AddParameter("azure-openai-api-key", secret: true);
 var azureOpenAiEmbeddingDeployment = builder.AddParameter("azure-openai-embedding-deployment");
@@ -39,6 +42,8 @@ var api = builder
 	.AddProject<Projects.MosaicMoney_Api>("api")
 	.WithEnvironment("Plaid__ClientId", plaidClientId)
 	.WithEnvironment("Plaid__Secret", plaidSecret)
+	.WithEnvironment("Authentication__Clerk__Issuer", clerkIssuer)
+	.WithEnvironment("Authentication__Clerk__SecretKey", clerkSecretKey)
 	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Deployment", azureOpenAiEmbeddingDeployment)
@@ -66,7 +71,12 @@ var worker = builder
 builder
 	.AddJavaScriptApp("web", "./MosaicMoney.Web")
 	.WithHttpEndpoint(port: 53832, env: "PORT", isProxied: false)
+	.WithEnvironment("CLERK_PUBLISHABLE_KEY", clerkPublishableKey)
+	.WithEnvironment("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", clerkPublishableKey)
+	.WithEnvironment("CLERK_SECRET_KEY", clerkSecretKey)
 	.WithReference(api)
 	.WaitFor(api);
+
+// Mobile is not launched by AppHost today; keep Clerk contract in src/MosaicMoney.Mobile/.env.example.
 
 builder.Build().Run();
