@@ -15,12 +15,27 @@ Primary skills to load before implementation:
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
 - `.github/skills/aspire-mosaic-money/SKILL.md`
+- `.github/skills/nuget-manager/SKILL.md` — load before adding or updating .NET packages for AI services.
+- `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
+- `microsoft-code-reference`
 - `microsoft-docs`
+
+On-demand skills to load when relevant:
+- `microsoft-foundry` and `agent-workflow-builder_ai_toolkit` for Foundry-hosted agents/models and Agent Framework workflow delivery.
+- `azure-ai` and `azure-aigateway` for Azure AI Search/Speech/OpenAI and APIM AI gateway patterns.
+- `azure-observability` and `azure-compliance` for AI telemetry/compliance review.
+- `azure-prepare`, `azure-validate`, `azure-deploy` for Azure AI deployment lifecycle work.
+- `git` for advanced branch/merge/rebase workflows.
 
 Skill-first workflow:
 1. Read relevant skill files first.
 2. Apply skill guidance to the task plan.
 3. Start implementation only after policy and skill checks pass.
+
+Skill checkpoint:
+1. At the start of each new task, confirm which baseline and on-demand skills apply and load them before planning or coding.
+2. When work becomes complex, crosses domains, or introduces unfamiliar tooling, pause and check whether another available skill should be loaded.
+3. If blocked or uncertain, check skill availability first, load the most relevant skill, and continue with that guidance.
 
 Technical scope:
 - Microsoft Agent Framework 1.0 RC graph workflows.

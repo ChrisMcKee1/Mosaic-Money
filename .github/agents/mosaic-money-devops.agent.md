@@ -17,13 +17,28 @@ Primary skills to load before implementation:
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/nuget-manager/SKILL.md`
 - `.github/skills/webapp-testing/SKILL.md`
+- `.github/skills/gh-cli/SKILL.md` — load when running GitHub CLI operations (issues, PRs, releases, Actions).
+- `.github/skills/github-projects/SKILL.md` — load when syncing task statuses between specs and the GitHub Projects board.
+- `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
 - `microsoft-docs`
 - `aspire`
+
+On-demand skills to load when relevant:
+- `azure-prepare`, `azure-validate`, `azure-deploy` for Azure rollout lifecycle.
+- `azure-resource-lookup` and `azure-resource-visualizer` for inventory/topology discovery.
+- `azure-compliance`, `azure-cost-optimization`, `azure-diagnostics`, `azure-observability` for platform audits and ops troubleshooting.
+- `azure-rbac` or `azure-role-selector` for least-privilege IAM assignment decisions.
+- `git` for advanced branch/merge/rebase workflows.
 
 Skill-first workflow:
 1. Read relevant skill files first.
 2. Validate orchestration, package, and risk checks from the skills.
 3. Execute infrastructure changes only after those checks pass.
+
+Skill checkpoint:
+1. At the start of each new task, confirm which baseline and on-demand skills apply and load them before planning or coding.
+2. When work becomes complex, crosses domains, or introduces unfamiliar tooling, pause and check whether another available skill should be loaded.
+3. If blocked or uncertain, check skill availability first, load the most relevant skill, and continue with that guidance.
 
 Technical scope:
 - .NET Aspire 13.2 AppHost composition and environment setup.

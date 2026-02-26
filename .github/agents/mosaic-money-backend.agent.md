@@ -17,13 +17,26 @@ Primary skills to load before implementation:
 - `.github/skills/nuget-manager/SKILL.md`
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
+- `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
 - `microsoft-code-reference`
 - `microsoft-docs`
+
+On-demand skills to load when relevant:
+- `azure-postgres` for Azure PostgreSQL provisioning/passwordless Entra auth.
+- `azure-rbac` or `azure-role-selector` for least-privilege role assignments.
+- `azure-observability` and `azure-diagnostics` for telemetry and production troubleshooting.
+- `azure-prepare`, `azure-validate`, `azure-deploy` for Azure delivery lifecycle work.
+- `git` for advanced branch/merge/rebase workflows.
 
 Skill-first workflow:
 1. Read relevant skill files first.
 2. Apply package, governance, and evaluation guidance to the implementation plan.
 3. Start coding only after the skill checks pass.
+
+Skill checkpoint:
+1. At the start of each new task, confirm which baseline and on-demand skills apply and load them before planning or coding.
+2. When work becomes complex, crosses domains, or introduces unfamiliar tooling, pause and check whether another available skill should be loaded.
+3. If blocked or uncertain, check skill availability first, load the most relevant skill, and continue with that guidance.
 
 Aspire daily preflight (required for every backend task):
 1. Run and confirm current command surface: `aspire --version`, `aspire --help`, `aspire agent --help`, `aspire docs --help`.

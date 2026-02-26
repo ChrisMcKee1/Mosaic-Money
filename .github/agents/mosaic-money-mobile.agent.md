@@ -12,11 +12,26 @@ Primary skills to load before implementation:
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
 - `.github/skills/prd/SKILL.md`
+- `.github/skills/frontend-design/SKILL.md` — load when building mobile UI screens to ensure distinctive, high-quality interfaces.
+- `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
+
+On-demand skills to load when relevant:
+- `building-native-ui` for Expo Router-native UI composition patterns.
+- `native-data-fetching` for network/cache/offline data flows.
+- `expo-api-routes` for server routes inside Expo Router projects.
+- `expo-cicd-workflows`, `expo-deployment`, `expo-dev-client` for CI/CD and release workflows.
+- `expo-tailwind-setup`, `upgrading-expo`, `use-dom`, `expo-ui-swift-ui` for platform-specific Expo setup/migration work.
+- `git` for advanced branch/merge/rebase workflows.
 
 Skill-first workflow:
 1. Read relevant skill files first.
 2. Apply governance and evaluation checks to the implementation plan.
 3. Start implementation only after the skill checks pass.
+
+Skill checkpoint:
+1. At the start of each new task, confirm which baseline and on-demand skills apply and load them before planning or coding.
+2. When work becomes complex, crosses domains, or introduces unfamiliar tooling, pause and check whether another available skill should be loaded.
+3. If blocked or uncertain, check skill availability first, load the most relevant skill, and continue with that guidance.
 
 Technical scope:
 - React Native with Expo SDK 55.

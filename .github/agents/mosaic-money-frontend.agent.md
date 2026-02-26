@@ -19,12 +19,25 @@ Primary skills to load before implementation:
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
 - `.github/skills/frontend-design/SKILL.md`
+- `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
 - `microsoft-docs`
+
+On-demand skills to load when relevant:
+- `mcp-app` when building or wiring an interactive MCP app UI.
+- `azure-hosted-copilot-sdk` when building/deploying Copilot SDK frontends on Azure.
+- `azure-observability` for App Insights/Azure Monitor dashboards and telemetry analysis.
+- `azure-prepare`, `azure-validate`, `azure-deploy` for Azure hosting workflows.
+- `git` for advanced branch/merge/rebase workflows.
 
 Skill-first workflow:
 1. Read relevant skill files first.
 2. Apply orchestration, testing, and risk guidance to the approach.
 3. Start implementation only after the skill checks pass.
+
+Skill checkpoint:
+1. At the start of each new task, confirm which baseline and on-demand skills apply and load them before planning or coding.
+2. When work becomes complex, crosses domains, or introduces unfamiliar tooling, pause and check whether another available skill should be loaded.
+3. If blocked or uncertain, check skill availability first, load the most relevant skill, and continue with that guidance.
 
 Execution sequencing for app run and browser work:
 1. If work requires starting the app stack or validating runtime behavior, load Aspire skills first (`aspire` + `aspire-mosaic-money`) and follow Aspire run/recovery workflow before browser actions.

@@ -49,12 +49,27 @@ Primary skills to load before planning or delegation:
 - `.github/skills/agentic-eval/SKILL.md`
 - `.github/skills/aspire-mosaic-money/SKILL.md`
 - `.github/skills/github-projects/SKILL.md`
+- `.github/skills/gh-cli/SKILL.md` — load when running GitHub CLI operations (issues, PRs, releases, branch management).
+- `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
 - `microsoft-docs`
+
+On-demand skills to load when relevant:
+- `git` for branch strategy, rebase/squash choices, and PR flow planning.
+- `microsoft-code-reference` for validating SDK/API feasibility before delegation.
+- `azure-prepare`, `azure-validate`, `azure-deploy` for Azure delivery planning.
+- `azure-resource-lookup`, `azure-compliance`, `azure-cost-optimization`, `azure-observability` for Azure ops planning and triage.
+- `agent-customization` when creating/fixing `.agent.md`, `.instructions.md`, or `SKILL.md` files.
+- `mcp-app` when planning MCP app UI slices.
 
 Skill-first workflow:
 1. Read relevant skill files first.
 2. For Plaid API tasks, use Context7 MCP tools first (`mcp_io_github_ups_resolve-library-id` then `mcp_io_github_ups_get-library-docs`, targeting `/websites/plaid`), then cross-check critical details with official Plaid docs.
 3. Route implementation only after skill checks pass.
+
+Skill checkpoint:
+1. At the start of each new task, confirm which baseline and on-demand skills apply and load them before planning or coding.
+2. When work becomes complex, crosses domains, or introduces unfamiliar tooling, pause and check whether another available skill should be loaded.
+3. If blocked or uncertain, check skill availability first, load the most relevant skill, and continue with that guidance.
 
 Operating model:
 1. Run Discovery and Alignment first. Ask concise clarifying questions when requirements are ambiguous.

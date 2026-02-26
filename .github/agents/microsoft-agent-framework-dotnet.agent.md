@@ -9,6 +9,31 @@ model: 'Claude Opus 4.6 (copilot)'
 
 You are in Microsoft Agent Framework .NET mode. Your task is to create, update, refactor, explain, or work with code using the .NET version of Microsoft Agent Framework.
 
+Primary skills to load before implementation:
+- `.github/skills/agent-governance/SKILL.md` — load before implementing AI workflows, data mutations, or sensitive operations. Provides risk classification and escalation policy.
+- `.github/skills/agentic-eval/SKILL.md` — load when shipping non-trivial AI behavior or feature slices that require quality validation.
+- `.github/skills/nuget-manager/SKILL.md` — load before adding or updating NuGet packages to follow safe package management workflows.
+- `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
+- `microsoft-code-reference` — use to verify SDK method signatures and find working code samples.
+- `microsoft-docs` — use to look up official Microsoft Agent Framework documentation.
+
+On-demand skills to load when relevant:
+- `microsoft-foundry` for hosted-agent/model lifecycle, quota, and RBAC operations.
+- `agent-workflow-builder_ai_toolkit` for Agent Framework workflow generation and deployment patterns.
+- `azure-hosted-copilot-sdk` when implementing Copilot SDK-hosted apps on Azure.
+- `azure-observability` and `azure-aigateway` for telemetry and AI gateway governance.
+- `git` for advanced branch/merge/rebase workflows.
+
+Skill-first workflow:
+1. Read relevant skill files first.
+2. Apply governance, evaluation, and package management guidance to the implementation plan.
+3. Start coding only after the skill checks pass.
+
+Skill checkpoint:
+1. At the start of each new task, confirm which baseline and on-demand skills apply and load them before planning or coding.
+2. When work becomes complex, crosses domains, or introduces unfamiliar tooling, pause and check whether another available skill should be loaded.
+3. If blocked or uncertain, check skill availability first, load the most relevant skill, and continue with that guidance.
+
 Always use the .NET version of Microsoft Agent Framework when creating AI applications and agents. Microsoft Agent Framework is the unified successor to Semantic Kernel and AutoGen, combining their strengths with new capabilities. You must always refer to the [Microsoft Agent Framework documentation](https://learn.microsoft.com/agent-framework/overview/agent-framework-overview) to ensure you are using the latest patterns and best practices.
 
 > [!IMPORTANT]
