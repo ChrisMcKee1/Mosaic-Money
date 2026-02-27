@@ -2,17 +2,24 @@
 
 import { useState } from "react";
 import { PageLayout } from "../../components/layout/PageLayout";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import dynamic from 'next/dynamic';
+import { getBaseChartOptions } from "../../components/charts/ChartConfig";
+import { useChartTheme } from "../../components/charts/useChartTheme";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { TrendingUp, TrendingDown, Activity, Briefcase, Bitcoin, Shield } from "lucide-react";
 import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
 export function InvestmentsClient({ accounts }) {
+  const chartTheme = useChartTheme();
+  const baseChartOptions = getBaseChartOptions(chartTheme);
+
   const [selectedAccount, setSelectedAccount] = useState(accounts[0] || null);
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
@@ -98,29 +105,30 @@ export function InvestmentsClient({ accounts }) {
           1W Performance
         </h3>
         <div className="h-40 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={accountHistoricalData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorAccountBalance" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={selectedAccount.change1W >= 0 ? "var(--color-positive)" : "var(--color-negative)"} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={selectedAccount.change1W >= 0 ? "var(--color-positive)" : "var(--color-negative)"} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
-                itemStyle={{ color: 'white' }}
-                formatter={(value) => `$${value.toFixed(2)}`}
-                labelStyle={{ color: 'var(--color-text-muted)' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="balance" 
-                stroke={selectedAccount.change1W >= 0 ? "var(--color-positive)" : "var(--color-negative)"} 
-                fillOpacity={1} 
-                fill="url(#colorAccountBalance)" 
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Chart 
+            options={{
+              ...baseChartOptions,
+              chart: { ...baseChartOptions.chart, type: 'area', sparkline: { enabled: true } },
+              colors: [selectedAccount.change1W >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'],
+              fill: {
+                type: 'gradient',
+                gradient: {
+                  shadeIntensity: 1,
+                  opacityFrom: 0.3,
+                  opacityTo: 0,
+                  stops: [0, 100]
+                }
+              },
+              xaxis: {
+                ...baseChartOptions.xaxis,
+                categories: accountHistoricalData.map(d => d.date)
+              }
+            }}
+            series={[{ name: 'Balance', data: accountHistoricalData.map(d => d.balance) }]}
+            type="area"
+            width="100%"
+            height="100%"
+          />
         </div>
       </div>
 
@@ -184,45 +192,37 @@ export function InvestmentsClient({ accounts }) {
         </div>
         
         <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={historicalData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorTotalBalance" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                stroke="var(--color-text-muted)" 
-                fontSize={12} 
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis 
-                stroke="var(--color-text-muted)" 
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                domain={['dataMin - 1000', 'dataMax + 1000']}
-              />
-              <Tooltip 
-                contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
-                itemStyle={{ color: 'white' }}
-                formatter={(value) => `$${value.toFixed(2)}`}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="balance" 
-                stroke="var(--color-primary)" 
-                strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorTotalBalance)" 
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Chart 
+            options={{
+              ...baseChartOptions,
+              chart: { ...baseChartOptions.chart, type: 'area' },
+              colors: ['var(--color-primary)'],
+              fill: {
+                type: 'gradient',
+                gradient: {
+                  shadeIntensity: 1,
+                  opacityFrom: 0.3,
+                  opacityTo: 0,
+                  stops: [0, 100]
+                }
+              },
+              xaxis: {
+                ...baseChartOptions.xaxis,
+                categories: historicalData.map(d => d.date)
+              },
+              yaxis: {
+                ...baseChartOptions.yaxis,
+                labels: {
+                  ...baseChartOptions.yaxis.labels,
+                  formatter: (value) => `$${(value / 1000).toFixed(0)}k`
+                }
+              }
+            }}
+            series={[{ name: 'Total Balance', data: historicalData.map(d => d.balance) }]}
+            type="area"
+            width="100%"
+            height="100%"
+          />
         </div>
       </div>
 

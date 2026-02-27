@@ -6,6 +6,8 @@ export const metadata = {
 };
 
 export default function SettingsPage() {
+  const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
+
   return (
     <div className="p-6 md:p-10 max-w-3xl w-full overflow-y-auto">
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:p-8">
@@ -28,7 +30,7 @@ export default function SettingsPage() {
           <p className="text-sm text-[var(--color-text-muted)] mb-4">
             Manage your account, password, and active sessions.
           </p>
-          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ? (
+          {isClerkConfigured ? (
             <Link 
               href="/settings/security" 
               className="inline-flex items-center justify-center rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--color-background)] hover:bg-[var(--color-primary-hover)] transition-colors"

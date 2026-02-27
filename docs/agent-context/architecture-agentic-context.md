@@ -16,6 +16,7 @@ Detailed architecture docs:
 - Orchestration database mode: use `AddAzurePostgresFlexibleServer` as the canonical Postgres resource; local full-stack can run via `.RunAsContainer()` and DB-only Azure rollout uses `src/apphost.database/apphost.cs`.
 - Web: Next.js 16 with React 19 and Tailwind CSS.
 - Mobile: React Native via Expo SDK 55 for mobile apps, with iPhone-first MVP release focus and Windows dev host + physical phone testing workflow.
+- Dashboard/reporting visualization standard: web uses `react-apexcharts`; mobile uses `victory-native-xl`; avoid net-new `recharts` for new work.
 - Data: PostgreSQL 18 with `azure_ai` extension and `pgvector`.
 - Authentication: Clerk for web/mobile sign-in and session management, with API-side JWT validation and deny-by-default authorization policies.
 - Azure PostgreSQL baseline from current Aspire publish: PostgreSQL 16, Burstable `Standard_B1ms`, 32 GB storage, HA disabled; tune via `ConfigureInfrastructure(...)` for production.
@@ -31,6 +32,7 @@ Detailed architecture docs:
 - DB-only rollout recommendation: run `aspire do provision-mosaic-postgres-kv` first, tag the vault (`mosaic=true`, `workload=mosaic-money`), then continue database provisioning.
 - Route low-confidence cases into `NeedsReview` instead of forced auto-resolution.
 - Preserve source-of-truth ledger integrity. Projection logic stays in presentation layers.
+- Aggregate/shape time-series buckets (day/week/month) before chart render boundaries to keep chart components presentation-only.
 
 ## Team Routing Map
 - `mosaic-money-backend`: API, entities, migrations, ingestion.

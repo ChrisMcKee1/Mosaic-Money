@@ -27,7 +27,7 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
 
   const content = (
     <html
@@ -56,7 +56,7 @@ export default function RootLayout({ children }) {
         <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:p-4 focus:bg-surface focus:text-primary focus:z-50">
           Skip to main content
         </a>
-        <Shell>{children}</Shell>
+        <Shell isClerkConfigured={isClerkConfigured}>{children}</Shell>
       </body>
     </html>
   );

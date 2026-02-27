@@ -2,17 +2,24 @@
 
 import { useState } from "react";
 import { PageLayout } from "../../components/layout/PageLayout";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import dynamic from 'next/dynamic';
+import { getDonutOptions } from "../../components/charts/ChartConfig";
+import { useChartTheme } from "../../components/charts/useChartTheme";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Calendar, CheckCircle2, Clock, AlertCircle, RefreshCw, FileText } from "lucide-react";
 import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
 export function RecurringsClient({ items }) {
+  const chartTheme = useChartTheme();
+  const donutOptions = getDonutOptions(chartTheme);
+
   // Mock status for items since API doesn't provide it yet
   const itemsWithStatus = items.map((item, i) => ({
     ...item,
@@ -139,29 +146,17 @@ export function RecurringsClient({ items }) {
             This Month
           </h3>
           <div className="relative w-48 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={donutData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {donutData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'white' }}
-                  formatter={(value) => `$${value.toFixed(2)}`}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <Chart 
+              options={{
+                ...donutOptions,
+                labels: donutData.map(d => d.name),
+                colors: ['var(--color-positive)', 'var(--color-surface-hover)'],
+              }}
+              series={donutData.map(d => d.value)}
+              type="donut"
+              width="100%"
+              height="100%"
+            />
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <CurrencyDisplay amount={totalLeft} className="text-2xl font-display font-bold" />
               <span className="text-xs text-[var(--color-text-muted)]">Left to Pay</span>

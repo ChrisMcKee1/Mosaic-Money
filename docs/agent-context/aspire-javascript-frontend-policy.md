@@ -35,10 +35,19 @@ This policy applies to web frontends (Next.js, Vite, and Node-based JS apps) orc
 - Do not leak internal service URLs to browser bundles unless intentionally public.
 - If client-side calls are required, expose only approved public env vars and route through controlled API surfaces.
 
+## Dashboard and reporting visualization policy (web)
+- Standardize on `react-apexcharts` for web dashboard/reporting charts that require interval toggles and time-series interactions.
+- Treat existing `recharts` usage as transitional legacy; do not add new `recharts` components for net-new M6/M7 dashboarding work.
+- Centralize chart option builders and shared formatting in reusable modules (avoid duplicated per-screen config blobs).
+- Pre-compute grouped financial series (day/week/month buckets) in selectors/hooks before passing data into chart components.
+- Keep chart colors and typography aligned to design tokens; avoid one-off chart-local hardcoded color values.
+
 ## Source grounding
 - JavaScript hosting package and methods:
   - `https://aspire.dev/integrations/frameworks/javascript/`
   - `https://aspire.dev/get-started/add-aspire-existing-app/`
 - JavaScript API migration details:
   - `https://aspire.dev/whats-new/aspire-13/`
+- ApexCharts React docs:
+  - `https://apexcharts.com/docs/react-charts/`
 - Mosaic Money secrets/config playbook: `docs/agent-context/secrets-and-configuration-playbook.md`

@@ -65,7 +65,9 @@ Deliver a bounded, auditable AI escalation pipeline that executes in strict orde
 | MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | Done |
 | MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | Done |
 | MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Pipeline emits final classification or `NeedsReview` with traceable stage-by-stage rationale. | Done |
-| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Add .NET evaluator libraries and Foundry evaluator/graders workflow with rerunnable documentation-backed instructions, dataset mappings, and CI evidence artifacts. | In Review |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Add .NET evaluator libraries and Foundry evaluator/graders workflow with rerunnable documentation-backed instructions, dataset mappings, and CI evidence artifacts. | In Progress |
+
+Update note (2026-02-26): Planner resumed `MM-AI-12` in `In Progress` for final evidence consolidation in the active completion wave.
 
 Implementation note (2026-02-23): `MM-AI-05` now includes an advisory PostgreSQL semantic retrieval contract that reads existing transaction embeddings (`pgvector` cosine distance), returns bounded candidates with normalized `[0..1]` scores, and emits explicit provenance (`ProvenanceSource`, `ProvenanceReference`, `ProvenancePayloadJson`). Deterministic stage remains first and authoritative for decisioning; semantic stage evidence is appended only after deterministic `NeedsReview` routing and does not auto-categorize independently.
 

@@ -1,22 +1,15 @@
 "use client";
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import dynamic from 'next/dynamic';
+import { getBaseChartOptions } from '../charts/ChartConfig';
+import { useChartTheme } from '../charts/useChartTheme';
 
-const CustomTooltip = ({ active, payload, label, prefix = "$" }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl shadow-xl">
-        <p className="text-white/60 text-xs font-medium mb-1 uppercase tracking-wider">{label}</p>
-        <p className="text-white font-display font-bold text-lg">
-          {prefix}{payload[0].value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 export function DashboardCharts({ netWorthHistory = [], transactions = [] }) {
+  const chartTheme = useChartTheme();
+  const baseChartOptions = getBaseChartOptions(chartTheme);
+
   // Process net worth history
   const nwData = netWorthHistory.map(point => {
     const date = new Date(point.date);
@@ -64,44 +57,30 @@ export function DashboardCharts({ netWorthHistory = [], transactions = [] }) {
           </div>
         </div>
         <div className="h-64 w-full relative z-10">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={nwData.length > 0 ? nwData : [{ name: 'No Data', netWorth: 0 }]} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.4}/>
-                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
-                </linearGradient>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                  <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} opacity={0.5} />
-              <XAxis 
-                dataKey="name" 
-                stroke="var(--color-text-muted)" 
-                fontSize={11} 
-                fontWeight={500}
-                tickLine={false}
-                axisLine={false}
-                dy={10}
-              />
-              <YAxis hide domain={['dataMin - 5000', 'dataMax + 5000']} />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '4 4' }} />
-              <Area 
-                type="monotone" 
-                dataKey="netWorth" 
-                stroke="var(--color-primary)" 
-                strokeWidth={3}
-                fillOpacity={1} 
-                fill="url(#colorNetWorth)" 
-                activeDot={{ r: 6, fill: 'var(--color-surface)', stroke: 'var(--color-primary)', strokeWidth: 2, filter: 'url(#glow)' }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <Chart 
+            options={{
+              ...baseChartOptions,
+              chart: { ...baseChartOptions.chart, type: 'area' },
+              colors: ['var(--color-primary)'],
+              fill: {
+                type: 'gradient',
+                gradient: {
+                  shadeIntensity: 1,
+                  opacityFrom: 0.4,
+                  opacityTo: 0,
+                  stops: [0, 100]
+                }
+              },
+              xaxis: {
+                ...baseChartOptions.xaxis,
+                categories: nwData.length > 0 ? nwData.map(d => d.name) : ['No Data']
+              }
+            }}
+            series={[{ name: 'Net Worth', data: nwData.length > 0 ? nwData.map(d => d.netWorth) : [0] }]}
+            type="area"
+            width="100%"
+            height="100%"
+          />
         </div>
       </div>
 
@@ -117,39 +96,21 @@ export function DashboardCharts({ netWorthHistory = [], transactions = [] }) {
           </div>
         </div>
         <div className="h-64 w-full relative z-10">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={spendingData.length > 0 ? spendingData : [{ name: 'No Data', spending: 0 }]} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-              <defs>
-                <filter id="glowWarning">
-                  <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                  <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} opacity={0.5} />
-              <XAxis 
-                dataKey="name" 
-                stroke="var(--color-text-muted)" 
-                fontSize={11} 
-                fontWeight={500}
-                tickLine={false}
-                axisLine={false}
-                dy={10}
-              />
-              <YAxis hide domain={[0, 'dataMax + 1000']} />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--color-border)', strokeWidth: 1, strokeDasharray: '4 4' }} />
-              <Line 
-                type="monotone" 
-                dataKey="spending" 
-                stroke="var(--color-warning)" 
-                strokeWidth={3}
-                dot={{ r: 4, fill: 'var(--color-surface)', stroke: 'var(--color-warning)', strokeWidth: 2 }}
-                activeDot={{ r: 6, fill: 'var(--color-warning)', stroke: 'var(--color-surface)', strokeWidth: 2, filter: 'url(#glowWarning)' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <Chart 
+            options={{
+              ...baseChartOptions,
+              chart: { ...baseChartOptions.chart, type: 'line' },
+              colors: ['var(--color-warning)'],
+              xaxis: {
+                ...baseChartOptions.xaxis,
+                categories: spendingData.length > 0 ? spendingData.map(d => d.name) : ['No Data']
+              }
+            }}
+            series={[{ name: 'Spending', data: spendingData.length > 0 ? spendingData.map(d => d.spending) : [0] }]}
+            type="line"
+            width="100%"
+            height="100%"
+          />
         </div>
       </div>
     </div>

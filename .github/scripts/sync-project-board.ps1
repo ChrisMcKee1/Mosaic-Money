@@ -41,13 +41,13 @@ $issues = @(
 
     # --- M2: Ledger Truth & Review Core ---
     @{ num=15; nid="I_kwDORVI-G87tOi3C"; status="Done" }        # MM-BE-05
-    @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="In Review" }   # MM-BE-06
+    @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="In Progress" }   # MM-BE-06
     @{ num=17; nid="I_kwDORVI-G87tOi8h"; status="Done" }        # MM-BE-12
     @{ num=18; nid="I_kwDORVI-G87tOi-v"; status="Done" }        # MM-BE-13
     @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="Done" }        # MM-BE-14
     @{ num=20; nid="I_kwDORVI-G87tOjF8"; status="Done" }        # MM-FE-04
     @{ num=21; nid="I_kwDORVI-G87tOjHr"; status="Done" }        # MM-FE-05
-    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="In Review" } # MM-FE-09
+    @{ num=22; nid="I_kwDORVI-G87tOjK3"; status="Done" } # MM-FE-09
     @{ num=23; nid="I_kwDORVI-G87tOjN9"; status="Done" }        # MM-MOB-02
     @{ num=24; nid="I_kwDORVI-G87tOjRE"; status="Done" }        # MM-MOB-03
     @{ num=25; nid="I_kwDORVI-G87tOjTk"; status="Done" }        # MM-MOB-04
@@ -102,16 +102,16 @@ $issues = @(
     @{ num=75; nid="I_kwDORVI-G87tk0EI"; status="Done" } # MM-FE-17
 
     # --- M6: UI Redesign & Theming ---
-    @{ num=65; nid="I_kwDORVI-G87tUSTb"; status="Blocked" } # MM-FE-10
-    @{ num=66; nid="I_kwDORVI-G87tUSUp"; status="Blocked" } # MM-FE-11
-    @{ num=67; nid="I_kwDORVI-G87tUSWo"; status="Blocked" } # MM-FE-12
-    @{ num=68; nid="I_kwDORVI-G87tUSYH"; status="Blocked" } # MM-FE-13
-    @{ num=69; nid="I_kwDORVI-G87tUSZk"; status="Blocked" } # MM-FE-14
-    @{ num=70; nid="I_kwDORVI-G87tUSbK"; status="Blocked" } # MM-FE-15
-    @{ num=71; nid="I_kwDORVI-G87tUScw"; status="Blocked" } # MM-FE-16
-    @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="Blocked" } # MM-FE-18
-    @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="Blocked" } # MM-MOB-09
-    @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="In Review" } # MM-AI-12
+    @{ num=65; nid="I_kwDORVI-G87tUSTb"; status="Done" } # MM-FE-10
+    @{ num=66; nid="I_kwDORVI-G87tUSUp"; status="Done" } # MM-FE-11
+    @{ num=67; nid="I_kwDORVI-G87tUSWo"; status="Done" } # MM-FE-12
+    @{ num=68; nid="I_kwDORVI-G87tUSYH"; status="Done" } # MM-FE-13
+    @{ num=69; nid="I_kwDORVI-G87tUSZk"; status="Done" } # MM-FE-14
+    @{ num=70; nid="I_kwDORVI-G87tUSbK"; status="Done" } # MM-FE-15
+    @{ num=71; nid="I_kwDORVI-G87tUScw"; status="Done" } # MM-FE-16
+    @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="Done" } # MM-FE-18
+    @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="Done" } # MM-MOB-09
+    @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="In Progress" } # MM-AI-12
 
     # --- M7: Identity, Household Access Control, and Account Ownership ---
     @{ num=96; nid="I_kwDORVI-G87t4vjw"; status="Done" } # MM-BE-19
@@ -123,11 +123,11 @@ $issues = @(
     @{ num=102; nid="I_kwDORVI-G87t4wG4"; status="Done" } # MM-ASP-08
     @{ num=103; nid="I_kwDORVI-G87t4wLb"; status="Done" } # MM-ASP-09
     @{ num=104; nid="I_kwDORVI-G87t4wMv"; status="Done" } # MM-FE-19
-    @{ num=105; nid="I_kwDORVI-G87t4wOX"; status="In Review" } # MM-FE-20
-    @{ num=106; nid="I_kwDORVI-G87t4wP1"; status="In Review" } # MM-FE-21
+    @{ num=105; nid="I_kwDORVI-G87t4wOX"; status="Done" } # MM-FE-20
+    @{ num=106; nid="I_kwDORVI-G87t4wP1"; status="Done" } # MM-FE-21
     @{ num=107; nid="I_kwDORVI-G87t4wRp"; status="Done" } # MM-MOB-10
-    @{ num=108; nid="I_kwDORVI-G87t4wVU"; status="In Review" } # MM-MOB-11
-    @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="In Review" } # MM-MOB-12
+    @{ num=108; nid="I_kwDORVI-G87t4wVU"; status="Done" } # MM-MOB-11
+    @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="Done" } # MM-MOB-12
 
     # --- M8: Authentication and Authorization (Clerk) ---
     @{ num=110; nid="I_kwDORVI-G87t_pbX"; status="Blocked" } # MM-ASP-10
@@ -140,6 +140,13 @@ $issues = @(
     @{ num=117; nid="I_kwDORVI-G87t_pi5"; status="Blocked" } # MM-MOB-13
     @{ num=118; nid="I_kwDORVI-G87t_pjw"; status="Done" } # MM-MOB-14
     @{ num=119; nid="I_kwDORVI-G87t_pk_"; status="Blocked" } # MM-QA-04
+
+    # --- M9: Cross-Surface Charting Framework Migration ---
+    @{ num=121; nid="I_kwDORVI-G87uWtLj"; status="Done" } # MM-FE-25
+    @{ num=122; nid="I_kwDORVI-G87uWtMu"; status="Done" } # MM-FE-26
+    @{ num=123; nid="I_kwDORVI-G87uWtOG"; status="In Review" } # MM-MOB-15
+    @{ num=124; nid="I_kwDORVI-G87uWtO-"; status="Done" } # MM-QA-05
+    @{ num=125; nid="I_kwDORVI-G87uXbCt"; status="Not Started" } # MM-MOB-GAP-01
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="

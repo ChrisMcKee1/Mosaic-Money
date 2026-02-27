@@ -130,3 +130,21 @@ The following parity actions were completed after the initial audit:
 - Web mobile fallback for right-context panels remains unimplemented.
 - Web list virtualization/paging for very large transaction datasets remains unimplemented.
 - Optional: introduce shared mobile UI primitives (card/badge/button wrappers) for consistency and maintainability.
+
+## Framework Modernization Direction (2026-02-26)
+
+Following redesign-quality concerns around dashboarding/reporting controls, planner direction is:
+- Web dashboard/reporting charts: migrate to `react-apexcharts`.
+- Mobile dashboard/reporting charts: standardize on `victory-native-xl`.
+- Existing web `recharts` usage remains transitional only while migration completes.
+
+### Why this direction
+- Better built-in time-series interaction patterns for financial workflows (interval switching, zooming, panning, mixed series).
+- Stronger parity path between rich web visuals and native mobile chart primitives.
+- Cleaner separation between data shaping (selectors/hooks) and chart rendering components.
+
+### Handoff requirements for frontend/mobile engineers
+- Implement shared day/week/month bucket builders before chart render boundaries.
+- Build reusable chart config primitives per surface instead of per-screen ad hoc options.
+- Keep color/typography strictly token-driven and remove one-off chart-local styling.
+- Add interaction and snapshot coverage for key chart widgets in web/mobile validation suites.

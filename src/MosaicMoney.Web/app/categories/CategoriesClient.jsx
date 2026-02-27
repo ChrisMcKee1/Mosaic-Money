@@ -2,17 +2,25 @@
 
 import { useState } from "react";
 import { PageLayout } from "../../components/layout/PageLayout";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import dynamic from 'next/dynamic';
+import { getBaseChartOptions, getDonutOptions } from "../../components/charts/ChartConfig";
+import { useChartTheme } from "../../components/charts/useChartTheme";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Tag, TrendingUp, AlertCircle } from "lucide-react";
 import { CurrencyDisplay } from "../../components/ui/CurrencyDisplay";
+
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
 export function CategoriesClient({ transactions }) {
+  const chartTheme = useChartTheme();
+  const baseChartOptions = getBaseChartOptions(chartTheme);
+  const donutOptions = getDonutOptions(chartTheme);
+
   // Mock budget data for now, since we don't have a budget API yet
   const mockBudgets = {
     "Groceries": 600,
@@ -94,35 +102,27 @@ export function CategoriesClient({ transactions }) {
           6-Month History
         </h3>
         <div className="h-48 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={historicalData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis 
-                dataKey="month" 
-                stroke="var(--color-text-muted)" 
-                fontSize={12} 
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis 
-                stroke="var(--color-text-muted)" 
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `$${value}`}
-              />
-              <Tooltip 
-                cursor={{ fill: 'var(--color-surface-hover)' }}
-                contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
-                itemStyle={{ color: 'white' }}
-              />
-              <Bar 
-                dataKey="spent" 
-                fill="var(--color-primary)" 
-                radius={[4, 4, 0, 0]} 
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <Chart 
+            options={{
+              ...baseChartOptions,
+              chart: { ...baseChartOptions.chart, type: 'bar' },
+              colors: ['var(--color-primary)'],
+              plotOptions: {
+                bar: {
+                  borderRadius: 4,
+                  columnWidth: '60%',
+                }
+              },
+              xaxis: {
+                ...baseChartOptions.xaxis,
+                categories: historicalData.map(d => d.month)
+              }
+            }}
+            series={[{ name: 'Spent', data: historicalData.map(d => d.spent) }]}
+            type="bar"
+            width="100%"
+            height="100%"
+          />
         </div>
       </div>
 
@@ -171,29 +171,17 @@ export function CategoriesClient({ transactions }) {
             Total Spent vs Budget
           </h3>
           <div className="relative w-48 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={categories}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="spent"
-                  stroke="none"
-                >
-                  {categories.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'white' }}
-                  formatter={(value) => `$${value.toFixed(2)}`}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <Chart 
+              options={{
+                ...donutOptions,
+                labels: categories.map(d => d.name),
+                colors: categories.map(d => d.color),
+              }}
+              series={categories.map(d => d.spent)}
+              type="donut"
+              width="100%"
+              height="100%"
+            />
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <CurrencyDisplay amount={totalSpent} className="text-2xl font-display font-bold" />
               <span className="text-xs text-[var(--color-text-muted)]">of ${totalBudget.toFixed(0)}</span>

@@ -79,14 +79,14 @@ All task tables use a `Status` column with the following values:
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
 | MM-BE-05 | Backend | NeedsReview state machine + transitions | MM-BE-04, MM-AI-01 | Explicit allowed transitions; ambiguous outcomes fail closed into `NeedsReview`. | Done |
-| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | In Review |
+| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | In Progress |
 | MM-BE-12 | Backend | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configurations and captures Link session metadata for diagnostics. | Done |
 | MM-BE-13 | Backend | Public token exchange + secure Item storage | MM-BE-12 | `public_token` is exchanged server-side and resulting `access_token` + `item_id` are persisted in secure backend storage. | Done |
 | MM-BE-14 | Backend | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook error states (including OAuth expiry/revocation) route to explicit relink/update-mode flows with human review boundaries. | Done |
 | MM-BE-15 | Backend | Plaid product capability mapping research | MM-BE-12, MM-BE-13, MM-BE-14 | Cross-reference PRD scenarios to Plaid products/endpoints/webhooks and sandbox institution coverage, then publish an approved MVP product map, schema impact list, and implementation order before expanding beyond `transactions`. | Done |
 | MM-FE-04 | Web | Read-only ledger transaction list | MM-FE-02, MM-FE-03, MM-BE-04 | Ledger truth rendered with distinct `UserNote` and `AgentNote`; no client mutation of source amounts/dates. | Done |
 | MM-FE-05 | Web | NeedsReview queue and approval UI | MM-FE-04, MM-BE-05 | Approve/reject/reclassify actions call backend review endpoints with explicit user intent. | Done |
-| MM-FE-09 | Web | Plaid Link onboarding flow | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued `link_token` and posts `public_token` + metadata for backend exchange. | In Review |
+| MM-FE-09 | Web | Plaid Link onboarding flow | MM-FE-02, MM-BE-12, MM-BE-13 | Web launches Link with server-issued `link_token` and posts `public_token` + metadata for backend exchange. | Done |
 | MM-MOB-02 | Mobile | Offline-safe state/caching foundation | MM-MOB-01 | Mobile handles offline read and queued sync states safely. | Done |
 | MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. | Done |
 | MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. | Done |
@@ -170,7 +170,7 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Checks reject `AddNpmApp`, hardcoded endpoints, and missing service-defaults patterns. | Done |
 | MM-BE-11 | Backend | Financial correctness/regression tests | MM-BE-01, MM-BE-02, MM-BE-03, MM-BE-04, MM-BE-05, MM-BE-06, MM-BE-07, MM-BE-08, MM-BE-09, MM-BE-10 | Money/date/matching/review/reimbursement edge-case tests pass. | Done |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Measured criteria enforced for routing correctness, ambiguity fail-closed behavior, external messaging hard-stop denial, and `AgentNote` explainability with a go/no-go artifact output. | Done |
-| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate `.NET` evaluator libraries and Foundry evaluator/graders with source-linked rerun instructions, dataset mappings, and CI evidence artifacts. | In Review |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate `.NET` evaluator libraries and Foundry evaluator/graders with source-linked rerun instructions, dataset mappings, and CI evidence artifacts. | In Progress |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. | Done |
 | MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | Done |
 | MM-BE-16 | Backend | Plaid Investments Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/investments/holdings/get`. | Done |
@@ -181,15 +181,15 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 ### M6 UI Redesign and Theming
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-FE-10 | Web | Global Layout & Theming | MM-FE-01 | Dark/Light mode toggle, CSS variable color system, distinctive typography, and main application shell implemented. | Blocked |
-| MM-FE-11 | Web | Dashboard Overview Screen | MM-FE-10 | Monthly spending chart, Net worth chart, Transactions to review, Top categories, and Next two weeks widgets implemented. | Blocked |
-| MM-FE-12 | Web | Accounts Screen | MM-FE-10 | Assets/Debts summary chart, grouped account lists with sparklines, and right detail panel implemented. | Blocked |
-| MM-FE-13 | Web | Transactions Screen | MM-FE-10 | Grouped transaction list with category tags and amounts, and right detail panel implemented. | Blocked |
-| MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | Blocked |
-| MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | Blocked |
-| MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | Blocked |
-| MM-FE-18 | Web | Semantic search and reranked dropdowns | MM-AI-05, MM-BE-10, MM-FE-17 | Search inputs and typeahead dropdowns use semantic retrieval + reranking so related intents (for example `utilities` and `water`) resolve together. | Blocked |
-| MM-MOB-09 | Mobile | Semantic search and reranked pickers | MM-AI-05, MM-BE-10, MM-MOB-07.3 | Mobile search and picker flows use semantic retrieval + reranking with parity to web behavior and confidence-safe fallbacks. | Blocked |
+| MM-FE-10 | Web | Global Layout & Theming | MM-FE-01 | Dark/Light mode toggle, CSS variable color system, distinctive typography, and main application shell implemented. | Done |
+| MM-FE-11 | Web | Dashboard Overview Screen | MM-FE-10 | Monthly spending chart, Net worth chart, Transactions to review, Top categories, and Next two weeks widgets implemented. | Done |
+| MM-FE-12 | Web | Accounts Screen | MM-FE-10 | Assets/Debts summary chart, grouped account lists with sparklines, and right detail panel implemented. | Done |
+| MM-FE-13 | Web | Transactions Screen | MM-FE-10 | Grouped transaction list with category tags and amounts, and right detail panel implemented. | Done |
+| MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | Done |
+| MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | Done |
+| MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | Done |
+| MM-FE-18 | Web | Semantic search and reranked dropdowns | MM-AI-05, MM-BE-10, MM-FE-17 | Search inputs and typeahead dropdowns use semantic retrieval + reranking so related intents (for example `utilities` and `water`) resolve together. | Done |
+| MM-MOB-09 | Mobile | Semantic search and reranked pickers | MM-AI-05, MM-BE-10, MM-MOB-07.3 | Mobile search and picker flows use semantic retrieval + reranking with parity to web behavior and confidence-safe fallbacks. | Done |
 
 ### M7 Identity, Household Access Control, and Account Ownership
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
@@ -203,11 +203,11 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | MM-ASP-08 | DevOps | Identity claim mapping configuration | MM-BE-19 | AppHost/API/Web/Mobile identity claim mapping is documented and reproducible across local and CI environments. | Done |
 | MM-ASP-09 | DevOps | Migration rollout and rollback playbook | MM-BE-24 | Step-by-step rollout, reconciliation checks, and rollback paths documented for account access migration. | Done |
 | MM-FE-19 | Web | Household member and invite management UI | MM-BE-20, MM-FE-10 | Web supports invite/accept/remove member workflows and membership status visibility. | Done |
-| MM-FE-20 | Web | Account sharing controls UI | MM-BE-21, MM-FE-19 | Web supports per-account visibility/role assignment (mine-only, spouse-only, joint, read-only) with confirmation UX. | In Review |
-| MM-FE-21 | Web | Account visibility filters and badges | MM-BE-23, MM-FE-20 | Account/transaction views expose `mine`, `joint`, `shared` filters and clear hidden/read-only badges. | In Review |
+| MM-FE-20 | Web | Account sharing controls UI | MM-BE-21, MM-FE-19 | Web supports per-account visibility/role assignment (mine-only, spouse-only, joint, read-only) with confirmation UX. | Done |
+| MM-FE-21 | Web | Account visibility filters and badges | MM-BE-23, MM-FE-20 | Account/transaction views expose `mine`, `joint`, `shared` filters and clear hidden/read-only badges. | Done |
 | MM-MOB-10 | Mobile | Membership and invite parity | MM-BE-20, MM-MOB-07 | Mobile supports member lifecycle views and invite acceptance with parity to web semantics. | Done |
-| MM-MOB-11 | Mobile | Account sharing controls parity | MM-BE-21, MM-MOB-10 | Mobile supports per-account sharing roles and visibility controls with safe defaults. | In Review |
-| MM-MOB-12 | Mobile | ACL-aware account and transaction views | MM-BE-23, MM-MOB-11 | Mobile renders member-scoped account/transaction lists with hidden/read-only behavior matching backend authorization. | In Review |
+| MM-MOB-11 | Mobile | Account sharing controls parity | MM-BE-21, MM-MOB-10 | Mobile supports per-account sharing roles and visibility controls with safe defaults. | Done |
+| MM-MOB-12 | Mobile | ACL-aware account and transaction views | MM-BE-23, MM-MOB-11 | Mobile renders member-scoped account/transaction lists with hidden/read-only behavior matching backend authorization. | Done |
 
 ### M8 Authentication and Authorization (Clerk)
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
@@ -222,6 +222,14 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | MM-MOB-13 | Mobile | Clerk Expo integration and sign-in flow | MM-ASP-10 | Mobile uses `@clerk/clerk-expo` + `expo-secure-store` token cache and custom sign-in flow with Microsoft option. | Blocked |
 | MM-MOB-14 | Mobile | Settings and account-link entrypoint parity | MM-MOB-13, MM-MOB-10 | Mobile settings includes appearance/security entry points and Add Account path parity with web intent. | Done |
 | MM-QA-04 | QA | Auth and access regression gate | MM-BE-26, MM-FE-24, MM-MOB-14 | Auth flows, protected endpoint behavior, and account-link navigation pass web/mobile/API validation matrix. | Blocked |
+
+### M9 Cross-Surface Charting Framework Migration
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-FE-25 | Web | ApexCharts foundation and shared config layer | MM-FE-10 | Shared chart config/time-bucket selector modules exist and power migrated web chart surfaces. | Done |
+| MM-FE-26 | Web | M6 chart migration to ApexCharts | MM-FE-25, MM-FE-11, MM-FE-12, MM-FE-14, MM-FE-15, MM-FE-16 | M6 dashboard/reporting surfaces use ApexCharts with token-consistent light/dark behavior. | Done |
+| MM-MOB-15 | Mobile | Victory Native XL chart parity widgets | MM-MOB-09, MM-MOB-11, MM-MOB-12 | Mobile surfaces provide parity KPI charts using Victory Native XL primitives and interval-aware inputs. | In Review |
+| MM-QA-05 | QA | Chart interaction and theme parity gate | MM-FE-26, MM-MOB-15 | Playwright evidence verifies interactive web charts in light/dark themes and documents residual gaps with backlog items. | Done |
 
 Update note (2026-02-25): Planner kickoff for M8 is created from Clerk authentication requirements. Initial implementation slice tasks (`MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-FE-22`, `MM-FE-23`, `MM-MOB-13`) are set to `In Progress` prior to specialist delegation.
 
@@ -264,6 +272,16 @@ Update note (2026-02-27): Planner closed the Partner A auth blocker and delivere
 - ACL visibility proof (`artifacts/release-gates/mm-qa-04/live-triage/partner-acl-api-validation-summary.json`) confirms `A only` / `B only` / `Joint` separation through protected API checks.
 
 `MM-QA-04` remains `Blocked` only on pending mobile device-level OAuth evidence under `MM-MOB-13`.
+
+Update note (2026-02-26): Planner resumed cross-surface completion wave. Tasks moved to `In Progress`: `MM-BE-06`, `MM-FE-09`, `MM-AI-12`, `MM-FE-10..16`, `MM-FE-18`, `MM-MOB-09`, `MM-FE-20`, `MM-FE-21`, `MM-MOB-11`, and `MM-MOB-12`. `MM-MOB-13` and `MM-QA-04` remain excluded/blocked for the current wave per explicit mobile-auth deferral.
+
+Update note (2026-02-26): Planner created M9 charting migration scope (`project-plan/specs/010-m9-cross-surface-charting-framework-migration.md`) and started tasks `MM-FE-25`, `MM-FE-26`, `MM-MOB-15`, and `MM-QA-05` in `In Progress` for delegated implementation and validation.
+
+Update note (2026-02-26): Planner validation closeout promoted `MM-FE-09`, `MM-FE-10..16`, `MM-FE-18`, `MM-FE-20`, `MM-FE-21`, `MM-MOB-09`, `MM-MOB-11`, `MM-MOB-12`, `MM-FE-25`, `MM-FE-26`, and `MM-QA-05` to `Done` after web/mobile verification evidence:
+- Web: `npm run build`, `npm run test:e2e`, and focused chart parity coverage in `tests/e2e/chart-theme-parity.spec.js` (desktop light/dark interaction + responsive chart-route rendering).
+- Mobile: `npm run typecheck`, `npm run test:sync-recovery`, `npm run test:review-projection`, and `npx expo install --check` with SDK-compatibility updates.
+
+Update note (2026-02-26): `MM-MOB-15` is moved to `In Review`. Victory Native XL chart primitives are integrated, but investments trend data still uses temporary mock history pending backend historical-series wiring. Gap is tracked as GitHub issue `#125` (`MM-MOB-GAP-01`).
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

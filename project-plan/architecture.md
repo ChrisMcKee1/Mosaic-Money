@@ -16,6 +16,7 @@ This file is the canonical architecture index and decision summary. Detailed dia
 - Orchestration: Aspire 13.3 preview (daily channel) with AppHost composition and MCP diagnostics.
 - Web: Next.js 16 + React 19 + Tailwind.
 - Mobile: Expo SDK 55 + React Native.
+- Data visualization: Web `react-apexcharts` (reporting/time-series), Mobile `victory-native-xl` (native charts).
 - Data: PostgreSQL with `pgvector` and `azure_ai` extension path.
 - AI: Deterministic + semantic retrieval + MAF fallback with release-gate governance.
 
@@ -26,6 +27,18 @@ This file is the canonical architecture index and decision summary. Detailed dia
 - Ambiguous/high-impact outcomes route to `NeedsReview`.
 - External messaging actions are deny-by-default.
 - Aspire `WithReference(...)` and service discovery are required over hardcoded endpoints.
+
+## 3.1 Dashboard and Reporting Component Framework Standard (2026-02-26)
+- Web default: `react-apexcharts` for dashboard/reporting visuals that require time-series interactions (zoom, pan, interval switching, annotations, mixed-series).
+- Mobile default: `victory-native-xl` for native, high-performance chart rendering aligned to Expo/React Native workflows.
+- Existing `recharts` visuals are considered transitional legacy. No new `recharts` usage should be introduced in net-new dashboard/reporting features.
+- Time-bucket aggregation (`day`, `week`, `month`) must happen before render in view-model selectors/hooks (not inside chart components) using a lightweight date utility.
+- Keep chart styling tokenized and semantic (theme variables/tokens), not hardcoded per-chart values.
+
+Rationale:
+- Current M6 experience has quality issues in dashboarding/reporting controls and interval interactions.
+- `react-apexcharts` provides stronger financial/time-series UX for the current web redesign target.
+- `victory-native-xl` provides a composable native path for mobile parity without forcing web-oriented wrappers.
 
 ## 4. Runtime Topology (Current)
 ```mermaid

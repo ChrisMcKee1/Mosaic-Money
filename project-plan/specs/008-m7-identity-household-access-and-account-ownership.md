@@ -149,11 +149,15 @@ flowchart TD
 | MM-ASP-08 | Identity claim mapping configuration | Done |
 | MM-ASP-09 | Migration rollout and rollback playbook | Done |
 | MM-FE-19 | Household member and invite management UI | Done |
-| MM-FE-20 | Account sharing controls UI | In Review |
-| MM-FE-21 | Account visibility filters and badges | In Review |
+| MM-FE-20 | Account sharing controls UI | Done |
+| MM-FE-21 | Account visibility filters and badges | Done |
 | MM-MOB-10 | Membership and invite parity | Done |
-| MM-MOB-11 | Account sharing controls parity | In Review |
-| MM-MOB-12 | ACL-aware account and transaction views | In Review |
+| MM-MOB-11 | Account sharing controls parity | Done |
+| MM-MOB-12 | ACL-aware account and transaction views | Done |
+
+Update note (2026-02-26): Planner resumed M7 review backlog into active completion (`MM-FE-20`, `MM-FE-21`, `MM-MOB-11`, `MM-MOB-12` moved to `In Progress`) while keeping M8 mobile auth deferral unchanged.
+
+Update note (2026-02-26): Planner promoted `MM-FE-20`, `MM-FE-21`, `MM-MOB-11`, and `MM-MOB-12` to `Done` after verification pass (household settings route coverage in web Playwright + mobile parity component review with clean mobile typecheck/regression command evidence).
 
 ## Acceptance Criteria
 - Model supports mine-only, spouse-only, and joint account visibility simultaneously.

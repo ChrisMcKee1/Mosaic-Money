@@ -21,7 +21,8 @@ export function getApiBaseUrl() {
 }
 
 async function getAuthorizationHeader() {
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+  const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
+  if (!isClerkConfigured) {
     return {};
   }
 

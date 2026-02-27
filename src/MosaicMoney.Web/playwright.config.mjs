@@ -40,7 +40,7 @@ export default defineConfig({
       timeout: 120_000,
       env: {
         API_URL: mockApiURL,
-        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "",
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_Y2xlcmsuZXhhbXBsZS5jb20k",
         CLERK_SECRET_KEY: "",
         NEXT_TELEMETRY_DISABLED: "1",
       },

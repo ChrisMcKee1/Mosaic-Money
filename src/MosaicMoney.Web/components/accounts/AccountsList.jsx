@@ -1,13 +1,27 @@
 "use client";
 
 import { Wallet, CreditCard, Building, Landmark, TrendingUp, MoreHorizontal, Users, User, Eye } from "lucide-react";
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import dynamic from 'next/dynamic';
+import { getSparklineOptions } from "../charts/ChartConfig";
+import { useChartTheme } from "../charts/useChartTheme";
 import { CurrencyDisplay } from "../ui/CurrencyDisplay";
 
-const generateSparklineData = (base, isPositive) => {
-  return Array.from({ length: 10 }).map((_, i) => ({
-    value: base + (Math.random() * 100 - 50) * (isPositive ? 1 : -1)
-  }));
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
+
+const generateSparklineData = (base, isPositive, seedSource) => {
+  let seed = String(seedSource)
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 17);
+
+  return Array.from({ length: 10 }).map(() => {
+    seed = (seed * 48271) % 2147483647;
+    const normalized = seed / 2147483647;
+    const delta = (normalized - 0.5) * 100;
+
+    return {
+      value: base + delta * (isPositive ? 1 : -1),
+    };
+  });
 };
 
 const VisibilityBadge = ({ visibility }) => {
@@ -30,6 +44,8 @@ const VisibilityBadge = ({ visibility }) => {
 };
 
 export function AccountsList({ accounts, onSelectAccount, selectedAccountId }) {
+  const chartTheme = useChartTheme();
+
   const groupedAccounts = accounts.reduce((acc, account) => {
     if (!acc[account.type]) acc[account.type] = [];
     acc[account.type].push(account);
@@ -67,7 +83,7 @@ export function AccountsList({ accounts, onSelectAccount, selectedAccountId }) {
               <div className="divide-y divide-[var(--color-border)]">
                 {typeAccounts.map((account) => {
                   const isAccPositive = account.balance >= 0;
-                  const sparklineData = generateSparklineData(Math.abs(account.balance), isAccPositive);
+                  const sparklineData = generateSparklineData(Math.abs(account.balance), isAccPositive, account.id);
                   
                   return (
                     <div 
@@ -97,18 +113,13 @@ export function AccountsList({ accounts, onSelectAccount, selectedAccountId }) {
 
                       {/* Sparkline */}
                       <div className="hidden md:block w-24 h-8 mx-4 opacity-50 group-hover:opacity-100 transition-opacity">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={sparklineData}>
-                            <Line 
-                              type="monotone" 
-                              dataKey="value" 
-                              stroke={isAccPositive ? "var(--color-positive)" : "var(--color-negative)"} 
-                              strokeWidth={2} 
-                              dot={false} 
-                              isAnimationActive={false}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
+                        <Chart 
+                          options={getSparklineOptions(isAccPositive, chartTheme)} 
+                          series={[{ data: sparklineData.map(d => d.value) }]} 
+                          type="line" 
+                          width="100%" 
+                          height="100%" 
+                        />
                       </div>
 
                       <div className="text-right flex items-center gap-4">

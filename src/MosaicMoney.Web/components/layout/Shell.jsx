@@ -32,24 +32,53 @@ const navigation = [
   { name: "Needs Review", href: "/needs-review", icon: AlertCircle },
 ];
 
-export function Shell({ children }) {
-  const pathname = usePathname();
+function ClerkControls() {
   const { signOut } = useClerk();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    if (isSigningOut) {
-      return;
-    }
-
+    if (isSigningOut) return;
     setIsSigningOut(true);
-
     try {
       await signOut({ redirectUrl: "/sign-in" });
     } finally {
       setIsSigningOut(false);
     }
   };
+
+  return (
+    <div className="px-3 py-2">
+      <SignedIn>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+          <UserButton afterSignOutUrl="/" />
+          <span className="text-sm font-medium text-[var(--color-text-main)]">Account</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            aria-label="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+            {isSigningOut ? "Signing out..." : "Sign Out"}
+          </button>
+        </div>
+      </SignedIn>
+      <SignedOut>
+        <SignInButton mode="modal">
+          <button className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">
+            Sign In
+          </button>
+        </SignInButton>
+      </SignedOut>
+    </div>
+  );
+}
+
+export function Shell({ children, isClerkConfigured }) {
+  const pathname = usePathname();
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)] text-[var(--color-text-main)]">
@@ -98,35 +127,7 @@ export function Shell({ children }) {
         </nav>
 
         <div className="p-4 border-t border-[var(--color-border)] space-y-3">
-          {process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && (
-            <div className="px-3 py-2">
-              <SignedIn>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                  <UserButton afterSignOutUrl="/" />
-                  <span className="text-sm font-medium text-[var(--color-text-main)]">Account</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    disabled={isSigningOut}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                    aria-label="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    {isSigningOut ? "Signing out..." : "Sign Out"}
-                  </button>
-                </div>
-              </SignedIn>
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="w-full flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] transition-colors">
-                    Sign In
-                  </button>
-                </SignInButton>
-              </SignedOut>
-            </div>
-          )}
+          {isClerkConfigured && <ClerkControls />}
           <ThemeSwitcher compact />
           <Link
             href="/settings"

@@ -1,6 +1,7 @@
 import { ActivityIndicator, Pressable, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo } from "react";
 import { useRouter } from "expo-router";
+import { CartesianChart, Bar } from "victory-native";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 import { useProjectionMetadata } from "../../projections/hooks/useProjectionMetadata";
@@ -81,6 +82,26 @@ export function AccountsOverviewScreen() {
           <Text style={styles.addAccountButtonText}>Add Account (Plaid)</Text>
         </Pressable>
 
+        {accountSummaries.length > 0 && (
+          <View style={styles.chartContainer}>
+            <CartesianChart
+              data={accountSummaries.map(a => ({ label: a.accountId.slice(0, 4), value: a.netAmount }))}
+              xKey="label"
+              yKeys={["value"]}
+              domainPadding={{ left: 50, right: 50, top: 30 }}
+            >
+              {({ points, chartBounds }) => (
+                <Bar
+                  chartBounds={chartBounds}
+                  points={points.value}
+                  color={theme.colors.primary}
+                  roundedCorners={{ topLeft: 4, topRight: 4 }}
+                />
+              )}
+            </CartesianChart>
+          </View>
+        )}
+
         {accountSummaries.length === 0 ? (
           <StatePanel title="No accounts" body="No account-linked transaction projections are available." />
         ) : (
@@ -153,6 +174,11 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontSize: 13,
     fontWeight: "700",
+  },
+  chartContainer: {
+    height: 200,
+    marginTop: 16,
+    marginBottom: 8,
   },
   card: {
     backgroundColor: theme.colors.surface,

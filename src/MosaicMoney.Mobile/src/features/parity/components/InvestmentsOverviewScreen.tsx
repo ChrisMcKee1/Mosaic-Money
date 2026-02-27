@@ -1,4 +1,5 @@
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { CartesianChart, Line } from "victory-native";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 import { formatCurrency } from "../../transactions/utils/formatters";
@@ -10,6 +11,16 @@ const mockAccounts = [
   { id: "4", name: "Robinhood", type: "Crypto", balance: 3200.0, change1W: -150.0, change1WPercent: -4.5 },
 ];
 
+const mockHistory = [
+  { day: 1, value: 185000 },
+  { day: 2, value: 186200 },
+  { day: 3, value: 185800 },
+  { day: 4, value: 187500 },
+  { day: 5, value: 188100 },
+  { day: 6, value: 187900 },
+  { day: 7, value: 189331.3 },
+];
+
 export function InvestmentsOverviewScreen() {
   return (
     <SafeAreaView style={styles.page}>
@@ -17,6 +28,23 @@ export function InvestmentsOverviewScreen() {
         <Text style={styles.heading}>Investments</Text>
         <Text style={styles.subheading}>Portfolio snapshot aligned to current web investment surface contract.</Text>
         <PrimarySurfaceNav />
+
+        <View style={styles.chartContainer}>
+          <CartesianChart
+            data={mockHistory}
+            xKey="day"
+            yKeys={["value"]}
+          >
+            {({ points }) => (
+              <Line
+                points={points.value}
+                color={theme.colors.primary}
+                strokeWidth={3}
+                animate={{ type: "timing", duration: 500 }}
+              />
+            )}
+          </CartesianChart>
+        </View>
 
         {mockAccounts.map((account) => (
           <View key={account.id} style={styles.card}>
@@ -54,6 +82,11 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 14,
     marginTop: 6,
+  },
+  chartContainer: {
+    height: 200,
+    marginTop: 16,
+    marginBottom: 8,
   },
   card: {
     backgroundColor: theme.colors.surface,

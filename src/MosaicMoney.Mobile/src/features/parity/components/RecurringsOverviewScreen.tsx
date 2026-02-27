@@ -1,10 +1,19 @@
 import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useMemo } from "react";
+import { Pie, PolarChart } from "victory-native";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 import { useProjectionMetadata } from "../../projections/hooks/useProjectionMetadata";
 import { formatCurrency, formatLedgerDate } from "../../transactions/utils/formatters";
 import { StatePanel } from "../../transactions/components/StatePanel";
+
+const CHART_COLORS = [
+  theme.colors.primary,
+  theme.colors.positive,
+  theme.colors.warning,
+  theme.colors.negative,
+  theme.colors.textMain,
+];
 
 export function RecurringsOverviewScreen() {
   const { items, isLoading, isRefreshing, isRetrying, error, refresh, retry } = useProjectionMetadata({ pageSize: 100 });
@@ -16,6 +25,24 @@ export function RecurringsOverviewScreen() {
         .sort((a, b) => (a.recurring.nextDueDate || "") < (b.recurring.nextDueDate || "") ? -1 : 1),
     [items],
   );
+
+  const frequencySummaries = useMemo(() => {
+    const buckets = new Map<string, { id: string; amount: number; color: string }>();
+    let colorIndex = 0;
+
+    for (const item of recurringItems) {
+      const freq = item.recurring.frequency || "Unknown";
+      const existing = buckets.get(freq) ?? {
+        id: freq,
+        amount: 0,
+        color: CHART_COLORS[colorIndex++ % CHART_COLORS.length],
+      };
+      existing.amount += Math.abs(item.rawAmount);
+      buckets.set(freq, existing);
+    }
+
+    return [...buckets.values()].sort((a, b) => b.amount - a.amount);
+  }, [recurringItems]);
 
   if (isLoading && items.length === 0) {
     return (
@@ -53,6 +80,19 @@ export function RecurringsOverviewScreen() {
         <Text style={styles.heading}>Recurrings</Text>
         <Text style={styles.subheading}>Recurring-linked projection items with due-date and amount context.</Text>
         <PrimarySurfaceNav />
+
+        {frequencySummaries.length > 0 && (
+          <View style={styles.chartContainer}>
+            <PolarChart
+              data={frequencySummaries as { id: string; amount: number; color: string }[]}
+              colorKey={"color"}
+              valueKey={"amount"}
+              labelKey={"id"}
+            >
+              <Pie.Chart />
+            </PolarChart>
+          </View>
+        )}
 
         {recurringItems.length === 0 ? (
           <StatePanel title="No recurring items" body="No recurring-linked projection rows are available yet." />
@@ -100,6 +140,11 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     fontSize: 14,
     marginTop: 6,
+  },
+  chartContainer: {
+    height: 300,
+    marginTop: 16,
+    marginBottom: 8,
   },
   card: {
     backgroundColor: theme.colors.surface,
