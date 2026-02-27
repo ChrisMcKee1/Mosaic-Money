@@ -144,6 +144,317 @@ namespace MosaicMoney.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentDecisionAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AgentNoteSummary")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
+                    b.Property<Guid>("AgentRunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AgentRunStageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Confidence")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("numeric(5,4)");
+
+                    b.Property<DateTime>("DecidedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DecisionType")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PolicyVersion")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Rationale")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ReasonCode")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("ReviewStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId", "DecidedAtUtc");
+
+                    b.HasIndex("AgentRunStageId", "DecidedAtUtc");
+
+                    b.HasIndex("ReviewedByUserId", "ReviewedAtUtc");
+
+                    b.HasIndex("Outcome", "ReviewStatus", "DecidedAtUtc");
+
+                    b.ToTable("AgentDecisionAudit", t =>
+                        {
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_ConfidenceRange", "\"Confidence\" IS NULL OR (\"Confidence\" >= 0 AND \"Confidence\" <= 1)");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_DecisionTypeRequired", "LENGTH(TRIM(\"DecisionType\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_FailClosedNeedsReview", "(\"Outcome\" = 2 AND \"ReviewStatus\" = 1) OR (\"Outcome\" <> 2 AND \"ReviewStatus\" <> 1)");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_OutcomeRange", "\"Outcome\" IN (1, 2, 3, 4)");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_PolicyVersionRequired", "LENGTH(TRIM(\"PolicyVersion\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_RationaleRequired", "LENGTH(TRIM(\"Rationale\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_ReasonCodeRequired", "LENGTH(TRIM(\"ReasonCode\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_ReviewedAfterDecision", "\"ReviewedAtUtc\" IS NULL OR \"ReviewedAtUtc\" >= \"DecidedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_AgentDecisionAudit_ReviewedAudit", "(\"ReviewedByUserId\" IS NULL AND \"ReviewedAtUtc\" IS NULL) OR (\"ReviewedByUserId\" IS NOT NULL AND \"ReviewedAtUtc\" IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FailureCode")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("FailureRationale")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("HouseholdId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PolicyVersion")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TriggerSource")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("WorkflowName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId", "CreatedAtUtc");
+
+                    b.HasIndex("HouseholdId", "Status", "CreatedAtUtc");
+
+                    b.HasIndex("WorkflowName", "TriggerSource", "CreatedAtUtc");
+
+                    b.ToTable("AgentRuns", t =>
+                        {
+                            t.HasCheckConstraint("CK_AgentRun_CompletedAfterCreated", "\"CompletedAtUtc\" IS NULL OR \"CompletedAtUtc\" >= \"CreatedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_AgentRun_CorrelationIdRequired", "LENGTH(TRIM(\"CorrelationId\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentRun_FailureAuditForEscalatedStates", "((\"Status\" IN (4, 5, 6)) AND \"FailureCode\" IS NOT NULL AND LENGTH(TRIM(\"FailureCode\")) > 0 AND \"FailureRationale\" IS NOT NULL AND LENGTH(TRIM(\"FailureRationale\")) > 0) OR (\"Status\" NOT IN (4, 5, 6))");
+
+                            t.HasCheckConstraint("CK_AgentRun_LastModifiedAfterCreated", "\"LastModifiedAtUtc\" >= \"CreatedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_AgentRun_PolicyVersionRequired", "LENGTH(TRIM(\"PolicyVersion\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentRun_StatusRange", "\"Status\" IN (1, 2, 3, 4, 5, 6)");
+
+                            t.HasCheckConstraint("CK_AgentRun_TerminalCompletionAudit", "((\"Status\" IN (1, 2)) AND \"CompletedAtUtc\" IS NULL) OR ((\"Status\" IN (3, 4, 5, 6)) AND \"CompletedAtUtc\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_AgentRun_TriggerSourceRequired", "LENGTH(TRIM(\"TriggerSource\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentRun_WorkflowNameRequired", "LENGTH(TRIM(\"WorkflowName\")) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentRunStage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AgentNoteSummary")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
+                    b.Property<Guid>("AgentRunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("Confidence")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("numeric(5,4)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Executor")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTime>("LastModifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OutcomeCode")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("OutcomeRationale")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("StageName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("StageOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId", "StageOrder")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "CreatedAtUtc");
+
+                    b.HasIndex("AgentRunId", "Status", "StageOrder");
+
+                    b.ToTable("AgentRunStages", t =>
+                        {
+                            t.HasCheckConstraint("CK_AgentRunStage_CompletedAfterCreated", "\"CompletedAtUtc\" IS NULL OR \"CompletedAtUtc\" >= \"CreatedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_ConfidenceRange", "\"Confidence\" IS NULL OR (\"Confidence\" >= 0 AND \"Confidence\" <= 1)");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_ExecutorRequired", "LENGTH(TRIM(\"Executor\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_LastModifiedAfterCreated", "\"LastModifiedAtUtc\" >= \"CreatedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_StageNameRequired", "LENGTH(TRIM(\"StageName\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_StageOrderRange", "\"StageOrder\" >= 1 AND \"StageOrder\" <= 64");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_StatusRange", "\"Status\" IN (1, 2, 3, 4, 5, 6)");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_TerminalCompletionAudit", "((\"Status\" IN (1, 2)) AND \"CompletedAtUtc\" IS NULL) OR ((\"Status\" IN (3, 4, 5, 6)) AND \"CompletedAtUtc\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_AgentRunStage_TerminalOutcomeRequired", "(\"Status\" IN (1, 2)) OR (\"OutcomeCode\" IS NOT NULL AND LENGTH(TRIM(\"OutcomeCode\")) > 0 AND \"OutcomeRationale\" IS NOT NULL AND LENGTH(TRIM(\"OutcomeRationale\")) > 0)");
+                        });
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentSignal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AgentRunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AgentRunStageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PayloadJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RaisedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("RequiresHumanReview")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SignalCode")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId", "RaisedAtUtc");
+
+                    b.HasIndex("AgentRunStageId", "RaisedAtUtc");
+
+                    b.HasIndex("RequiresHumanReview", "IsResolved", "RaisedAtUtc");
+
+                    b.ToTable("AgentSignals", t =>
+                        {
+                            t.HasCheckConstraint("CK_AgentSignal_HumanReviewRequiredForHighSeverity", "(\"Severity\" IN (1, 2)) OR \"RequiresHumanReview\" = TRUE");
+
+                            t.HasCheckConstraint("CK_AgentSignal_ResolutionAudit", "(\"IsResolved\" = TRUE AND \"ResolvedAtUtc\" IS NOT NULL) OR (\"IsResolved\" = FALSE AND \"ResolvedAtUtc\" IS NULL)");
+
+                            t.HasCheckConstraint("CK_AgentSignal_SeverityRange", "\"Severity\" IN (1, 2, 3, 4)");
+
+                            t.HasCheckConstraint("CK_AgentSignal_SignalCodeRequired", "LENGTH(TRIM(\"SignalCode\")) > 0");
+
+                            t.HasCheckConstraint("CK_AgentSignal_SummaryRequired", "LENGTH(TRIM(\"Summary\")) > 0");
+                        });
+                });
+
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.Category", b =>
                 {
                     b.Property<Guid>("Id")
@@ -388,6 +699,79 @@ namespace MosaicMoney.Api.Migrations
                             t.HasCheckConstraint("CK_HouseholdUser_MembershipStatusRange", "\"MembershipStatus\" IN (1, 2, 3)");
 
                             t.HasCheckConstraint("CK_HouseholdUser_RemovedAudit", "(\"MembershipStatus\" = 3 AND \"RemovedAtUtc\" IS NOT NULL) OR (\"MembershipStatus\" <> 3 AND \"RemovedAtUtc\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.IdempotencyKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AgentRunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("KeyValue")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ResolutionCode")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("ResolutionRationale")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AgentRunId", "CreatedAtUtc");
+
+                    b.HasIndex("Scope", "KeyValue")
+                        .IsUnique();
+
+                    b.HasIndex("Status", "ExpiresAtUtc");
+
+                    b.ToTable("IdempotencyKeys", t =>
+                        {
+                            t.HasCheckConstraint("CK_IdempotencyKey_ExpiresAfterCreated", "\"ExpiresAtUtc\" > \"CreatedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_IdempotencyKey_FinalizationAudit", "((\"Status\" = 1) AND \"FinalizedAtUtc\" IS NULL) OR ((\"Status\" IN (2, 3, 4)) AND \"FinalizedAtUtc\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_IdempotencyKey_FinalizedAfterCreated", "\"FinalizedAtUtc\" IS NULL OR \"FinalizedAtUtc\" >= \"CreatedAtUtc\"");
+
+                            t.HasCheckConstraint("CK_IdempotencyKey_KeyValueRequired", "LENGTH(TRIM(\"KeyValue\")) > 0");
+
+                            t.HasCheckConstraint("CK_IdempotencyKey_RequestHashRequired", "LENGTH(TRIM(\"RequestHash\")) > 0");
+
+                            t.HasCheckConstraint("CK_IdempotencyKey_ResolutionAudit", "(\"ResolutionCode\" IS NULL AND \"ResolutionRationale\" IS NULL) OR (\"ResolutionCode\" IS NOT NULL AND LENGTH(TRIM(\"ResolutionCode\")) > 0 AND \"ResolutionRationale\" IS NOT NULL AND LENGTH(TRIM(\"ResolutionRationale\")) > 0)");
+
+                            t.HasCheckConstraint("CK_IdempotencyKey_ScopeRequired", "LENGTH(TRIM(\"Scope\")) > 0");
+
+                            t.HasCheckConstraint("CK_IdempotencyKey_StatusRange", "\"Status\" IN (1, 2, 3, 4)");
                         });
                 });
 
@@ -1666,6 +2050,70 @@ namespace MosaicMoney.Api.Migrations
                     b.Navigation("HouseholdUser");
                 });
 
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentDecisionAudit", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.AgentRun", "AgentRun")
+                        .WithMany("DecisionAudits")
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.AgentRunStage", "AgentRunStage")
+                        .WithMany("DecisionAudits")
+                        .HasForeignKey("AgentRunStageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.HouseholdUser", "ReviewedByUser")
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AgentRun");
+
+                    b.Navigation("AgentRunStage");
+
+                    b.Navigation("ReviewedByUser");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentRun", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.Household", "Household")
+                        .WithMany()
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Household");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentRunStage", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.AgentRun", "AgentRun")
+                        .WithMany("Stages")
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AgentRun");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentSignal", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.AgentRun", "AgentRun")
+                        .WithMany("Signals")
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.AgentRunStage", "AgentRunStage")
+                        .WithMany("Signals")
+                        .HasForeignKey("AgentRunStageId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AgentRun");
+
+                    b.Navigation("AgentRunStage");
+                });
+
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.ClassificationStageOutput", b =>
                 {
                     b.HasOne("MosaicMoney.Api.Domain.Ledger.TransactionClassificationOutcome", "Outcome")
@@ -1732,6 +2180,16 @@ namespace MosaicMoney.Api.Migrations
                     b.Navigation("Household");
 
                     b.Navigation("MosaicUser");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.IdempotencyKey", b =>
+                {
+                    b.HasOne("MosaicMoney.Api.Domain.Ledger.AgentRun", "AgentRun")
+                        .WithMany("IdempotencyKeys")
+                        .HasForeignKey("AgentRunId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AgentRun");
                 });
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.InvestmentHoldingSnapshot", b =>
@@ -1925,6 +2383,24 @@ namespace MosaicMoney.Api.Migrations
                     b.Navigation("PlaidAccountLinks");
 
                     b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentRun", b =>
+                {
+                    b.Navigation("DecisionAudits");
+
+                    b.Navigation("IdempotencyKeys");
+
+                    b.Navigation("Signals");
+
+                    b.Navigation("Stages");
+                });
+
+            modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.AgentRunStage", b =>
+                {
+                    b.Navigation("DecisionAudits");
+
+                    b.Navigation("Signals");
                 });
 
             modelBuilder.Entity("MosaicMoney.Api.Domain.Ledger.Category", b =>

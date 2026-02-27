@@ -13,8 +13,18 @@ namespace MosaicMoney.Api.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
-                .Annotation("Npgsql:PostgresExtension:azure_ai", ",,")
                 .Annotation("Npgsql:PostgresExtension:vector", ",,");
+
+            migrationBuilder.Sql(
+                """
+                DO $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'azure_ai') THEN
+                        CREATE EXTENSION IF NOT EXISTS azure_ai;
+                    END IF;
+                END
+                $$;
+                """);
 
             migrationBuilder.CreateTable(
                 name: "Categories",

@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Azure.Messaging.EventHubs" Version="13.3.0-preview.1.26126.7" />
+    <PackageReference Include="Aspire.Azure.Messaging.ServiceBus" Version="13.3.0-preview.1.26126.7" />
     <PackageReference Include="Aspire.Npgsql" Version="13.3.0-preview.1.26121.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
   </ItemGroup>

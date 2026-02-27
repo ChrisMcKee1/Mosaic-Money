@@ -8,6 +8,7 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
 {
     private const string EvidencePathEnvironmentVariableName = "MM_AI_11_EVIDENCE_PATH";
     private const string OfficialEvaluatorEvidencePathEnvironmentVariableName = "MM_AI_12_EVIDENCE_PATH";
+    private const string SpecialistEvaluatorEvidencePathEnvironmentVariableName = "MM_AI_15_EVIDENCE_PATH";
 
     [Fact]
     public async Task EvaluateAsync_AllCriteriaMeetReleaseBlockingThresholds()
@@ -17,6 +18,7 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
         WriteReportToOutput(report);
         TryWriteEvidenceArtifact(report);
         TryWriteOfficialEvaluatorReplayArtifact(report);
+        TryWriteSpecialistEvaluatorReplayArtifacts();
 
         Assert.True(report.IsReleaseReady, report.ToFailureMessage());
     }
@@ -144,7 +146,26 @@ public sealed class AgenticEvalReleaseGateTests(ITestOutputHelper output)
             });
 
         File.WriteAllText(resolvedPath, serializedArtifact);
+        AgenticEvalOfficialEvaluatorReplayPack.WriteCompanionArtifacts(report.OfficialEvaluatorStack, resolvedPath);
         output.WriteLine("{0}: official evaluator replay artifact written to {1}", report.GateId, resolvedPath);
+    }
+
+    private void TryWriteSpecialistEvaluatorReplayArtifacts()
+    {
+        var evidencePath = Environment.GetEnvironmentVariable(SpecialistEvaluatorEvidencePathEnvironmentVariableName);
+        if (string.IsNullOrWhiteSpace(evidencePath))
+        {
+            return;
+        }
+
+        var resolvedPath = Path.GetFullPath(evidencePath);
+        var snapshot = AgenticEvalSpecialistEvaluatorPack.BuildSnapshot();
+        AgenticEvalSpecialistEvaluatorReplayArtifacts.WriteArtifacts(snapshot, resolvedPath);
+
+        output.WriteLine(
+            "{0}: specialist evaluator replay artifact written to {1}",
+            AgenticEvalReleaseGate.GateId,
+            resolvedPath);
     }
 
     private sealed record AgenticEvalReleaseGateEvidence(

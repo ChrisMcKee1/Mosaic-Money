@@ -295,3 +295,52 @@ Notes:
 
 - Keep `AiWorkflow:Embeddings:Provider=deterministic` until endpoint/key/deployment values are set.
 - Do not commit endpoint keys, API keys, or project-specific identifiers in `appsettings*.json`.
+
+## Runtime messaging backbone local setup contract (M10 MM-ASP-12)
+
+M10 runtime orchestration now uses Aspire-native resources for Service Bus and Event Hubs, with explicit `WithReference(...)` wiring into API and Worker.
+
+Aspire-native runtime resources (AppHost):
+
+1. `AddAzureServiceBus("runtime-messaging")`
+2. `AddServiceBusQueue("runtime-ingestion-completed")`
+3. `AddServiceBusQueue("runtime-assistant-message-posted")`
+4. `AddServiceBusQueue("runtime-nightly-anomaly-sweep")`
+5. `AddAzureEventHubs("runtime-telemetry")`
+6. `AddHub("runtime-telemetry-stream")`
+7. `AddConsumerGroup("mosaic-money-runtime")`
+
+Connection names validated at startup when `RuntimeMessaging:Enabled=true`:
+
+1. `ConnectionStrings:runtime-ingestion-completed`
+2. `ConnectionStrings:runtime-assistant-message-posted`
+3. `ConnectionStrings:runtime-nightly-anomaly-sweep`
+4. `ConnectionStrings:runtime-telemetry-stream`
+
+Event Grid configuration remains explicit until a first-class Aspire Event Grid integration is available:
+
+1. `Parameters:runtime-eventgrid-publish-endpoint` (private configuration)
+2. `Parameters:runtime-eventgrid-publish-access-key` (secret)
+3. `Parameters:runtime-eventgrid-topic-name` (non-secret topic identifier)
+
+Injected runtime environment keys (API and Worker):
+
+1. `RuntimeMessaging__Enabled` (set to `true` only when connection refs + Event Grid config are present)
+2. `RuntimeMessaging__EventGrid__PublishEndpoint`
+3. `RuntimeMessaging__EventGrid__PublishAccessKey`
+4. `RuntimeMessaging__EventGrid__TopicName`
+
+File-based AppHost commands (this repository) for Event Grid values:
+
+```bash
+dotnet user-secrets set "Parameters:runtime-eventgrid-publish-endpoint" "https://<topic-name>.<region>-1.eventgrid.azure.net/api/events" --file src/apphost.cs
+dotnet user-secrets set "Parameters:runtime-eventgrid-publish-access-key" "<event-grid-access-key>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:runtime-eventgrid-topic-name" "mm-runtime-events" --file src/apphost.cs
+dotnet user-secrets list --file src/apphost.cs
+```
+
+Notes:
+
+- Prefer Aspire-native resource references over manual Service Bus/Event Hubs connection-string environment variables.
+- Event Grid publish endpoint/key remain secret-managed values and must never be committed.
+- API/Worker startup validation is fail-closed when `RuntimeMessaging:Enabled=true`: missing Aspire connection refs or Event Grid values throw at startup.

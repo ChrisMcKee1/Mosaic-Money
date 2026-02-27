@@ -4,6 +4,9 @@
 This file is the canonical architecture index and decision summary. Detailed diagrams and model artifacts are now split into dedicated docs:
 
 - `docs/architecture/README.md`
+- `docs/architecture/master-platform-architecture.md`
+- `docs/architecture/architecture-decisions.md`
+- `docs/architecture/unified-api-mcp-entrypoints.md`
 - `docs/architecture/system-topology.md`
 - `docs/architecture/ai-orchestration-flow.md`
 - `docs/architecture/deployment-modes.md`
@@ -13,6 +16,7 @@ This file is the canonical architecture index and decision summary. Detailed dia
 
 ## 2. Current Stack (2026-02)
 - Backend: C# 14 / .NET 10 Minimal APIs.
+- Unified API surface: REST Minimal API endpoints and MCP endpoints in one ASP.NET Core host with shared business logic services.
 - Orchestration: Aspire 13.3 preview (daily channel) with AppHost composition and MCP diagnostics.
 - Web: Next.js 16 + React 19 + Tailwind.
 - Mobile: Expo SDK 55 + React Native.
@@ -27,6 +31,7 @@ This file is the canonical architecture index and decision summary. Detailed dia
 - Ambiguous/high-impact outcomes route to `NeedsReview`.
 - External messaging actions are deny-by-default.
 - Aspire `WithReference(...)` and service discovery are required over hardcoded endpoints.
+- Minimal API handlers and MCP tools must remain thin presentation wrappers over shared core use-case services.
 
 ## 3.1 Dashboard and Reporting Component Framework Standard (2026-02-26)
 - Web default: `react-apexcharts` for dashboard/reporting visuals that require time-series interactions (zoom, pan, interval switching, annotations, mixed-series).
@@ -89,3 +94,4 @@ See `docs/architecture/deployment-modes.md` for operational details and troubles
 - Canonical DB/connection name: `mosaicmoneydb`.
 - DB-only Azure provisioning uses `src/apphost.database/apphost.cs`.
 - Aspire deploy remains AppHost-scoped; DB-only rollout is achieved by deploying the DB-only AppHost project.
+- Unified REST + MCP hosting is adopted for `MosaicMoney.Api`; explicit MCP tools are required (no auto-conversion from Minimal API routes).

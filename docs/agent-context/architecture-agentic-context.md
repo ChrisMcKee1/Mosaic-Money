@@ -5,6 +5,9 @@ Canonical source: [Full Architecture](../../project-plan/architecture.md)
 
 Detailed architecture docs:
 - [Architecture Docs Index](../architecture/README.md)
+- [Master Platform Architecture](../architecture/master-platform-architecture.md)
+- [Architecture Decision Log](../architecture/architecture-decisions.md)
+- [Unified API and MCP Entrypoints](../architecture/unified-api-mcp-entrypoints.md)
 - [System Topology](../architecture/system-topology.md)
 - [AI Orchestration Flow](../architecture/ai-orchestration-flow.md)
 - [Deployment Modes](../architecture/deployment-modes.md)
@@ -12,6 +15,7 @@ Detailed architecture docs:
 
 ## Core Stack
 - Backend: C# 14 with .NET 10 Minimal APIs.
+- API host pattern: one ASP.NET Core service can expose both Minimal API and MCP endpoints, both wrapping shared core services.
 - Orchestration: Aspire 13.3 preview AppHost with API, worker, and frontend composition.
 - Orchestration database mode: use `AddAzurePostgresFlexibleServer` as the canonical Postgres resource; local full-stack can run via `.RunAsContainer()` and DB-only Azure rollout uses `src/apphost.database/apphost.cs`.
 - Web: Next.js 16 with React 19 and Tailwind CSS.
@@ -25,6 +29,7 @@ Detailed architecture docs:
 
 ## Architectural Rules
 - Keep Copilot as UI and coding assistant, not runtime orchestration.
+- Do not treat Minimal API route mappings as MCP tools; use explicit MCP tool wrappers that call shared business services.
 - Keep deterministic and in-database AI paths primary for cost and latency control.
 - Treat API as resource server: validate Clerk JWTs, map `sub` to Mosaic identity, and enforce protected endpoints via authorization policy.
 - Escalation order is deterministic -> semantic retrieval -> MAF fallback.
@@ -33,6 +38,8 @@ Detailed architecture docs:
 - Route low-confidence cases into `NeedsReview` instead of forced auto-resolution.
 - Preserve source-of-truth ledger integrity. Projection logic stays in presentation layers.
 - Aggregate/shape time-series buckets (day/week/month) before chart render boundaries to keep chart components presentation-only.
+
+Runtime gap note (2026-02-27): staged classification policy is implemented, but full runtime multi-agent orchestration and conversational assistant surfaces are not yet complete. See `docs/agent-context/runtime-agentic-gap-analysis-2026-02-27.md` for required schema, worker/eventing, and UI expansion roadmap.
 
 ## Team Routing Map
 - `mosaic-money-backend`: API, entities, migrations, ingestion.

@@ -23,6 +23,8 @@ Related detail docs:
 - Recurring forecasting and safe-to-spend projections.
 - Business-expense isolation from household budget burn.
 - Semantic retrieval over local PostgreSQL embeddings.
+- Runtime multi-agent expansion with specialist finance agents and durable workflow audit state.
+- Conversational assistant surface that orchestrates backend agents with explicit human approval gates.
 - Household identity and account access policy controls.
 - Clerk-based authentication and authorization across web/mobile/API with Microsoft SSO and passkey readiness.
 - Discoverable settings and account-linking UX entry points (appearance, security, and Plaid linking).

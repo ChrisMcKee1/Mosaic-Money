@@ -1,6 +1,9 @@
 import { chromium } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { loadLocalTriageEnv } from './load-local-triage-env.mjs';
+
+loadLocalTriageEnv();
 
 const baseUrl = process.env.MM_TRIAGE_BASE_URL ?? 'http://localhost:53832';
 const outputDir = path.resolve('../../artifacts/release-gates/mm-qa-04/live-triage');

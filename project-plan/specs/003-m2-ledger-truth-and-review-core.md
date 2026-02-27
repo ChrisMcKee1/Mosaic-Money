@@ -36,7 +36,7 @@ Deliver the first complete human-reviewed ledger loop: Plaid account-link onboar
 | ID | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|
 | MM-BE-05 | NeedsReview state machine and transitions | MM-BE-04, MM-AI-01 | Explicit transition rules with fail-closed behavior for ambiguity. | Done |
-| MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | In Progress |
+| MM-BE-06 | Idempotent ingestion pipeline (`raw -> enriched`) | MM-BE-03, MM-BE-05 | Duplicate-safe upsert with note preservation and review routing. | Done |
 Update note (2026-02-26): Planner moved `MM-BE-06` back to `In Progress` for final acceptance pass and integration verification as part of the cross-surface completion wave.
 | MM-BE-12 | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configs and records link session metadata for diagnostics/support. | Done |
 | MM-BE-13 | Public token exchange and Item credential storage | MM-BE-12 | Backend exchanges `public_token` to `access_token` + `item_id` and stores credentials in secure backend storage paths only. | Done |
@@ -82,6 +82,8 @@ Update note (2026-02-26): Planner promoted `MM-FE-09` to `Done` after revalidati
 Update note (2026-02-25): `MM-BE-06` is reopened for a targeted Plaid transactions-history enhancement to request and ingest the maximum available historical range (up to 24 months) during onboarding/sync initialization while maintaining idempotent raw-to-enriched behavior.
 
 Update note (2026-02-25): `MM-BE-06` implementation now includes explicit `days_requested` request wiring for Plaid transactions initialization (`/link/token/create` and bootstrap `/transactions/sync` path), plus bounded configuration (`30..730`, default `730`) and passing focused backend tests. Status advanced to `In Review`.
+
+Update note (2026-02-27): Planner verification closed `MM-BE-06` as `Done` after focused backend test evidence confirmed idempotent raw->enriched persistence and sync replay safety with historical-depth request wiring: `PlaidDeltaIngestionServiceTests`, `PlaidHttpTokenProviderTests`, and `PlaidTransactionsSyncProcessorTests` (15 passed, 0 failed).
 
 Update note (2026-02-26): `MM-MOB-08` is moved to `Blocked` pending device-level React Native Plaid Link sandbox validation with a configured authenticated runtime environment.
 

@@ -85,3 +85,48 @@ Mosaic Money is a cloud-first, single-entry personal finance system for a two-us
 
 ### Delivery Gate
 Clerk auth work is tracked in milestone spec `project-plan/specs/009-m8-authentication-and-authorization-clerk.md` and must meet all authn/authz verification gates before promotion to `Done`.
+
+## 8. Runtime Agentic Architecture Gap Analysis (2026-02-27)
+
+This section captures runtime product-agent coverage (API, worker, orchestration, database, and user assistant surfaces), distinct from coding-agent mode configuration.
+
+Detailed audit artifact:
+- `docs/agent-context/runtime-agentic-gap-analysis-2026-02-27.md`
+
+### Current runtime strengths
+- Deterministic -> semantic -> MAF escalation policy is implemented with fail-closed `NeedsReview` behavior.
+- Semantic retrieval is implemented in PostgreSQL with provenance fields and confidence fusion.
+- `UserNote` and `AgentNote` separation is preserved, with summary sanitation policies for AI outputs.
+- Human approval/review workflows exist for ambiguous and high-impact outcomes.
+
+### Confirmed architecture gaps
+- Runtime multi-agent catalog is missing (specialists for transfer, income, debt quality, investment classification, anomaly detection).
+- MAF runtime remains partial/no-op by default and is not yet an always-on orchestrated specialist graph.
+- Worker service is underutilized for orchestration; most async orchestration is still API-hosted.
+- No production conversational assistant entrypoint exists that orchestrates backend specialist agents for web/mobile users.
+- Durable workflow run-state persistence is incomplete (run/stage/signal/audit lifecycle entities).
+- Event-driven architecture is incomplete for end-to-end agent workflows.
+
+### Required runtime expansion direction
+1. Add an orchestrator agent that handles user intent and dispatches specialist agents with policy-safe responses.
+2. Introduce specialist agents for core finance domains (categorization, transfer detection, income normalization, debt quality, investment classification, anomaly detection).
+3. Add durable agent workflow persistence (`AgentRuns`, `AgentRunStages`, `AgentSignals`, `AgentDecisionAudit`, replay-safe idempotency keys).
+4. Shift async orchestration responsibilities into Worker with explicit event-driven boundaries.
+5. Add web/mobile conversational assistant surfaces with explicit approval cards for high-impact actions.
+
+### Required database and contract deltas
+- Add workflow lifecycle tables for runtime auditability and replay safety:
+	- `AgentRuns`
+	- `AgentRunStages`
+	- `AgentSignals`
+	- `AgentDecisionAudit`
+	- `IdempotencyKeys`
+- Extend classification and retrieval responses with run provenance fields (`runId`, `correlationId`, stage provenance metadata).
+- Add assistant orchestration contracts for conversation invoke, streaming updates, and explicit approval/reject callbacks.
+
+### Eventing architecture recommendation
+- Use **Azure Service Bus** for durable business commands and workflow processing.
+- Use **Azure Event Grid** for event notification fan-out.
+- Use **Azure Event Hubs** for high-throughput telemetry and replayable event streams.
+
+This recommendation is based on Microsoft guidance and aligned references listed in the detailed gap analysis artifact.

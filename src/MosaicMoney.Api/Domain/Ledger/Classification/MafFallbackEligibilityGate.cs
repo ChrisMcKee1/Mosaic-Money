@@ -6,6 +6,7 @@ public static class MafFallbackEligibilityReasonCodes
     public const string IneligibleFinalizedBeforeFallback = "maf_ineligible_finalized_before_fallback";
     public const string IneligibleSemanticNotAttempted = "maf_ineligible_semantic_not_attempted";
     public const string IneligibleExistingNeedsReview = "maf_ineligible_existing_needs_review";
+    public const string IneligibleSpecialistRoutingPolicy = "maf_ineligible_specialist_routing_policy";
 }
 
 public sealed record MafFallbackEligibilityDecision(

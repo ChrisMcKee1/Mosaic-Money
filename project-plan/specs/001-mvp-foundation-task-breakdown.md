@@ -54,6 +54,8 @@ All task tables use a `Status` column with the following values:
 6. M6 UI Redesign and Theming
 7. M7 Identity, Household Access Control, and Account Ownership
 8. M8 Authentication and Authorization (Clerk)
+9. M9 Cross-Surface Charting Framework Migration
+10. M10 Runtime Agentic Orchestration and Conversational Assistant
 
 ## Cross-Domain Dependency DAG (Small Tasks)
 
@@ -79,7 +81,7 @@ All task tables use a `Status` column with the following values:
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
 | MM-BE-05 | Backend | NeedsReview state machine + transitions | MM-BE-04, MM-AI-01 | Explicit allowed transitions; ambiguous outcomes fail closed into `NeedsReview`. | Done |
-| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | In Progress |
+| MM-BE-06 | Backend | Idempotent ingestion pipeline (raw -> enriched) | MM-BE-03, MM-BE-05 | Duplicate Plaid delta handling is safe; raw payload stored; enriched record upserted with note preservation. | Done |
 | MM-BE-12 | Backend | Plaid Link token lifecycle endpoints | MM-BE-04, MM-ASP-03 | Backend issues OAuth-capable Link token configurations and captures Link session metadata for diagnostics. | Done |
 | MM-BE-13 | Backend | Public token exchange + secure Item storage | MM-BE-12 | `public_token` is exchanged server-side and resulting `access_token` + `item_id` are persisted in secure backend storage. | Done |
 | MM-BE-14 | Backend | Plaid webhook and Item recovery contract | MM-BE-13, MM-BE-05 | Item/webhook error states (including OAuth expiry/revocation) route to explicit relink/update-mode flows with human review boundaries. | Done |
@@ -228,8 +230,36 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 |---|---|---|---|---|---|
 | MM-FE-25 | Web | ApexCharts foundation and shared config layer | MM-FE-10 | Shared chart config/time-bucket selector modules exist and power migrated web chart surfaces. | Done |
 | MM-FE-26 | Web | M6 chart migration to ApexCharts | MM-FE-25, MM-FE-11, MM-FE-12, MM-FE-14, MM-FE-15, MM-FE-16 | M6 dashboard/reporting surfaces use ApexCharts with token-consistent light/dark behavior. | Done |
-| MM-MOB-15 | Mobile | Victory Native XL chart parity widgets | MM-MOB-09, MM-MOB-11, MM-MOB-12 | Mobile surfaces provide parity KPI charts using Victory Native XL primitives and interval-aware inputs. | In Review |
+| MM-MOB-15 | Mobile | Victory Native XL chart parity widgets | MM-MOB-09, MM-MOB-11, MM-MOB-12 | Mobile surfaces provide parity KPI charts using Victory Native XL primitives and interval-aware inputs. | Done |
 | MM-QA-05 | QA | Chart interaction and theme parity gate | MM-FE-26, MM-MOB-15 | Playwright evidence verifies interactive web charts in light/dark themes and documents residual gaps with backlog items. | Done |
+
+### M10 Runtime Agentic Orchestration and Conversational Assistant
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| MM-ASP-12 | DevOps | Runtime messaging backbone in AppHost | MM-ASP-10, MM-ASP-11 | AppHost wiring for Service Bus command lanes, Event Grid fan-out, and Event Hubs telemetry streams with secret-safe configuration contracts. | Done |
+| MM-ASP-13 | DevOps | Worker orchestration runbooks and diagnostics | MM-ASP-12, MM-ASP-06 | Operational runbook for queue retries, dead-letter recovery, replay, and trace correlation across API/Worker/assistant flows. | Done |
+| MM-BE-27 | Backend | Agent workflow lifecycle schema | MM-BE-26 | Add `AgentRuns`, `AgentRunStages`, `AgentSignals`, `AgentDecisionAudit`, and replay-safe idempotency keys via EF migrations and persistence contracts. | Done |
+| MM-BE-28 | Backend | Worker-owned orchestration command handlers | MM-BE-27, MM-ASP-12 | Move classification/enrichment workflow triggers into worker command handlers with idempotent retries and deterministic fail-closed behavior. | Done |
+| MM-AI-13 | AI | Specialist agent registry and routing policy | MM-AI-10, MM-BE-27 | Configurable specialist map (categorization, transfer, income, debt quality, investment, anomaly) with deterministic precedence and escalation policy. | Done |
+| MM-AI-14 | AI | Conversational orchestrator workflow contracts | MM-AI-13, MM-BE-28 | Assistant orchestration contracts for invoke/stream/approve/reject with run correlation and policy-aware response shaping. | Done |
+| MM-AI-15 | AI | Specialist evaluator packs and replay artifacts | MM-AI-12, MM-AI-13, MM-AI-14 | Role-level evaluator datasets, pass/fail thresholds, and reproducible replay artifacts for each specialist lane. | Done |
+| MM-FE-27 | Web | Assistant shell and approval card UX | MM-AI-14, MM-FE-22 | Global assistant panel with conversational thread, approval cards, and explicit high-impact action confirmations. | Done |
+| MM-FE-28 | Web | Agent provenance and explainability timeline | MM-FE-27, MM-BE-27 | UI for run/stage provenance, confidence, and rationale summaries without exposing disallowed transcript/tool dumps. | Done |
+| MM-MOB-16 | Mobile | Assistant parity with offline-safe queue | MM-AI-14, MM-MOB-14 | Mobile assistant screen with queued outbound prompts, async update handling, and parity approval interactions. | Not Started |
+| MM-QA-06 | QA | Multi-agent runtime release gate | MM-ASP-13, MM-AI-15, MM-FE-28, MM-MOB-16 | Cross-surface gate validating routing correctness, policy denials, replay safety, and assistant UX acceptance. | Not Started |
+
+### AP0 PostgreSQL Discrepancy Closure Wave
+| ID | Domain | Task | Dependencies | Done Criteria | Status |
+|---|---|---|---|---|---|
+| AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Taxonomy/data-discrepancy closure plan and execution are coordinated across backend, AI, web, mobile, ops, and QA with evidence artifacts. | In Progress |
+| AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Baseline categories/subcategories are seeded idempotently; deterministic backfill reduces null-heavy category assignment rates while ambiguous rows route to `NeedsReview`. | Not Started |
+| AP0-BE-02 | Backend | Scoped ownership model for user/shared categories | AP0-EPIC | Schema supports `User`, `HouseholdShared`, and `Platform` taxonomy ownership without breaking existing transaction links. | Not Started |
+| AP0-BE-03 | Backend | Category lifecycle API (CRUD/reorder/reparent/audit) | AP0-BE-02 | Scope-aware endpoints exist for category/subcategory lifecycle operations with auditability, idempotent ordering, and fail-closed authorization. | Not Started |
+| AP0-FE-01 | Web | Settings categories management experience | AP0-BE-03 | Web settings supports category/subcategory create/edit/delete/reorder/reparent with scope-aware UX and error handling. | Not Started |
+| AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile supports parity category management flows with offline-safe mutation queue and sync recovery behavior. | Not Started |
+| AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform taxonomy tables | AP0-BE-03 | Operator-only admin lane manages platform taxonomy with auditable provenance, role protection, and rollback-safe workflows. | Not Started |
+| AP0-AI-01 | AI | Taxonomy readiness gates for ingestion/classification | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks gate routing behavior and improve fill-rates without violating fail-closed policy constraints. | Not Started |
+| AP0-QA-01 | QA | AP0 discrepancy closure release gate and evidence pack | AP0-BE-01, AP0-BE-02, AP0-BE-03, AP0-FE-01, AP0-MOB-01, AP0-OPS-01, AP0-AI-01 | End-to-end SQL/API/web/mobile/AI evidence confirms discrepancy closure and ownership/security boundaries. | Not Started |
 
 Update note (2026-02-25): Planner kickoff for M8 is created from Clerk authentication requirements. Initial implementation slice tasks (`MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-FE-22`, `MM-FE-23`, `MM-MOB-13`) are set to `In Progress` prior to specialist delegation.
 
@@ -275,6 +305,8 @@ Update note (2026-02-27): Planner closed the Partner A auth blocker and delivere
 
 Update note (2026-02-26): Planner resumed cross-surface completion wave. Tasks moved to `In Progress`: `MM-BE-06`, `MM-FE-09`, `MM-AI-12`, `MM-FE-10..16`, `MM-FE-18`, `MM-MOB-09`, `MM-FE-20`, `MM-FE-21`, `MM-MOB-11`, and `MM-MOB-12`. `MM-MOB-13` and `MM-QA-04` remain excluded/blocked for the current wave per explicit mobile-auth deferral.
 
+Update note (2026-02-27): Planner final acceptance promoted `MM-BE-06` to `Done` after focused backend verification passed for duplicate-safe raw/enriched persistence and Plaid history-depth wiring (`days_requested` bounded to 24 months): `PlaidDeltaIngestionServiceTests`, `PlaidHttpTokenProviderTests`, and `PlaidTransactionsSyncProcessorTests` (15 passed, 0 failed).
+
 Update note (2026-02-26): Planner created M9 charting migration scope (`project-plan/specs/010-m9-cross-surface-charting-framework-migration.md`) and started tasks `MM-FE-25`, `MM-FE-26`, `MM-MOB-15`, and `MM-QA-05` in `In Progress` for delegated implementation and validation.
 
 Update note (2026-02-26): Planner validation closeout promoted `MM-FE-09`, `MM-FE-10..16`, `MM-FE-18`, `MM-FE-20`, `MM-FE-21`, `MM-MOB-09`, `MM-MOB-11`, `MM-MOB-12`, `MM-FE-25`, `MM-FE-26`, and `MM-QA-05` to `Done` after web/mobile verification evidence:
@@ -282,6 +314,26 @@ Update note (2026-02-26): Planner validation closeout promoted `MM-FE-09`, `MM-F
 - Mobile: `npm run typecheck`, `npm run test:sync-recovery`, `npm run test:review-projection`, and `npx expo install --check` with SDK-compatibility updates.
 
 Update note (2026-02-26): `MM-MOB-15` is moved to `In Review`. Victory Native XL chart primitives are integrated, but investments trend data still uses temporary mock history pending backend historical-series wiring. Gap is tracked as GitHub issue `#125` (`MM-MOB-GAP-01`).
+
+Update note (2026-02-27): `MM-MOB-GAP-01` (`#125`) is now closed by replacing mobile `InvestmentsOverviewScreen` mock trend history with API-backed `/api/v1/net-worth/history` investment series mapping via `mobileInvestmentsHistoryApi`. Validation evidence: `npm --prefix src/MosaicMoney.Mobile run typecheck`, `npm --prefix src/MosaicMoney.Mobile run test:sync-recovery`, `npm --prefix src/MosaicMoney.Mobile run test:review-projection`, and focused `mobileInvestmentsHistoryApi.test.ts` all pass. With the residual gap resolved, `MM-MOB-15` is promoted to `Done`.
+
+Update note (2026-02-27): Daily kickoff AI audit and specialist delegation review confirms `MM-AI-12` still has outstanding replay-pack evidence gaps (`artifacts/release-gates/mm-ai-12/criteria-dataset-mapping.json` and `artifacts/release-gates/mm-ai-12/replay-pack.md`) plus pending cloud evaluator execution evidence. `MM-AI-12` remains `In Progress` and will not be promoted until those artifacts are produced and validated.
+
+Update note (2026-02-27): Planner created M10 runtime-agentic milestone planning artifacts and synchronized GitHub work tracking (`#126` epic and `#127`, `#128`, `#132`, `#134`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`) to Project 1 with `Not Started` status and parent/sub-issue relationships.
+
+Update note (2026-02-27): Planner started active M10 implementation and moved `MM-ASP-12` (`#127`), `MM-BE-27` (`#132`), and `MM-AI-13` (`#139`) to `In Progress` for delegated DevOps/Backend/AI execution.
+
+Update note (2026-02-27): Planner verification pass moved `MM-ASP-12` (`#127`), `MM-BE-27` (`#132`), and `MM-AI-13` (`#139`) to `In Review` after integrated compile/test checks passed for runtime messaging contracts, lifecycle schema constraints, and specialist routing policy (`19` focused tests passed, `0` failed).
+
+Update note (2026-02-27): Planner final review promoted `MM-ASP-12` (`#127`), `MM-BE-27` (`#132`), and `MM-AI-13` (`#139`) to `Done` after additional integrated verification: AppHost/API/Worker builds succeed with Aspire-native runtime messaging wiring and focused lifecycle/routing/runtime tests pass (`21` passed, `0` failed across `RuntimeMessagingBackboneOptionsTests`, `AgentWorkflowLifecycleModelContractTests`, `ClassificationSpecialistRoutingPolicyTests`, and `DeterministicClassificationOrchestratorTests`).
+
+Update note (2026-02-27): Planner closeout promoted `MM-ASP-13` (`#138`), `MM-BE-28` (`#128`), `MM-AI-14` (`#137`), `MM-AI-15` (`#140`), `MM-FE-27` (`#134`), and `MM-FE-28` (`#141`) to `Done` after integrated validation evidence:
+- Runtime verification: AppHost/API/Worker/Web healthy with runtime messaging and telemetry resources green (`runtime-messaging`, `runtime-ingestion-completed`, `runtime-assistant-message-posted`, `runtime-nightly-anomaly-sweep`, `runtime-telemetry`, `runtime-telemetry-stream`, `mosaic-money-runtime`).
+- Backend/AI tests: focused suite passed (`22` passed, `0` failed) including `AgentWorkflowLifecycleModelContractTests`, `RuntimeMessagingBackboneOptionsTests`, `ClassificationSpecialistRoutingPolicyTests`, `AgenticEvalReleaseGateTests`, `AgenticEvalSpecialistEvaluatorPackTests`, and `AgenticEvalSpecialistEvaluatorArtifactsTests`.
+- Web build: `npm --prefix src/MosaicMoney.Web run build` succeeded for assistant/provenance surfaces (expected non-blocking local API base URL warning outside Aspire-injected runtime).
+- Mobile auth exception preserved per planner direction: `MM-MOB-13` remains `Blocked` and excluded from this closeout wave.
+
+Update note (2026-02-27): Planner backfill sync added AP0 discrepancy-closure work items already tracked on Project 1 (`#144`-`#152`) into spec governance. `AP0-EPIC` (`#144`) is now `In Progress` for active planning/execution orchestration; child work items remain `Not Started` pending implementation sequencing.
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

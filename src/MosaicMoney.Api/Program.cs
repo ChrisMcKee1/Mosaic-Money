@@ -15,6 +15,9 @@ using Pgvector.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddAiWorkflowIntegrationChecks();
+builder.AddRuntimeMessagingBackboneChecks();
+builder.AddAzureServiceBusClient(connectionName: "runtime-assistant-message-posted");
+builder.AddAzureEventHubProducerClient(connectionName: "runtime-telemetry-stream");
 builder.AddNpgsqlDbContext<MosaicMoneyDbContext>(
     connectionName: "mosaicmoneydb",
     configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
@@ -42,6 +45,10 @@ builder.Services.AddScoped<TransactionProjectionMetadataQueryService>();
 builder.Services.AddScoped<IDeterministicClassificationEngine, DeterministicClassificationEngine>();
 builder.Services.AddScoped<IClassificationAmbiguityPolicyGate, ClassificationAmbiguityPolicyGate>();
 builder.Services.AddScoped<IClassificationConfidenceFusionPolicy, ClassificationConfidenceFusionPolicy>();
+builder.Services.Configure<ClassificationSpecialistRegistryOptions>(
+    builder.Configuration.GetSection(ClassificationSpecialistRegistryOptions.SectionName));
+builder.Services.AddSingleton<IClassificationSpecialistRegistry, ClassificationSpecialistRegistry>();
+builder.Services.AddSingleton<IClassificationSpecialistRoutingPolicy, ClassificationSpecialistRoutingPolicy>();
 builder.Services.AddScoped<IPostgresSemanticNeighborQuery, PostgresSemanticNeighborQuery>();
 builder.Services.AddScoped<IPostgresSemanticRetrievalService, PostgresSemanticRetrievalService>();
 builder.Services.Configure<MafFallbackGraphOptions>(builder.Configuration.GetSection(MafFallbackGraphOptions.SectionName));

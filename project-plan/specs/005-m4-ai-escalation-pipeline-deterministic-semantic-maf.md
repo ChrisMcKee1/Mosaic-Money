@@ -83,6 +83,8 @@ Implementation note (2026-02-25): `MM-AI-12` implementation is in review with of
 - Mapping coverage includes all `MM-AI-11` criteria and reusable dataset fields (`query`, `response`, `tool_definitions`, `actions`, `expected_actions`, `ground_truth`) for rerunnable replay scenarios.
 - Task status is now `In Review` after focused offline validation (`AgenticEvalOfficialEvaluatorStackTests`, `AgenticEvalOfficialEvaluatorArtifactsTests`, `AgenticEvalReleaseGateTests`) and release-gate script replay; cloud-run evidence is still required before `Done`.
 
+Implementation note (2026-02-27): Planner-led kickoff audit plus AI specialist review found that official evaluator replay-pack artifact generation is still incomplete (`artifacts/release-gates/mm-ai-12/criteria-dataset-mapping.json` and `artifacts/release-gates/mm-ai-12/replay-pack.md` missing in latest run evidence), and cloud evaluator execution evidence is not yet captured. `MM-AI-12` remains `In Progress` pending those artifacts and validation reruns.
+
 ## MM-AI-12 Documentation Replay Pack
 Use this runbook verbatim when restarting evaluator modernization work after a pause. Do not mark `MM-AI-12` done without producing all artifacts listed below.
 

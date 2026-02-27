@@ -15,14 +15,14 @@ test.describe('Household Settings', () => {
     await expect(page.getByRole('heading', { name: 'Invite Member' })).toBeVisible();
     await expect(page.locator('input[name="email"]')).toBeVisible();
     await expect(page.locator('select[name="role"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send Invite' })).toBeVisible();
   });
 
   test('should enforce invite form behavior based on household availability', async ({ page }) => {
     await page.goto('/settings/household');
 
     const emailInput = page.locator('input[name="email"]');
-    const submitButton = page.locator('button[type="submit"]');
+    const submitButton = page.getByRole('button', { name: 'Send Invite' });
 
     if (await submitButton.isEnabled()) {
       await emailInput.fill('invalid-email');

@@ -22,6 +22,7 @@ public sealed class DeterministicClassificationOrchestrator(
     IDeterministicClassificationEngine deterministicClassificationEngine,
     IClassificationAmbiguityPolicyGate ambiguityPolicyGate,
     IClassificationConfidenceFusionPolicy confidenceFusionPolicy,
+    IClassificationSpecialistRoutingPolicy specialistRoutingPolicy,
     IPostgresSemanticRetrievalService semanticRetrievalService,
     IMafFallbackEligibilityGate mafFallbackEligibilityGate,
     IMafFallbackGraphService mafFallbackGraphService) : IDeterministicClassificationOrchestrator
@@ -62,20 +63,36 @@ public sealed class DeterministicClassificationOrchestrator(
 
         var stageResult = deterministicClassificationEngine.Execute(deterministicRequest);
         var gateDecision = ambiguityPolicyGate.Evaluate(transaction.ReviewStatus, stageResult);
+        var routingDecision = specialistRoutingPolicy.Evaluate(new ClassificationSpecialistRoutingInput(
+            transaction.Description,
+            transaction.Amount,
+            transaction.ReviewStatus,
+            stageResult,
+            gateDecision));
         var now = DateTime.UtcNow;
-        var shouldAttemptSemanticStage = gateDecision.Decision == ClassificationDecision.NeedsReview;
+        var shouldAttemptSemanticStage = gateDecision.Decision == ClassificationDecision.NeedsReview
+            && routingDecision.AllowSemanticStage;
         var semanticResult = shouldAttemptSemanticStage
             ? await semanticRetrievalService.RetrieveCandidatesAsync(transaction.Id, cancellationToken: cancellationToken)
             : null;
-        var fusionDecision = confidenceFusionPolicy.Evaluate(
+        var rawFusionDecision = confidenceFusionPolicy.Evaluate(
             transaction.ReviewStatus,
             stageResult,
             gateDecision,
             semanticResult);
+        var fusionDecision = ApplyRoutingPolicyDecision(transaction.ReviewStatus, rawFusionDecision, routingDecision);
         var mafEligibilityDecision = mafFallbackEligibilityGate.Evaluate(
             gateDecision,
             fusionDecision,
             shouldAttemptSemanticStage);
+
+        if (!routingDecision.AllowMafFallbackStage)
+        {
+            mafEligibilityDecision = new MafFallbackEligibilityDecision(
+                IsEligible: false,
+                MafFallbackEligibilityReasonCodes.IneligibleSpecialistRoutingPolicy,
+                "Specialist routing policy disabled MAF fallback for the selected lane.");
+        }
 
         var mafResult = await ExecuteMafFallbackIfEligibleAsync(
             transaction,
@@ -89,6 +106,7 @@ public sealed class DeterministicClassificationOrchestrator(
         var deterministicStageOutput = BuildDeterministicStageOutput(
             stageResult,
             gateDecision,
+            routingDecision,
             shouldAttemptSemanticStage,
             now);
 
@@ -294,10 +312,11 @@ public sealed class DeterministicClassificationOrchestrator(
     private static ClassificationStageOutput BuildDeterministicStageOutput(
         DeterministicClassificationStageResult stageResult,
         ClassificationAmbiguityDecision gateDecision,
+        ClassificationSpecialistRoutingDecision routingDecision,
         bool escalatedToNextStage,
         DateTime producedAtUtc)
     {
-        var rationale = BuildDeterministicDecisionRationale(stageResult.Rationale, gateDecision);
+        var rationale = BuildDeterministicDecisionRationale(stageResult.Rationale, gateDecision, routingDecision);
 
         return new ClassificationStageOutput
         {
@@ -391,9 +410,10 @@ public sealed class DeterministicClassificationOrchestrator(
 
     private static string BuildDeterministicDecisionRationale(
         string deterministicRationale,
-        ClassificationAmbiguityDecision gateDecision)
+        ClassificationAmbiguityDecision gateDecision,
+        ClassificationSpecialistRoutingDecision routingDecision)
     {
-        var stageRationale = $"{deterministicRationale} Gate decision {gateDecision.DecisionReasonCode}: {gateDecision.DecisionRationale}";
+        var stageRationale = $"{deterministicRationale} Gate decision {gateDecision.DecisionReasonCode}: {gateDecision.DecisionRationale} Routing decision {routingDecision.DecisionReasonCode}: {routingDecision.DecisionRationale}";
         return Truncate(stageRationale, 500);
     }
 
@@ -452,5 +472,39 @@ public sealed class DeterministicClassificationOrchestrator(
         return value.Length <= maxLength
             ? value
             : value[..maxLength];
+    }
+
+    private static ClassificationConfidenceFusionDecision ApplyRoutingPolicyDecision(
+        TransactionReviewStatus currentReviewStatus,
+        ClassificationConfidenceFusionDecision fusionDecision,
+        ClassificationSpecialistRoutingDecision routingDecision)
+    {
+        if (!routingDecision.OverrideFinalDecisionToNeedsReview)
+        {
+            return fusionDecision;
+        }
+
+        return new ClassificationConfidenceFusionDecision(
+            ClassificationDecision.NeedsReview,
+            ResolveNeedsReviewStatus(currentReviewStatus),
+            ProposedSubcategoryId: null,
+            RoundConfidence(fusionDecision.FinalConfidence),
+            routingDecision.DecisionReasonCode,
+            routingDecision.DecisionRationale,
+            routingDecision.AgentNoteSummary,
+            EscalatedToNextStage: false);
+    }
+
+    private static TransactionReviewStatus ResolveNeedsReviewStatus(TransactionReviewStatus currentReviewStatus)
+    {
+        if (TransactionReviewStateMachine.TryTransition(
+                currentReviewStatus,
+                TransactionReviewAction.RouteToNeedsReview,
+                out var nextStatus))
+        {
+            return nextStatus;
+        }
+
+        return TransactionReviewStatus.NeedsReview;
     }
 }

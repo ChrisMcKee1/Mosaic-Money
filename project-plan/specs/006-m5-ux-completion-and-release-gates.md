@@ -58,7 +58,7 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Automated checks for disallowed patterns and missing orchestration conventions. | Done |
 | MM-BE-11 | Backend | Financial correctness regression suite | MM-BE-10 | Money/date/matching/review/reimbursement/AI-routing regression matrix with pass gates. | Done |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Thresholded routing correctness and safety report for release blocking decisions. | Done |
-| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate official `.NET` + Foundry evaluators/graders with source-linked replay instructions and reproducible evidence artifacts. | In Review |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate official `.NET` + Foundry evaluators/graders with source-linked replay instructions and reproducible evidence artifacts. | In Progress |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-07, MM-BE-09, MM-BE-05 | Desktop/mobile web critical journey regression and error-state validation. | Done |
 | MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Done |
 | MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Done |
@@ -87,6 +87,8 @@ Implementation note (2026-02-25): `MM-AI-12` is now `In Review` and extends the 
 - Script update: `.github/scripts/run-mm-ai-11-release-gate.ps1` now also writes an official evaluator replay artifact (`-OfficialEvaluatorOutputPath`, default `artifacts/release-gates/mm-ai-12/latest.json`).
 - Evidence output includes source-linked evaluator references, criterion-to-evaluator mappings, dataset field mappings, and explicit fail-closed readiness when cloud evaluator prerequisites are absent.
 - Focused validation is tracked in `src/MosaicMoney.Api.Tests/AgenticEvalOfficialEvaluatorStackTests.cs` and `src/MosaicMoney.Api.Tests/AgenticEvalReleaseGateTests.cs`.
+
+Implementation note (2026-02-27): Daily kickoff status reconciliation returned `MM-AI-12` to `In Progress` for completion follow-through. Specialist audit evidence shows missing replay-pack artifacts (`artifacts/release-gates/mm-ai-12/criteria-dataset-mapping.json`, `artifacts/release-gates/mm-ai-12/replay-pack.md`) and no cloud evaluator execution evidence in latest outputs. Task remains open until these are generated and validated.
 
 Implementation note (2026-02-24): Planner review promoted `MM-BE-11` to `Done` after full backend regression execution passed (`dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj`: 136 passed, 0 failed).
 

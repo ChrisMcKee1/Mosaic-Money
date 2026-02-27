@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Classification;
@@ -334,20 +335,112 @@ public sealed class DeterministicClassificationOrchestratorTests
         Assert.Contains("send_message", mafStage.Rationale, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task ClassifyAndPersistAsync_SpecialistIncomeLane_RoutesFailClosedWithoutSemanticOrMaf()
+    {
+        await using var dbContext = CreateDbContext();
+        var seeded = await SeedLedgerDataAsync(dbContext, "Payroll direct deposit", 1850.45m);
+        var semanticStub = new StubSemanticRetrievalService();
+        var mafEligibilityStub = new StubMafFallbackEligibilityGate { IsEligible = true };
+        var mafStub = new StubMafFallbackGraphService();
+
+        var specialistOptions = new ClassificationSpecialistRegistryOptions
+        {
+            EnableRoutingPolicy = true,
+        };
+
+        var orchestrator = CreateOrchestrator(
+            dbContext,
+            semanticStub,
+            mafEligibilityGate: mafEligibilityStub,
+            mafFallbackGraphService: mafStub,
+            specialistRoutingPolicy: CreateSpecialistRoutingPolicy(specialistOptions));
+
+        var result = await orchestrator.ClassifyAndPersistAsync(seeded.TransactionId, seeded.ReviewerId);
+
+        Assert.NotNull(result);
+        Assert.Equal(ClassificationDecision.NeedsReview, result!.Outcome.Decision);
+        Assert.Equal(ClassificationSpecialistRoutingReasonCodes.SpecialistEscalationRequired, result.Outcome.DecisionReasonCode);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, result.TransactionReviewStatus);
+        Assert.Equal(ClassificationSpecialistRoutingReasonCodes.SpecialistEscalationRequired, result.TransactionReviewReason);
+        Assert.Equal(0, semanticStub.CallCount);
+        Assert.Equal(0, mafStub.CallCount);
+
+        var persistedOutcome = await dbContext.TransactionClassificationOutcomes
+            .Include(x => x.StageOutputs)
+            .SingleAsync(x => x.Id == result.Outcome.Id);
+
+        var deterministicOutput = Assert.Single(persistedOutcome.StageOutputs);
+        Assert.Equal(ClassificationStage.Deterministic, deterministicOutput.Stage);
+        Assert.Contains(
+            ClassificationSpecialistRoutingReasonCodes.SpecialistEscalationRequired,
+            deterministicOutput.Rationale,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ClassifyAndPersistAsync_SpecialistDisabledLane_RoutesFailClosed()
+    {
+        await using var dbContext = CreateDbContext();
+        var seeded = await SeedLedgerDataAsync(dbContext, "Transfer to savings", -52.10m);
+        var semanticStub = new StubSemanticRetrievalService();
+        var mafEligibilityStub = new StubMafFallbackEligibilityGate { IsEligible = true };
+        var mafStub = new StubMafFallbackGraphService();
+
+        var specialistOptions = new ClassificationSpecialistRegistryOptions
+        {
+            EnableRoutingPolicy = true,
+        };
+
+        specialistOptions.Specialists[ClassificationSpecialistKeys.Transfer] = new ClassificationSpecialistRegistrationOptions
+        {
+            SpecialistId = ClassificationSpecialistKeys.Transfer,
+            Enabled = false,
+            AllowSemanticStage = false,
+            AllowMafFallbackStage = false,
+        };
+
+        var orchestrator = CreateOrchestrator(
+            dbContext,
+            semanticStub,
+            mafEligibilityGate: mafEligibilityStub,
+            mafFallbackGraphService: mafStub,
+            specialistRoutingPolicy: CreateSpecialistRoutingPolicy(specialistOptions));
+
+        var result = await orchestrator.ClassifyAndPersistAsync(seeded.TransactionId, seeded.ReviewerId);
+
+        Assert.NotNull(result);
+        Assert.Equal(ClassificationDecision.NeedsReview, result!.Outcome.Decision);
+        Assert.Equal(ClassificationSpecialistRoutingReasonCodes.SpecialistDisabled, result.Outcome.DecisionReasonCode);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, result.TransactionReviewStatus);
+        Assert.Equal(ClassificationSpecialistRoutingReasonCodes.SpecialistDisabled, result.TransactionReviewReason);
+        Assert.Equal(0, semanticStub.CallCount);
+        Assert.Equal(0, mafStub.CallCount);
+    }
+
     private static DeterministicClassificationOrchestrator CreateOrchestrator(
         MosaicMoneyDbContext dbContext,
         IPostgresSemanticRetrievalService semanticRetrievalService,
         IMafFallbackEligibilityGate? mafEligibilityGate = null,
-        IMafFallbackGraphService? mafFallbackGraphService = null)
+        IMafFallbackGraphService? mafFallbackGraphService = null,
+        IClassificationSpecialistRoutingPolicy? specialistRoutingPolicy = null)
     {
         return new DeterministicClassificationOrchestrator(
             dbContext,
             new DeterministicClassificationEngine(),
             new ClassificationAmbiguityPolicyGate(),
             new ClassificationConfidenceFusionPolicy(),
+            specialistRoutingPolicy ?? CreateSpecialistRoutingPolicy(new ClassificationSpecialistRegistryOptions()),
             semanticRetrievalService,
             mafEligibilityGate ?? new StubMafFallbackEligibilityGate(),
             mafFallbackGraphService ?? new StubMafFallbackGraphService());
+    }
+
+    private static IClassificationSpecialistRoutingPolicy CreateSpecialistRoutingPolicy(
+        ClassificationSpecialistRegistryOptions options)
+    {
+        return new ClassificationSpecialistRoutingPolicy(
+            new ClassificationSpecialistRegistry(Options.Create(options)));
     }
 
     private static MosaicMoneyDbContext CreateDbContext()

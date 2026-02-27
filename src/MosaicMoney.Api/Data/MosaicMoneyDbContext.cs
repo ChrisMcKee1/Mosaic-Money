@@ -64,6 +64,16 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<ClassificationStageOutput> ClassificationStageOutputs => Set<ClassificationStageOutput>();
 
+    public DbSet<AgentRun> AgentRuns => Set<AgentRun>();
+
+    public DbSet<AgentRunStage> AgentRunStages => Set<AgentRunStage>();
+
+    public DbSet<AgentSignal> AgentSignals => Set<AgentSignal>();
+
+    public DbSet<AgentDecisionAudit> AgentDecisionAudit => Set<AgentDecisionAudit>();
+
+    public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -716,6 +726,240 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasForeignKey(x => x.ProposedSubcategoryId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        modelBuilder.Entity<AgentRun>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_AgentRun_CorrelationIdRequired",
+                    "LENGTH(TRIM(\"CorrelationId\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_WorkflowNameRequired",
+                    "LENGTH(TRIM(\"WorkflowName\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_TriggerSourceRequired",
+                    "LENGTH(TRIM(\"TriggerSource\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_PolicyVersionRequired",
+                    "LENGTH(TRIM(\"PolicyVersion\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_StatusRange",
+                    "\"Status\" IN (1, 2, 3, 4, 5, 6)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_LastModifiedAfterCreated",
+                    "\"LastModifiedAtUtc\" >= \"CreatedAtUtc\"");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_CompletedAfterCreated",
+                    "\"CompletedAtUtc\" IS NULL OR \"CompletedAtUtc\" >= \"CreatedAtUtc\"");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_TerminalCompletionAudit",
+                    "((\"Status\" IN (1, 2)) AND \"CompletedAtUtc\" IS NULL) OR ((\"Status\" IN (3, 4, 5, 6)) AND \"CompletedAtUtc\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRun_FailureAuditForEscalatedStates",
+                    "((\"Status\" IN (4, 5, 6)) AND \"FailureCode\" IS NOT NULL AND LENGTH(TRIM(\"FailureCode\")) > 0 AND \"FailureRationale\" IS NOT NULL AND LENGTH(TRIM(\"FailureRationale\")) > 0) OR (\"Status\" NOT IN (4, 5, 6))");
+            });
+
+        modelBuilder.Entity<AgentRun>()
+            .HasIndex(x => new { x.CorrelationId, x.CreatedAtUtc });
+
+        modelBuilder.Entity<AgentRun>()
+            .HasIndex(x => new { x.WorkflowName, x.TriggerSource, x.CreatedAtUtc });
+
+        modelBuilder.Entity<AgentRun>()
+            .HasIndex(x => new { x.HouseholdId, x.Status, x.CreatedAtUtc });
+
+        modelBuilder.Entity<AgentRunStage>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_StageNameRequired",
+                    "LENGTH(TRIM(\"StageName\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_ExecutorRequired",
+                    "LENGTH(TRIM(\"Executor\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_StatusRange",
+                    "\"Status\" IN (1, 2, 3, 4, 5, 6)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_StageOrderRange",
+                    "\"StageOrder\" >= 1 AND \"StageOrder\" <= 64");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_ConfidenceRange",
+                    "\"Confidence\" IS NULL OR (\"Confidence\" >= 0 AND \"Confidence\" <= 1)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_LastModifiedAfterCreated",
+                    "\"LastModifiedAtUtc\" >= \"CreatedAtUtc\"");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_CompletedAfterCreated",
+                    "\"CompletedAtUtc\" IS NULL OR \"CompletedAtUtc\" >= \"CreatedAtUtc\"");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_TerminalCompletionAudit",
+                    "((\"Status\" IN (1, 2)) AND \"CompletedAtUtc\" IS NULL) OR ((\"Status\" IN (3, 4, 5, 6)) AND \"CompletedAtUtc\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentRunStage_TerminalOutcomeRequired",
+                    "(\"Status\" IN (1, 2)) OR (\"OutcomeCode\" IS NOT NULL AND LENGTH(TRIM(\"OutcomeCode\")) > 0 AND \"OutcomeRationale\" IS NOT NULL AND LENGTH(TRIM(\"OutcomeRationale\")) > 0)");
+            });
+
+        modelBuilder.Entity<AgentRunStage>()
+            .HasIndex(x => new { x.AgentRunId, x.StageOrder })
+            .IsUnique();
+
+        modelBuilder.Entity<AgentRunStage>()
+            .HasIndex(x => new { x.AgentRunId, x.Status, x.StageOrder });
+
+        modelBuilder.Entity<AgentRunStage>()
+            .HasIndex(x => new { x.Status, x.CreatedAtUtc });
+
+        modelBuilder.Entity<AgentSignal>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_AgentSignal_SignalCodeRequired",
+                    "LENGTH(TRIM(\"SignalCode\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentSignal_SummaryRequired",
+                    "LENGTH(TRIM(\"Summary\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentSignal_SeverityRange",
+                    "\"Severity\" IN (1, 2, 3, 4)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentSignal_ResolutionAudit",
+                    "(\"IsResolved\" = TRUE AND \"ResolvedAtUtc\" IS NOT NULL) OR (\"IsResolved\" = FALSE AND \"ResolvedAtUtc\" IS NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentSignal_HumanReviewRequiredForHighSeverity",
+                    "(\"Severity\" IN (1, 2)) OR \"RequiresHumanReview\" = TRUE");
+            });
+
+        modelBuilder.Entity<AgentSignal>()
+            .Property(x => x.RequiresHumanReview)
+            .HasDefaultValue(true);
+
+        modelBuilder.Entity<AgentSignal>()
+            .HasIndex(x => new { x.AgentRunId, x.RaisedAtUtc });
+
+        modelBuilder.Entity<AgentSignal>()
+            .HasIndex(x => new { x.RequiresHumanReview, x.IsResolved, x.RaisedAtUtc });
+
+        modelBuilder.Entity<AgentSignal>()
+            .HasIndex(x => new { x.AgentRunStageId, x.RaisedAtUtc });
+
+        modelBuilder.Entity<AgentDecisionAudit>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_DecisionTypeRequired",
+                    "LENGTH(TRIM(\"DecisionType\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_ReasonCodeRequired",
+                    "LENGTH(TRIM(\"ReasonCode\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_RationaleRequired",
+                    "LENGTH(TRIM(\"Rationale\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_PolicyVersionRequired",
+                    "LENGTH(TRIM(\"PolicyVersion\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_OutcomeRange",
+                    "\"Outcome\" IN (1, 2, 3, 4)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_ConfidenceRange",
+                    "\"Confidence\" IS NULL OR (\"Confidence\" >= 0 AND \"Confidence\" <= 1)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_FailClosedNeedsReview",
+                    "(\"Outcome\" = 2 AND \"ReviewStatus\" = 1) OR (\"Outcome\" <> 2 AND \"ReviewStatus\" <> 1)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_ReviewedAudit",
+                    "(\"ReviewedByUserId\" IS NULL AND \"ReviewedAtUtc\" IS NULL) OR (\"ReviewedByUserId\" IS NOT NULL AND \"ReviewedAtUtc\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentDecisionAudit_ReviewedAfterDecision",
+                    "\"ReviewedAtUtc\" IS NULL OR \"ReviewedAtUtc\" >= \"DecidedAtUtc\"");
+            });
+
+        modelBuilder.Entity<AgentDecisionAudit>()
+            .HasIndex(x => new { x.AgentRunId, x.DecidedAtUtc });
+
+        modelBuilder.Entity<AgentDecisionAudit>()
+            .HasIndex(x => new { x.Outcome, x.ReviewStatus, x.DecidedAtUtc });
+
+        modelBuilder.Entity<AgentDecisionAudit>()
+            .HasIndex(x => new { x.AgentRunStageId, x.DecidedAtUtc });
+
+        modelBuilder.Entity<AgentDecisionAudit>()
+            .HasIndex(x => new { x.ReviewedByUserId, x.ReviewedAtUtc });
+
+        modelBuilder.Entity<IdempotencyKey>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_ScopeRequired",
+                    "LENGTH(TRIM(\"Scope\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_KeyValueRequired",
+                    "LENGTH(TRIM(\"KeyValue\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_RequestHashRequired",
+                    "LENGTH(TRIM(\"RequestHash\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_StatusRange",
+                    "\"Status\" IN (1, 2, 3, 4)");
+
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_ExpiresAfterCreated",
+                    "\"ExpiresAtUtc\" > \"CreatedAtUtc\"");
+
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_FinalizationAudit",
+                    "((\"Status\" = 1) AND \"FinalizedAtUtc\" IS NULL) OR ((\"Status\" IN (2, 3, 4)) AND \"FinalizedAtUtc\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_ResolutionAudit",
+                    "(\"ResolutionCode\" IS NULL AND \"ResolutionRationale\" IS NULL) OR (\"ResolutionCode\" IS NOT NULL AND LENGTH(TRIM(\"ResolutionCode\")) > 0 AND \"ResolutionRationale\" IS NOT NULL AND LENGTH(TRIM(\"ResolutionRationale\")) > 0)");
+
+                t.HasCheckConstraint(
+                    "CK_IdempotencyKey_FinalizedAfterCreated",
+                    "\"FinalizedAtUtc\" IS NULL OR \"FinalizedAtUtc\" >= \"CreatedAtUtc\"");
+            });
+
+        modelBuilder.Entity<IdempotencyKey>()
+            .HasIndex(x => new { x.Scope, x.KeyValue })
+            .IsUnique();
+
+        modelBuilder.Entity<IdempotencyKey>()
+            .HasIndex(x => new { x.Status, x.ExpiresAtUtc });
+
+        modelBuilder.Entity<IdempotencyKey>()
+            .HasIndex(x => new { x.AgentRunId, x.CreatedAtUtc });
+
         modelBuilder.Entity<Household>()
             .HasMany(x => x.Users)
             .WithOne(x => x.Household)
@@ -739,6 +983,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .WithOne(x => x.Household)
             .HasForeignKey(x => x.HouseholdId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Household>()
+            .HasMany<AgentRun>()
+            .WithOne(x => x.Household)
+            .HasForeignKey(x => x.HouseholdId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Category>()
             .HasMany(x => x.Subcategories)
@@ -792,6 +1042,48 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasMany(x => x.Splits)
             .WithOne(x => x.Subcategory)
             .HasForeignKey(x => x.SubcategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<AgentRun>()
+            .HasMany(x => x.Stages)
+            .WithOne(x => x.AgentRun)
+            .HasForeignKey(x => x.AgentRunId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AgentRun>()
+            .HasMany(x => x.Signals)
+            .WithOne(x => x.AgentRun)
+            .HasForeignKey(x => x.AgentRunId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AgentRun>()
+            .HasMany(x => x.DecisionAudits)
+            .WithOne(x => x.AgentRun)
+            .HasForeignKey(x => x.AgentRunId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<AgentRun>()
+            .HasMany(x => x.IdempotencyKeys)
+            .WithOne(x => x.AgentRun)
+            .HasForeignKey(x => x.AgentRunId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<AgentRunStage>()
+            .HasMany(x => x.Signals)
+            .WithOne(x => x.AgentRunStage)
+            .HasForeignKey(x => x.AgentRunStageId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<AgentRunStage>()
+            .HasMany(x => x.DecisionAudits)
+            .WithOne(x => x.AgentRunStage)
+            .HasForeignKey(x => x.AgentRunStageId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<AgentDecisionAudit>()
+            .HasOne(x => x.ReviewedByUser)
+            .WithMany()
+            .HasForeignKey(x => x.ReviewedByUserId)
             .OnDelete(DeleteBehavior.SetNull);
     }
 }

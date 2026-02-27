@@ -54,7 +54,7 @@ Current dashboard/reporting controls are not meeting redesign quality expectatio
 |---|---|---|---|
 | MM-FE-25 | `mosaic-money-frontend` | Done | ApexCharts foundation + shared web chart config modules and time-bucket selector wiring. |
 | MM-FE-26 | `mosaic-money-frontend` | Done | Migrate M6 web chart surfaces from Recharts to ApexCharts and preserve design-token parity. |
-| MM-MOB-15 | `mosaic-money-mobile` | In Review | Add Victory Native XL chart primitives and parity KPI widgets across mobile overview/detail surfaces. |
+| MM-MOB-15 | `mosaic-money-mobile` | Done | Add Victory Native XL chart primitives and parity KPI widgets across mobile overview/detail surfaces. |
 | MM-QA-05 | `mosaic-money-planner` | Done | Playwright light/dark chart-interaction validation + documented gap registry with follow-up board items. |
 
 ## Done Criteria
@@ -72,4 +72,4 @@ Current dashboard/reporting controls are not meeting redesign quality expectatio
 ## Validation Closeout (2026-02-26)
 - Web validation: `npm run build` and full `npm run test:e2e` in `src/MosaicMoney.Web` passed with focused chart parity coverage in `tests/e2e/chart-theme-parity.spec.js`.
 - Mobile validation: `npm run typecheck`, `npm run test:sync-recovery`, `npm run test:review-projection`, and `npx expo install --check` in `src/MosaicMoney.Mobile` passed.
-- Residual gap tracked: GitHub issue `#125` (`MM-MOB-GAP-01`) for replacing `mockHistory` in `InvestmentsOverviewScreen.tsx` with API historical series data.
+- Residual gap resolved (2026-02-27): GitHub issue `#125` (`MM-MOB-GAP-01`) is closed after replacing `mockHistory` in `InvestmentsOverviewScreen.tsx` with API historical series data (`/api/v1/net-worth/history` investment-balance mapping) and validating with mobile typecheck + focused parity regression tests.

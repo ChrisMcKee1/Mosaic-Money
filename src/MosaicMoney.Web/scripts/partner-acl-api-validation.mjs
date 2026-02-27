@@ -1,6 +1,9 @@
 import { chromium } from "@playwright/test";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { loadLocalTriageEnv } from "./load-local-triage-env.mjs";
+
+loadLocalTriageEnv();
 
 const webBaseUrl = process.env.MM_TRIAGE_BASE_URL ?? "http://localhost:53832";
 const apiBaseUrl = process.env.MM_API_BASE_URL ?? "http://localhost:5207";

@@ -2,6 +2,8 @@
 #:property UserSecretsId=270f7f5f-f938-4fde-be8f-247819628151
 #:package Aspire.Hosting.JavaScript@13.3.0-preview.1.26121.1
 #:package Aspire.Hosting.Azure.PostgreSQL@13.3.0-preview.1.26123.9
+#:package Aspire.Hosting.Azure.ServiceBus@13.3.0-preview.1.26121.1
+#:package Aspire.Hosting.Azure.EventHubs@13.3.0-preview.1.26121.1
 #:project ./MosaicMoney.Api/MosaicMoney.Api.csproj
 #:project ./MosaicMoney.Worker/MosaicMoney.Worker.csproj
 
@@ -24,7 +26,12 @@ else
 	var postgres = builder
 		.AddAzurePostgresFlexibleServer("mosaic-postgres")
 		.WithPasswordAuthentication(postgresAdminUsername, postgresAdminPassword)
-		.RunAsContainer();
+		.RunAsContainer(container =>
+		{
+			// Local image pin keeps pgvector extension behavior consistent with current test/dev baseline.
+			container.WithImage("pgvector/pgvector");
+			container.WithImageTag("pg17");
+		});
 
 	ledgerDb = postgres.AddDatabase("mosaicmoneydb");
 }
@@ -38,6 +45,27 @@ var azureOpenAiApiKey = builder.AddParameter("azure-openai-api-key", secret: tru
 var azureOpenAiEmbeddingDeployment = builder.AddParameter("azure-openai-embedding-deployment");
 var azureOpenAiChatDeployment = builder.AddParameter("azure-openai-chat-deployment");
 
+// M10 MM-ASP-12 runtime messaging backbone (Aspire-native resources and references).
+var runtimeServiceBus = builder
+	.AddAzureServiceBus("runtime-messaging")
+	.RunAsEmulator();
+
+var runtimeLaneIngestionCompleted = runtimeServiceBus.AddServiceBusQueue("runtime-ingestion-completed");
+var runtimeLaneAssistantMessagePosted = runtimeServiceBus.AddServiceBusQueue("runtime-assistant-message-posted");
+var runtimeLaneNightlyAnomalySweep = runtimeServiceBus.AddServiceBusQueue("runtime-nightly-anomaly-sweep");
+
+var runtimeEventHubs = builder
+	.AddAzureEventHubs("runtime-telemetry")
+	.RunAsEmulator();
+
+var runtimeTelemetryStream = runtimeEventHubs.AddHub("runtime-telemetry-stream");
+var runtimeTelemetryConsumer = runtimeTelemetryStream.AddConsumerGroup("mosaic-money-runtime");
+
+// Event Grid remains explicit config until a first-class Aspire Event Grid integration is available.
+var runtimeEventGridPublishEndpoint = builder.AddParameter("runtime-eventgrid-publish-endpoint");
+var runtimeEventGridPublishAccessKey = builder.AddParameter("runtime-eventgrid-publish-access-key", secret: true);
+var runtimeEventGridTopicName = builder.AddParameter("runtime-eventgrid-topic-name");
+
 var api = builder
 	.AddProject<Projects.MosaicMoney_Api>("api")
 	.WithEnvironment("Plaid__ClientId", plaidClientId)
@@ -50,6 +78,17 @@ var api = builder
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
+	.WithEnvironment("RuntimeMessaging__Enabled", "false")
+	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
+	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)
+	.WithEnvironment("RuntimeMessaging__EventGrid__TopicName", runtimeEventGridTopicName)
+	.WithReference(runtimeServiceBus)
+	.WithReference(runtimeLaneIngestionCompleted)
+	.WithReference(runtimeLaneAssistantMessagePosted)
+	.WithReference(runtimeLaneNightlyAnomalySweep)
+	.WithReference(runtimeEventHubs)
+	.WithReference(runtimeTelemetryStream)
+	.WithReference(runtimeTelemetryConsumer)
 	.WithReference(ledgerDb)
 	.WaitFor(ledgerDb);
 
@@ -63,6 +102,17 @@ var worker = builder
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
+	.WithEnvironment("RuntimeMessaging__Enabled", "false")
+	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
+	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)
+	.WithEnvironment("RuntimeMessaging__EventGrid__TopicName", runtimeEventGridTopicName)
+	.WithReference(runtimeServiceBus)
+	.WithReference(runtimeLaneIngestionCompleted)
+	.WithReference(runtimeLaneAssistantMessagePosted)
+	.WithReference(runtimeLaneNightlyAnomalySweep)
+	.WithReference(runtimeEventHubs)
+	.WithReference(runtimeTelemetryStream)
+	.WithReference(runtimeTelemetryConsumer)
 	.WithReference(ledgerDb)
 	.WithReference(api)
 	.WaitFor(ledgerDb)

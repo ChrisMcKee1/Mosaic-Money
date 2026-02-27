@@ -41,7 +41,7 @@ $issues = @(
 
     # --- M2: Ledger Truth & Review Core ---
     @{ num=15; nid="I_kwDORVI-G87tOi3C"; status="Done" }        # MM-BE-05
-    @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="In Progress" }   # MM-BE-06
+    @{ num=16; nid="I_kwDORVI-G87tOi5M"; status="Done" }   # MM-BE-06
     @{ num=17; nid="I_kwDORVI-G87tOi8h"; status="Done" }        # MM-BE-12
     @{ num=18; nid="I_kwDORVI-G87tOi-v"; status="Done" }        # MM-BE-13
     @{ num=19; nid="I_kwDORVI-G87tOjBj"; status="Done" }        # MM-BE-14
@@ -130,12 +130,12 @@ $issues = @(
     @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="Done" } # MM-MOB-12
 
     # --- M8: Authentication and Authorization (Clerk) ---
-    @{ num=110; nid="I_kwDORVI-G87t_pbX"; status="Blocked" } # MM-ASP-10
-    @{ num=111; nid="I_kwDORVI-G87t_pco"; status="In Review" } # MM-ASP-11
-    @{ num=112; nid="I_kwDORVI-G87t_pd7"; status="In Review" } # MM-BE-25
-    @{ num=113; nid="I_kwDORVI-G87t_pfA"; status="In Review" } # MM-BE-26
-    @{ num=114; nid="I_kwDORVI-G87t_pf2"; status="In Review" } # MM-FE-22
-    @{ num=115; nid="I_kwDORVI-G87t_pg7"; status="In Review" } # MM-FE-23
+    @{ num=110; nid="I_kwDORVI-G87t_pbX"; status="Done" } # MM-ASP-10
+    @{ num=111; nid="I_kwDORVI-G87t_pco"; status="Done" } # MM-ASP-11
+    @{ num=112; nid="I_kwDORVI-G87t_pd7"; status="Done" } # MM-BE-25
+    @{ num=113; nid="I_kwDORVI-G87t_pfA"; status="Done" } # MM-BE-26
+    @{ num=114; nid="I_kwDORVI-G87t_pf2"; status="Done" } # MM-FE-22
+    @{ num=115; nid="I_kwDORVI-G87t_pg7"; status="Done" } # MM-FE-23
     @{ num=116; nid="I_kwDORVI-G87t_phz"; status="Done" } # MM-FE-24
     @{ num=117; nid="I_kwDORVI-G87t_pi5"; status="Blocked" } # MM-MOB-13
     @{ num=118; nid="I_kwDORVI-G87t_pjw"; status="Done" } # MM-MOB-14
@@ -144,9 +144,34 @@ $issues = @(
     # --- M9: Cross-Surface Charting Framework Migration ---
     @{ num=121; nid="I_kwDORVI-G87uWtLj"; status="Done" } # MM-FE-25
     @{ num=122; nid="I_kwDORVI-G87uWtMu"; status="Done" } # MM-FE-26
-    @{ num=123; nid="I_kwDORVI-G87uWtOG"; status="In Review" } # MM-MOB-15
+    @{ num=123; nid="I_kwDORVI-G87uWtOG"; status="Done" } # MM-MOB-15
     @{ num=124; nid="I_kwDORVI-G87uWtO-"; status="Done" } # MM-QA-05
-    @{ num=125; nid="I_kwDORVI-G87uXbCt"; status="Not Started" } # MM-MOB-GAP-01
+    @{ num=125; nid="I_kwDORVI-G87uXbCt"; status="Done" } # MM-MOB-GAP-01
+
+    # --- M10: Runtime Agentic Orchestration and Conversational Assistant ---
+    @{ num=126; nid="I_kwDORVI-G87ukepV"; status="In Progress" } # M10 Epic
+    @{ num=127; nid="I_kwDORVI-G87ukfAZ"; status="Done" } # MM-ASP-12
+    @{ num=128; nid="I_kwDORVI-G87ukfAd"; status="Done" } # MM-BE-28
+    @{ num=132; nid="I_kwDORVI-G87ukfAm"; status="Done" } # MM-BE-27
+    @{ num=134; nid="I_kwDORVI-G87ukfAv"; status="Done" } # MM-FE-27
+    @{ num=137; nid="I_kwDORVI-G87ukfBN"; status="Done" } # MM-AI-14
+    @{ num=138; nid="I_kwDORVI-G87ukfQu"; status="Done" } # MM-ASP-13
+    @{ num=139; nid="I_kwDORVI-G87ukfUz"; status="Done" } # MM-AI-13
+    @{ num=140; nid="I_kwDORVI-G87ukfan"; status="Done" } # MM-AI-15
+    @{ num=141; nid="I_kwDORVI-G87ukfil"; status="Done" } # MM-FE-28
+    @{ num=142; nid="I_kwDORVI-G87ukfmT"; status="Not Started" } # MM-MOB-16
+    @{ num=143; nid="I_kwDORVI-G87ukfqo"; status="Not Started" } # MM-QA-06
+
+    # --- AP0: PostgreSQL Discrepancy Closure Wave ---
+    @{ num=144; nid="I_kwDORVI-G87um9mp"; status="In Progress" } # AP0-EPIC
+    @{ num=145; nid="I_kwDORVI-G87unDr_"; status="Not Started" } # AP0-BE-01
+    @{ num=146; nid="I_kwDORVI-G87unDtL"; status="Not Started" } # AP0-BE-02
+    @{ num=147; nid="I_kwDORVI-G87unDuS"; status="Not Started" } # AP0-FE-01
+    @{ num=148; nid="I_kwDORVI-G87unDvJ"; status="Not Started" } # AP0-MOB-01
+    @{ num=149; nid="I_kwDORVI-G87unDw8"; status="Not Started" } # AP0-OPS-01
+    @{ num=150; nid="I_kwDORVI-G87unDx4"; status="Not Started" } # AP0-AI-01
+    @{ num=151; nid="I_kwDORVI-G87unDy1"; status="Not Started" } # AP0-QA-01
+    @{ num=152; nid="I_kwDORVI-G87unEX6"; status="Not Started" } # AP0-BE-03
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="

@@ -1,7 +1,13 @@
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CartesianChart, Line } from "victory-native";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
+import { toReadableError } from "../../../shared/services/mobileApiClient";
 import { theme } from "../../../theme/tokens";
+import {
+  fetchInvestmentHistoryChartPoints,
+  type InvestmentHistoryChartPoint,
+} from "../services/mobileInvestmentsHistoryApi";
 import { formatCurrency } from "../../transactions/utils/formatters";
 
 const mockAccounts = [
@@ -11,39 +17,73 @@ const mockAccounts = [
   { id: "4", name: "Robinhood", type: "Crypto", balance: 3200.0, change1W: -150.0, change1WPercent: -4.5 },
 ];
 
-const mockHistory = [
-  { day: 1, value: 185000 },
-  { day: 2, value: 186200 },
-  { day: 3, value: 185800 },
-  { day: 4, value: 187500 },
-  { day: 5, value: 188100 },
-  { day: 6, value: 187900 },
-  { day: 7, value: 189331.3 },
-];
-
 export function InvestmentsOverviewScreen() {
+  const [historyPoints, setHistoryPoints] = useState<InvestmentHistoryChartPoint[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadHistory = async () => {
+      setIsHistoryLoading(true);
+      try {
+        const nextPoints = await fetchInvestmentHistoryChartPoints(controller.signal);
+        setHistoryPoints(nextPoints);
+        setHistoryError(null);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setHistoryPoints([]);
+          setHistoryError(toReadableError(error, "Unable to load investment history."));
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsHistoryLoading(false);
+        }
+      }
+    };
+
+    void loadHistory();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
   return (
     <SafeAreaView style={styles.page}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.heading}>Investments</Text>
         <Text style={styles.subheading}>Portfolio snapshot aligned to current web investment surface contract.</Text>
         <PrimarySurfaceNav />
+        {historyError ? <Text style={styles.warningText}>{historyError}</Text> : null}
 
         <View style={styles.chartContainer}>
-          <CartesianChart
-            data={mockHistory}
-            xKey="day"
-            yKeys={["value"]}
-          >
-            {({ points }) => (
-              <Line
-                points={points.value}
-                color={theme.colors.primary}
-                strokeWidth={3}
-                animate={{ type: "timing", duration: 500 }}
-              />
-            )}
-          </CartesianChart>
+          {isHistoryLoading ? (
+            <View style={styles.chartStateContainer}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <Text style={styles.chartStateText}>Loading investment history...</Text>
+            </View>
+          ) : historyPoints.length === 0 ? (
+            <View style={styles.chartStateContainer}>
+              <Text style={styles.chartStateText}>No investment history available yet.</Text>
+            </View>
+          ) : (
+            <CartesianChart
+              data={historyPoints}
+              xKey="day"
+              yKeys={["value"]}
+            >
+              {({ points }) => (
+                <Line
+                  points={points.value}
+                  color={theme.colors.primary}
+                  strokeWidth={3}
+                  animate={{ type: "timing", duration: 500 }}
+                />
+              )}
+            </CartesianChart>
+          )}
         </View>
 
         {mockAccounts.map((account) => (
@@ -87,6 +127,27 @@ const styles = StyleSheet.create({
     height: 200,
     marginTop: 16,
     marginBottom: 8,
+  },
+  chartStateContainer: {
+    alignItems: "center",
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  chartStateText: {
+    color: theme.colors.textMuted,
+    fontSize: 13,
+    marginTop: 10,
+    textAlign: "center",
+  },
+  warningText: {
+    color: theme.colors.warning,
+    fontSize: 13,
+    marginTop: 12,
   },
   card: {
     backgroundColor: theme.colors.surface,

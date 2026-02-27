@@ -18,6 +18,7 @@ This folder contains AI-agent-facing context and implementation policies.
 - `aspire-local-run-reliability.md`: deterministic local startup, recovery, and diagnostics workflow for AppHost resources.
 - `identity-claim-mapping-and-account-access-migration-playbook.md`: MM-ASP-08/MM-ASP-09 identity mapping contract and migration rollout/rollback runbook.
 - `clerk-sample-users-household-validation-runbook.md`: repeatable two-persona Clerk sample-user + household bootstrap and API/UI/DB verification workflow.
+- `runtime-agentic-worker-runbook.md`: runtime worker queue retry/dead-letter/replay and trace-correlation operations for assistant and orchestration lanes.
 - `secrets-and-configuration-playbook.md`: layered secret management and per-project configuration contract guidance.
 - `skills-catalog.md`: cross-directory skill inventory (repo, user, extension), JIT loading policy, and per-agent baseline/on-demand mappings.
 - `instructions-catalog.md`: curated custom-instructions selection, exclusions, and adaptation decisions.
