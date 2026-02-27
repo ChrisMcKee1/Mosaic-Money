@@ -49,7 +49,8 @@ public static class ClerkAuthenticationExtensions
 
         services
             .AddAuthorizationBuilder()
-            .SetDefaultPolicy(requireJwtPolicy);
+            .SetDefaultPolicy(requireJwtPolicy)
+            .SetFallbackPolicy(requireJwtPolicy);
 
         return services;
     }

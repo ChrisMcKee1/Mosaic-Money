@@ -10,6 +10,8 @@ It is aligned to MM-ASP-10 and MM-ASP-11:
 3. Passkey/WebAuthn readiness and constraints
 4. Local and CI configuration flows without committing secret values
 
+For two-persona validation and household data bootstrap using sample Clerk users, see `docs/agent-context/clerk-sample-users-household-validation-runbook.md`.
+
 ## Source links
 - Aspire JavaScript hosting integration: https://aspire.dev/integrations/frameworks/javascript/
 - Aspire 13 JavaScript API migration (`AddNpmApp` removed, `AddJavaScriptApp` introduced): https://aspire.dev/whats-new/aspire-13/

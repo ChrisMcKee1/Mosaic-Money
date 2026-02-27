@@ -63,7 +63,7 @@ Finalize MVP release readiness with measurable, auditable release gates across b
 | MM-MOB-07.1 | Mobile | Offline mutation queue hardening | MM-MOB-06, MM-BE-05 | Schema-validated offline queue for review/transaction actions. | Done |
 | MM-MOB-07.2 | Mobile | Sync recovery engine validation | MM-MOB-07.1 | Background retry/reconciliation behavior with stale conflict handling. | Done |
 | MM-MOB-07.3 | Mobile | Review/projection flow integration tests | MM-MOB-07.2, MM-BE-09 | End-to-end mobile validation for review and projection workflows. | Done |
-| MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | In Review |
+| MM-QA-01 | QA | Cross-surface UAT and defect triage | MM-BE-11, MM-AI-11, MM-FE-08, MM-MOB-07.3 | Unified pass/fail matrix and defect severity disposition. | Blocked |
 | MM-QA-02 | QA | Security/config and dependency gate | MM-ASP-07, MM-QA-01 | No unresolved high-severity config/security findings. | Done |
 | MM-QA-03 | QA | Release rehearsal and rollback drill | MM-QA-01, MM-QA-02 | Rehearsed release with validated rollback path and go/no-go artifact. | Done |
 | MM-BE-16 | Backend | Plaid Investments Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/investments/holdings/get`. | Done |
@@ -110,6 +110,8 @@ Implementation note (2026-02-26): Planner reran QA gates after remediation and p
 - Dependency remediation: upgraded `src/MosaicMoney.Web` dependency `next` to `16.1.6` and re-ran `npm audit --audit-level=high --omit=dev` with `0 vulnerabilities`.
 - QA-02 evidence refresh: `artifacts/release-gates/mm-qa-02/latest.md`.
 - QA-03 evidence refresh: full stop/build/start/wait/resources release rehearsal and rollback restart sequence passed again with healthy API/worker/web resources (`artifacts/release-gates/mm-qa-03/latest.md`).
+
+Implementation note (2026-02-26): `MM-QA-01` is moved to `Blocked` after latest rerun because full web Playwright regression still reports unresolved failures (dashboard/navigation/needs-review selector and interaction contract mismatches), and orchestration policy gate currently errors on wildcard path handling in `.github/scripts/test-orchestration-policy-gates.ps1`.
 
 ## Verification Matrix
 | Area | Validation | Pass Criteria |

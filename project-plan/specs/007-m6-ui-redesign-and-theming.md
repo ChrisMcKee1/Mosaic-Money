@@ -14,17 +14,19 @@ Implement a distinctive, production-grade frontend interface with high design qu
 
 | Task ID | Owner | Status | Description |
 |---|---|---|---|
-| MM-FE-10 | `mosaic-money-frontend` | In Review | **Global Layout & Theming**: Implement Dark/Light mode toggle, CSS variable color system, distinctive typography, and the main application shell (Left Sidebar, Main Content, Right Context Panel). |
-| MM-FE-11 | `mosaic-money-frontend` | In Review | **Dashboard Overview Screen**: Implement Monthly spending line chart, Net worth line chart, Transactions to review widget, Top categories summary, and Next two weeks recurring widget. |
-| MM-FE-12 | `mosaic-money-frontend` | In Review | **Accounts Screen**: Implement Assets/Debts summary chart, and grouped lists for Credit cards, Depository, Investment, Loan, and Real estate with sparklines. Right panel for specific account details. |
-| MM-FE-13 | `mosaic-money-frontend` | In Review | **Transactions Screen**: Implement grouped transaction list (Today, Yesterday, etc.) with category tags and amounts. Right panel for transaction details, categorization, and history. |
-| MM-FE-14 | `mosaic-money-frontend` | In Review | **Categories & Budgeting Screen**: Implement total spent vs budget donut chart, detailed progress bars for regular categories. Right panel for category breakdown and historical bar chart. |
-| MM-FE-15 | `mosaic-money-frontend` | In Review | **Investments Screen**: Implement live balance estimate chart, top movers widget, and account list with 1W balance change. Right panel for specific asset details (e.g., Crypto chart and positions). |
-| MM-FE-16 | `mosaic-money-frontend` | In Review | **Recurrings Screen**: Implement left to pay vs paid so far donut chart, list of recurring transactions with status (paid, overdue, upcoming). Right panel for recurring rule details and history. |
-| MM-FE-18 | `mosaic-money-frontend` | In Review | **Semantic Search & Reranked Typeahead (Web)**: Upgrade all web search inputs/dropdowns to use semantic retrieval + reranking so related intents (for example `utilities` and `water`) surface relevant results even when exact labels differ. |
-| MM-MOB-09 | `mosaic-money-mobile` | In Review | **Semantic Search & Reranked Pickers (Mobile)**: Apply the same semantic retrieval + reranking behavior to mobile search and picker experiences to preserve cross-surface AI-enabled discovery quality. |
+| MM-FE-10 | `mosaic-money-frontend` | Blocked | **Global Layout & Theming**: Implement Dark/Light mode toggle, CSS variable color system, distinctive typography, and the main application shell (Left Sidebar, Main Content, Right Context Panel). |
+| MM-FE-11 | `mosaic-money-frontend` | Blocked | **Dashboard Overview Screen**: Implement Monthly spending line chart, Net worth line chart, Transactions to review widget, Top categories summary, and Next two weeks recurring widget. |
+| MM-FE-12 | `mosaic-money-frontend` | Blocked | **Accounts Screen**: Implement Assets/Debts summary chart, and grouped lists for Credit cards, Depository, Investment, Loan, and Real estate with sparklines. Right panel for specific account details. |
+| MM-FE-13 | `mosaic-money-frontend` | Blocked | **Transactions Screen**: Implement grouped transaction list (Today, Yesterday, etc.) with category tags and amounts. Right panel for transaction details, categorization, and history. |
+| MM-FE-14 | `mosaic-money-frontend` | Blocked | **Categories & Budgeting Screen**: Implement total spent vs budget donut chart, detailed progress bars for regular categories. Right panel for category breakdown and historical bar chart. |
+| MM-FE-15 | `mosaic-money-frontend` | Blocked | **Investments Screen**: Implement live balance estimate chart, top movers widget, and account list with 1W balance change. Right panel for specific asset details (e.g., Crypto chart and positions). |
+| MM-FE-16 | `mosaic-money-frontend` | Blocked | **Recurrings Screen**: Implement left to pay vs paid so far donut chart, list of recurring transactions with status (paid, overdue, upcoming). Right panel for recurring rule details and history. |
+| MM-FE-18 | `mosaic-money-frontend` | Blocked | **Semantic Search & Reranked Typeahead (Web)**: Upgrade all web search inputs/dropdowns to use semantic retrieval + reranking so related intents (for example `utilities` and `water`) surface relevant results even when exact labels differ. |
+| MM-MOB-09 | `mosaic-money-mobile` | Blocked | **Semantic Search & Reranked Pickers (Mobile)**: Apply the same semantic retrieval + reranking behavior to mobile search and picker experiences to preserve cross-surface AI-enabled discovery quality. |
 
 Update note (2026-02-25): Planner delegated MM-FE-18 and MM-MOB-09 with research-first and validation requirements. Implementations were returned with semantic search wiring across web/mobile plus focused validation evidence, and both tasks were promoted to `In Review`.
+
+Update note (2026-02-26): Planner reran full web Playwright regression and moved `MM-FE-10..16` and `MM-FE-18` to `Blocked` pending selector/interaction contract reconciliation (`tests/e2e/dashboard-and-transactions.spec.js`, `tests/e2e/navigation-responsive.spec.js`, `tests/e2e/needs-review.spec.js`). `MM-MOB-09` is `Blocked` pending mobile runtime parity validation coverage.
 
 ## Implementation Guidelines
 - Follow the `frontend-design` skill principles.

@@ -91,7 +91,7 @@ All task tables use a `Status` column with the following values:
 | MM-MOB-03 | Mobile | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile queue lists pending review items with clear status and refresh behavior. | Done |
 | MM-MOB-04 | Mobile | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Distinct display for `UserNote` vs `AgentNote`; ledger values treated as read-only truth. | Done |
 | MM-MOB-05 | Mobile | HITL approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Approve/reject actions route through backend and never bypass human approval requirements. | Done |
-| MM-MOB-08 | Mobile | Plaid Link SDK onboarding flow | MM-MOB-01, MM-BE-12, MM-BE-13 | Mobile uses React Native Link SDK with backend-issued `link_token` and server-side token exchange. | In Review |
+| MM-MOB-08 | Mobile | Plaid Link SDK onboarding flow | MM-MOB-01, MM-BE-12, MM-BE-13 | Mobile uses React Native Link SDK with backend-issued `link_token` and server-side token exchange. | Blocked |
 
 Update note (2026-02-23): Mobile scaffold created at `src/MosaicMoney.Mobile` (Expo TypeScript). `MM-MOB-03` and `MM-MOB-04` are unblocked and now in `In Review` after delegated implementation and typecheck pass.
 
@@ -181,15 +181,15 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 ### M6 UI Redesign and Theming
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-FE-10 | Web | Global Layout & Theming | MM-FE-01 | Dark/Light mode toggle, CSS variable color system, distinctive typography, and main application shell implemented. | In Review |
-| MM-FE-11 | Web | Dashboard Overview Screen | MM-FE-10 | Monthly spending chart, Net worth chart, Transactions to review, Top categories, and Next two weeks widgets implemented. | In Review |
-| MM-FE-12 | Web | Accounts Screen | MM-FE-10 | Assets/Debts summary chart, grouped account lists with sparklines, and right detail panel implemented. | In Review |
-| MM-FE-13 | Web | Transactions Screen | MM-FE-10 | Grouped transaction list with category tags and amounts, and right detail panel implemented. | In Review |
-| MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | In Review |
-| MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | In Review |
-| MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | In Review |
-| MM-FE-18 | Web | Semantic search and reranked dropdowns | MM-AI-05, MM-BE-10, MM-FE-17 | Search inputs and typeahead dropdowns use semantic retrieval + reranking so related intents (for example `utilities` and `water`) resolve together. | In Review |
-| MM-MOB-09 | Mobile | Semantic search and reranked pickers | MM-AI-05, MM-BE-10, MM-MOB-07.3 | Mobile search and picker flows use semantic retrieval + reranking with parity to web behavior and confidence-safe fallbacks. | In Review |
+| MM-FE-10 | Web | Global Layout & Theming | MM-FE-01 | Dark/Light mode toggle, CSS variable color system, distinctive typography, and main application shell implemented. | Blocked |
+| MM-FE-11 | Web | Dashboard Overview Screen | MM-FE-10 | Monthly spending chart, Net worth chart, Transactions to review, Top categories, and Next two weeks widgets implemented. | Blocked |
+| MM-FE-12 | Web | Accounts Screen | MM-FE-10 | Assets/Debts summary chart, grouped account lists with sparklines, and right detail panel implemented. | Blocked |
+| MM-FE-13 | Web | Transactions Screen | MM-FE-10 | Grouped transaction list with category tags and amounts, and right detail panel implemented. | Blocked |
+| MM-FE-14 | Web | Categories & Budgeting Screen | MM-FE-10 | Total spent vs budget donut chart, detailed progress bars, and right detail panel implemented. | Blocked |
+| MM-FE-15 | Web | Investments Screen | MM-FE-10 | Live balance estimate chart, top movers widget, account list with 1W balance change, and right detail panel implemented. | Blocked |
+| MM-FE-16 | Web | Recurrings Screen | MM-FE-10 | Left to pay vs paid so far donut chart, list of recurring transactions with status, and right detail panel implemented. | Blocked |
+| MM-FE-18 | Web | Semantic search and reranked dropdowns | MM-AI-05, MM-BE-10, MM-FE-17 | Search inputs and typeahead dropdowns use semantic retrieval + reranking so related intents (for example `utilities` and `water`) resolve together. | Blocked |
+| MM-MOB-09 | Mobile | Semantic search and reranked pickers | MM-AI-05, MM-BE-10, MM-MOB-07.3 | Mobile search and picker flows use semantic retrieval + reranking with parity to web behavior and confidence-safe fallbacks. | Blocked |
 
 ### M7 Identity, Household Access Control, and Account Ownership
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
@@ -212,16 +212,16 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 ### M8 Authentication and Authorization (Clerk)
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
-| MM-ASP-10 | DevOps | Clerk runtime secret and issuer wiring | MM-ASP-03, MM-ASP-04 | AppHost/API/Web/Mobile receive Clerk keys/issuer via env + user-secrets contract with no hardcoded credentials. | In Review |
-| MM-ASP-11 | DevOps | Clerk tenant/provider configuration runbook | MM-ASP-10 | Source-linked runbook covers Clerk app creation, Microsoft SSO setup, and passkey enablement for local/CI use. | In Review |
-| MM-BE-25 | Backend | API JWT validation and fallback auth policy | MM-ASP-10, MM-BE-19 | API validates Clerk JWTs and applies deny-by-default authorization for protected routes. | In Review |
-| MM-BE-26 | Backend | Auth subject to Mosaic identity mapping | MM-BE-25, MM-BE-19, MM-BE-20 | `sub` claim maps to `MosaicUsers` and household membership context used for ACL-scoped reads/writes. | In Review |
-| MM-FE-22 | Web | Clerk web integration and protected routes | MM-ASP-10 | Web app uses Clerk provider, sign-in/sign-up routes, and guarded app-shell navigation. | In Review |
-| MM-FE-23 | Web | Accounts add-account CTA and Plaid entry path | MM-FE-22, MM-FE-12, MM-FE-09 | Accounts screen exposes clear Add Account/Plaid link entry point (top-level CTA) into onboarding flow. | In Review |
+| MM-ASP-10 | DevOps | Clerk runtime secret and issuer wiring | MM-ASP-03, MM-ASP-04 | AppHost/API/Web/Mobile receive Clerk keys/issuer via env + user-secrets contract with no hardcoded credentials. | Done |
+| MM-ASP-11 | DevOps | Clerk tenant/provider configuration runbook | MM-ASP-10 | Source-linked runbook covers Clerk app creation, Microsoft SSO setup, and passkey enablement for local/CI use. | Done |
+| MM-BE-25 | Backend | API JWT validation and fallback auth policy | MM-ASP-10, MM-BE-19 | API validates Clerk JWTs and applies deny-by-default authorization for protected routes. | Done |
+| MM-BE-26 | Backend | Auth subject to Mosaic identity mapping | MM-BE-25, MM-BE-19, MM-BE-20 | `sub` claim maps to `MosaicUsers` and household membership context used for ACL-scoped reads/writes. | Done |
+| MM-FE-22 | Web | Clerk web integration and protected routes | MM-ASP-10 | Web app uses Clerk provider, sign-in/sign-up routes, and guarded app-shell navigation. | Done |
+| MM-FE-23 | Web | Accounts add-account CTA and Plaid entry path | MM-FE-22, MM-FE-12, MM-FE-09 | Accounts screen exposes clear Add Account/Plaid link entry point (top-level CTA) into onboarding flow. | Done |
 | MM-FE-24 | Web | Settings IA for appearance and security | MM-FE-10, MM-FE-22 | Settings includes Appearance/Theming and Security sections, preserving existing design language. | Done |
-| MM-MOB-13 | Mobile | Clerk Expo integration and sign-in flow | MM-ASP-10 | Mobile uses `@clerk/clerk-expo` + `expo-secure-store` token cache and custom sign-in flow with Microsoft option. | In Review |
+| MM-MOB-13 | Mobile | Clerk Expo integration and sign-in flow | MM-ASP-10 | Mobile uses `@clerk/clerk-expo` + `expo-secure-store` token cache and custom sign-in flow with Microsoft option. | Blocked |
 | MM-MOB-14 | Mobile | Settings and account-link entrypoint parity | MM-MOB-13, MM-MOB-10 | Mobile settings includes appearance/security entry points and Add Account path parity with web intent. | Done |
-| MM-QA-04 | QA | Auth and access regression gate | MM-BE-26, MM-FE-24, MM-MOB-14 | Auth flows, protected endpoint behavior, and account-link navigation pass web/mobile/API validation matrix. | In Review |
+| MM-QA-04 | QA | Auth and access regression gate | MM-BE-26, MM-FE-24, MM-MOB-14 | Auth flows, protected endpoint behavior, and account-link navigation pass web/mobile/API validation matrix. | Blocked |
 
 Update note (2026-02-25): Planner kickoff for M8 is created from Clerk authentication requirements. Initial implementation slice tasks (`MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-FE-22`, `MM-FE-23`, `MM-MOB-13`) are set to `In Progress` prior to specialist delegation.
 
@@ -234,6 +234,36 @@ Update note (2026-02-26): `MM-FE-24` and `MM-MOB-14` moved to `In Progress` for 
 Update note (2026-02-26): `MM-FE-24` and `MM-MOB-14` are now `Done` after shipping web/mobile settings parity and account-link CTAs with validation evidence (`npm run build`, targeted web Playwright auth/account/settings specs, mobile typecheck, and focused mobile vitest suites).
 
 Update note (2026-02-26): `MM-QA-04` moved to `In Review` after running API auth regression (`ApiAuthorizationTests`), web auth/account-link route checks, and mobile compile/regression validations.
+
+Update note (2026-02-26): Planner revalidation wave completed with refreshed backend/auth and Playwright evidence. Tasks moved to `Blocked` now include explicit blockers:
+- `MM-ASP-10`: AppHost runtime missing required Clerk parameter values (`clerk-issuer`, `clerk-publishable-key`, `clerk-secret-key`) and `web-installer` dependency conflict for `@clerk/nextjs` with React 19.2.0 during orchestration startup.
+- `MM-FE-10..16`, `MM-FE-18`: Full web Playwright regression currently fails (`dashboard-and-transactions`, `navigation-responsive`, `needs-review`) and requires selector/interaction contract reconciliation before promotion.
+- `MM-MOB-08`, `MM-MOB-09`, `MM-MOB-13`: mobile device-level Clerk/Plaid/semantic-flow validation remains pending in this environment.
+- `MM-QA-04`: blocked by unresolved auth runtime prerequisites and failing full web regression pack.
+
+Update note (2026-02-27): Planner evidence pass promoted `MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-BE-26`, `MM-FE-22`, and `MM-FE-23` to `Done` after:
+- Healthy AppHost Clerk runtime configuration with active web auth sessions.
+- Two-persona Clerk validation with DB-mapped `MosaicUsers`/`HouseholdUsers` rows and ACL coverage.
+- Authenticated API proof (`/api/v1/households`, `/api/v1/transactions`) plus protected-route behavior verification.
+- Web Accounts Add Account CTA confirmation and post-sign-in dashboard load verification.
+
+`MM-QA-04` remains `Blocked` only on pending mobile end-to-end auth/sign-in execution under `MM-MOB-13`.
+
+Update note (2026-02-27): Planner applied a mobile auth transport remediation for M8 by wiring Clerk bearer token forwarding into mobile API requests (`src/MosaicMoney.Mobile/app/_layout.tsx` and `src/MosaicMoney.Mobile/src/shared/services/mobileApiClient.ts`) while preserving `X-Mosaic-Household-User-Id` mapping behavior. Focused validation evidence is captured in `artifacts/release-gates/mm-qa-04/mobile-clerk-token-forwarding-validation.md` (mobile typecheck + focused regression suites pass). `MM-MOB-13` and `MM-QA-04` remain `Blocked` pending device-level OAuth sign-in execution and full matrix rerun.
+
+Update note (2026-02-27): Planner reran live two-persona web auth triage and captured refreshed evidence in `artifacts/release-gates/mm-qa-04/live-triage/summary.json` plus `artifacts/release-gates/mm-qa-04/live-triage/triage-findings-2026-02-27.md`:
+- Partner B signs in successfully and all tested routes return `200` (including `/dashboard` resolving to `/`, no `404`).
+- Partner A remains blocked at Clerk factor-one; Clerk sign-in API response includes `form_password_incorrect`.
+
+`MM-QA-04` remains `Blocked` pending Partner A credential/account recovery and one final full auth/access matrix rerun. `MM-MOB-13` remains `Blocked` pending device-level OAuth sign-in evidence.
+
+Update note (2026-02-27): Planner closed the Partner A auth blocker and delivered explicit sign-out UX with refreshed live evidence:
+- Web shell now exposes a dedicated `Sign Out` button wired to Clerk `signOut()` (`src/MosaicMoney.Web/components/layout/Shell.jsx`).
+- Sign-out roundtrip evidence (`artifacts/release-gates/mm-qa-04/live-triage/signout-roundtrip-summary.json`) confirms A sign-in -> sign-out -> B sign-in flow succeeds.
+- Full live partner triage rerun (`artifacts/release-gates/mm-qa-04/live-triage/summary.json`) now shows both Partner A and Partner B reach `/` and all tested routes return `200`.
+- ACL visibility proof (`artifacts/release-gates/mm-qa-04/live-triage/partner-acl-api-validation-summary.json`) confirms `A only` / `B only` / `Joint` separation through protected API checks.
+
+`MM-QA-04` remains `Blocked` only on pending mobile device-level OAuth evidence under `MM-MOB-13`.
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

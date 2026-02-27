@@ -48,7 +48,7 @@ Deliver the first complete human-reviewed ledger loop: Plaid account-link onboar
 | MM-MOB-03 | NeedsReview queue screen | MM-MOB-02, MM-BE-05 | Mobile review inbox with clear pending statuses. | Done |
 | MM-MOB-04 | Transaction detail with dual notes | MM-MOB-01, MM-BE-04 | Clear distinction of `UserNote` and `AgentNote` in mobile detail view. | Done |
 | MM-MOB-05 | Human-in-the-loop approval actions | MM-MOB-03, MM-MOB-04, MM-BE-05 | Mobile approve/reject actions with explicit user confirmation and sync behavior. | Done |
-| MM-MOB-08 | Plaid Link onboarding flow (mobile) | MM-MOB-01, MM-BE-12, MM-BE-13 | React Native Link SDK flow submits `public_token` for backend exchange and does not expose Plaid secrets on-device. | In Review |
+| MM-MOB-08 | Plaid Link onboarding flow (mobile) | MM-MOB-01, MM-BE-12, MM-BE-13 | React Native Link SDK flow submits `public_token` for backend exchange and does not expose Plaid secrets on-device. | Blocked |
 
 Update note (2026-02-23): `src/MosaicMoney.Mobile` scaffold now exists, so `MM-MOB-03` and `MM-MOB-04` are unblocked and now in `In Review` after delegated implementation and typecheck pass.
 
@@ -79,6 +79,8 @@ Update note (2026-02-25): `MM-FE-09` and `MM-MOB-08` now include active Link SDK
 Update note (2026-02-25): `MM-BE-06` is reopened for a targeted Plaid transactions-history enhancement to request and ingest the maximum available historical range (up to 24 months) during onboarding/sync initialization while maintaining idempotent raw-to-enriched behavior.
 
 Update note (2026-02-25): `MM-BE-06` implementation now includes explicit `days_requested` request wiring for Plaid transactions initialization (`/link/token/create` and bootstrap `/transactions/sync` path), plus bounded configuration (`30..730`, default `730`) and passing focused backend tests. Status advanced to `In Review`.
+
+Update note (2026-02-26): `MM-MOB-08` is moved to `Blocked` pending device-level React Native Plaid Link sandbox validation with a configured authenticated runtime environment.
 
 ## Plaid Product Capability Research Gate (`MM-BE-15`)
 Complete this gate before implementing non-`transactions` product ingestion lanes.

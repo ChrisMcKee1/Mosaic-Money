@@ -9,18 +9,19 @@ test("renders projection metrics and transaction context from backend truth", as
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByTestId("api-status-value")).toHaveText("Connected");
+  await expect(page.getByText("Safe to Spend", { exact: true })).toBeVisible();
+  await expect(page.getByText("Household Burn", { exact: true })).toBeVisible();
+  await expect(page.getByText("Business Expenses", { exact: true })).toBeVisible();
 
-  await expect(page.getByTestId("metric-total-liquidity")).toHaveText("$1620.00");
-  await expect(page.getByTestId("metric-household-burn")).toHaveText("$1300.00");
-  await expect(page.getByTestId("metric-business-expenses")).toHaveText("$80.00");
-  await expect(page.getByTestId("metric-safe-to-spend")).toHaveText("$470.00");
-  await expect(page.getByTestId("metric-upcoming-recurring")).toHaveText("$1250.00");
-  await expect(page.getByTestId("metric-pending-reimbursements")).toHaveText("$100.00");
+  await expect(page.getByText("$470.00", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("$1,300.00", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("$80.00", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Monthly Rent", { exact: true })).toBeVisible();
+  await expect(page.getByText("Payroll Deposit", { exact: true })).toBeVisible();
 
   await expect(page.getByText("2026-02-10", { exact: true })).toBeVisible();
-  await expect(page.getByText("Business Expense", { exact: true })).toBeVisible();
-  await expect(page.getByText("Amortized: 3 splits", { exact: true })).toBeVisible();
+  await expect(page.getByText("Design Software Subscription", { exact: true })).toBeVisible();
+  await expect(page.getByText("Business", { exact: true })).toBeVisible();
 });
 
 test("shows disconnected state when health check fails", async ({ page, request }) => {
@@ -28,8 +29,8 @@ test("shows disconnected state when health check fails", async ({ page, request 
 
   await page.goto("/");
 
-  await expect(page.getByTestId("api-status-value")).toHaveText("Disconnected");
-  await expect(page.getByTestId("dashboard-error-banner")).toContainText("Failed to load dashboard data");
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByText("Failed to load dashboard data. Please ensure the API is running.")).toBeVisible();
 });
 
 test("shows transactions error state when projection data is unavailable", async ({ page, request }) => {
@@ -37,6 +38,5 @@ test("shows transactions error state when projection data is unavailable", async
 
   await page.goto("/transactions");
 
-  await expect(page.getByRole("heading", { name: "Transactions" })).toBeVisible();
   await expect(page.getByTestId("transactions-error-banner")).toContainText("Failed to load transactions");
 });

@@ -52,7 +52,7 @@ $issues = @(
     @{ num=24; nid="I_kwDORVI-G87tOjRE"; status="Done" }        # MM-MOB-03
     @{ num=25; nid="I_kwDORVI-G87tOjTk"; status="Done" }        # MM-MOB-04
     @{ num=26; nid="I_kwDORVI-G87tOjWi"; status="Done" }        # MM-MOB-05
-    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="In Review" } # MM-MOB-08
+    @{ num=27; nid="I_kwDORVI-G87tOjcR"; status="Blocked" } # MM-MOB-08
     @{ num=64; nid="I_kwDORVI-G87tRGKo"; status="Done" }        # MM-BE-15
 
     # --- M3: Ingestion, Recurring, Reimbursements & Projections (all Done) ---
@@ -93,7 +93,7 @@ $issues = @(
     @{ num=58; nid="I_kwDORVI-G87tOmjY"; status="Done" }        # MM-MOB-07.1
     @{ num=59; nid="I_kwDORVI-G87tOmlT"; status="Done" }        # MM-MOB-07.2
     @{ num=60; nid="I_kwDORVI-G87tOmnF"; status="Done" }        # MM-MOB-07.3
-    @{ num=61; nid="I_kwDORVI-G87tOmq3"; status="In Review" } # MM-QA-01
+    @{ num=61; nid="I_kwDORVI-G87tOmq3"; status="Blocked" } # MM-QA-01
     @{ num=62; nid="I_kwDORVI-G87tOmsd"; status="Done" } # MM-QA-02
     @{ num=63; nid="I_kwDORVI-G87tOmtk"; status="Done" } # MM-QA-03
     @{ num=72; nid="I_kwDORVI-G87tkz1h"; status="Done" } # MM-BE-16
@@ -102,15 +102,15 @@ $issues = @(
     @{ num=75; nid="I_kwDORVI-G87tk0EI"; status="Done" } # MM-FE-17
 
     # --- M6: UI Redesign & Theming ---
-    @{ num=65; nid="I_kwDORVI-G87tUSTb"; status="In Review" } # MM-FE-10
-    @{ num=66; nid="I_kwDORVI-G87tUSUp"; status="In Review" } # MM-FE-11
-    @{ num=67; nid="I_kwDORVI-G87tUSWo"; status="In Review" } # MM-FE-12
-    @{ num=68; nid="I_kwDORVI-G87tUSYH"; status="In Review" } # MM-FE-13
-    @{ num=69; nid="I_kwDORVI-G87tUSZk"; status="In Review" } # MM-FE-14
-    @{ num=70; nid="I_kwDORVI-G87tUSbK"; status="In Review" } # MM-FE-15
-    @{ num=71; nid="I_kwDORVI-G87tUScw"; status="In Review" } # MM-FE-16
-    @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="In Review" } # MM-FE-18
-    @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="In Review" } # MM-MOB-09
+    @{ num=65; nid="I_kwDORVI-G87tUSTb"; status="Blocked" } # MM-FE-10
+    @{ num=66; nid="I_kwDORVI-G87tUSUp"; status="Blocked" } # MM-FE-11
+    @{ num=67; nid="I_kwDORVI-G87tUSWo"; status="Blocked" } # MM-FE-12
+    @{ num=68; nid="I_kwDORVI-G87tUSYH"; status="Blocked" } # MM-FE-13
+    @{ num=69; nid="I_kwDORVI-G87tUSZk"; status="Blocked" } # MM-FE-14
+    @{ num=70; nid="I_kwDORVI-G87tUSbK"; status="Blocked" } # MM-FE-15
+    @{ num=71; nid="I_kwDORVI-G87tUScw"; status="Blocked" } # MM-FE-16
+    @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="Blocked" } # MM-FE-18
+    @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="Blocked" } # MM-MOB-09
     @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="In Review" } # MM-AI-12
 
     # --- M7: Identity, Household Access Control, and Account Ownership ---
@@ -130,16 +130,16 @@ $issues = @(
     @{ num=109; nid="I_kwDORVI-G87t4wWZ"; status="In Review" } # MM-MOB-12
 
     # --- M8: Authentication and Authorization (Clerk) ---
-    @{ num=110; nid="I_kwDORVI-G87t_pbX"; status="In Review" } # MM-ASP-10
+    @{ num=110; nid="I_kwDORVI-G87t_pbX"; status="Blocked" } # MM-ASP-10
     @{ num=111; nid="I_kwDORVI-G87t_pco"; status="In Review" } # MM-ASP-11
     @{ num=112; nid="I_kwDORVI-G87t_pd7"; status="In Review" } # MM-BE-25
     @{ num=113; nid="I_kwDORVI-G87t_pfA"; status="In Review" } # MM-BE-26
     @{ num=114; nid="I_kwDORVI-G87t_pf2"; status="In Review" } # MM-FE-22
     @{ num=115; nid="I_kwDORVI-G87t_pg7"; status="In Review" } # MM-FE-23
     @{ num=116; nid="I_kwDORVI-G87t_phz"; status="Done" } # MM-FE-24
-    @{ num=117; nid="I_kwDORVI-G87t_pi5"; status="In Review" } # MM-MOB-13
+    @{ num=117; nid="I_kwDORVI-G87t_pi5"; status="Blocked" } # MM-MOB-13
     @{ num=118; nid="I_kwDORVI-G87t_pjw"; status="Done" } # MM-MOB-14
-    @{ num=119; nid="I_kwDORVI-G87t_pk_"; status="In Review" } # MM-QA-04
+    @{ num=119; nid="I_kwDORVI-G87t_pk_"; status="Blocked" } # MM-QA-04
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="

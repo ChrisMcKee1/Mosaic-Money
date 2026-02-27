@@ -1,6 +1,9 @@
 import { getApiBaseUrl } from "../../features/transactions/services/apiConfig";
 
 const configuredHouseholdUserId = process.env.EXPO_PUBLIC_MOSAIC_HOUSEHOLD_USER_ID?.trim();
+type AuthTokenProvider = () => Promise<string | null | undefined>;
+
+let authTokenProvider: AuthTokenProvider | null = null;
 
 interface ApiErrorEnvelope {
   code: string;
@@ -24,6 +27,10 @@ export class MobileApiError extends Error {
     this.code = code;
     this.traceId = traceId;
   }
+}
+
+export function setAuthTokenProvider(provider: AuthTokenProvider | null): void {
+  authTokenProvider = provider;
 }
 
 function isApiErrorResponse(payload: unknown): payload is ApiErrorResponse {
@@ -70,10 +77,22 @@ export async function requestJson<TParsed, TBody = unknown>(
 ): Promise<TParsed> {
   const method = options.method ?? "GET";
   const baseUrl = getApiBaseUrl();
+  let authToken: string | null | undefined;
+
+  if (authTokenProvider) {
+    try {
+      authToken = await authTokenProvider();
+    } catch (error) {
+      console.error("Unable to resolve mobile auth token:", error);
+      authToken = null;
+    }
+  }
+
   const response = await fetch(`${baseUrl}${path}`, {
     method,
     headers: {
       Accept: "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(configuredHouseholdUserId
         ? { "X-Mosaic-Household-User-Id": configuredHouseholdUserId }
         : {}),

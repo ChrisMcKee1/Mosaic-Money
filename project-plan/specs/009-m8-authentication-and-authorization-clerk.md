@@ -42,16 +42,16 @@ Implement production-grade authentication and authorization for Mosaic Money usi
 ## Task Breakdown
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
-| MM-ASP-10 | DevOps | Clerk runtime secret and issuer wiring | MM-ASP-03, MM-ASP-04 | AppHost/API/Web/Mobile receive Clerk keys/issuer through env + user-secrets contract with documented key map. | In Review |
-| MM-ASP-11 | DevOps | Clerk tenant/provider configuration runbook | MM-ASP-10 | Source-linked setup runbook for Clerk app creation, Microsoft SSO, passkey enablement, and local/CI variable mapping. | In Review |
-| MM-BE-25 | Backend | API JWT validation and fallback auth policy | MM-ASP-10, MM-BE-19 | API validates Clerk JWTs and enforces deny-by-default authorization on protected endpoints. | In Review |
-| MM-BE-26 | Backend | Auth subject to Mosaic identity mapping | MM-BE-25, MM-BE-19, MM-BE-20 | Backend maps `sub` claim to `MosaicUsers` and applies membership checks for household/account access APIs. | In Review |
-| MM-FE-22 | Web | Clerk web integration and protected routes | MM-ASP-10 | Web app uses Clerk provider, sign-in/sign-up routes, and guarded shell navigation behavior. | In Review |
-| MM-FE-23 | Web | Accounts Add Account and Plaid link path | MM-FE-22, MM-FE-12, MM-FE-09 | Accounts screen exposes Add Account CTA and routes users into Plaid onboarding/linking flow. | In Review |
+| MM-ASP-10 | DevOps | Clerk runtime secret and issuer wiring | MM-ASP-03, MM-ASP-04 | AppHost/API/Web/Mobile receive Clerk keys/issuer through env + user-secrets contract with documented key map. | Done |
+| MM-ASP-11 | DevOps | Clerk tenant/provider configuration runbook | MM-ASP-10 | Source-linked setup runbook for Clerk app creation, Microsoft SSO, passkey enablement, and local/CI variable mapping. | Done |
+| MM-BE-25 | Backend | API JWT validation and fallback auth policy | MM-ASP-10, MM-BE-19 | API validates Clerk JWTs and enforces deny-by-default authorization on protected endpoints. | Done |
+| MM-BE-26 | Backend | Auth subject to Mosaic identity mapping | MM-BE-25, MM-BE-19, MM-BE-20 | Backend maps `sub` claim to `MosaicUsers` and applies membership checks for household/account access APIs. | Done |
+| MM-FE-22 | Web | Clerk web integration and protected routes | MM-ASP-10 | Web app uses Clerk provider, sign-in/sign-up routes, and guarded shell navigation behavior. | Done |
+| MM-FE-23 | Web | Accounts Add Account and Plaid link path | MM-FE-22, MM-FE-12, MM-FE-09 | Accounts screen exposes Add Account CTA and routes users into Plaid onboarding/linking flow. | Done |
 | MM-FE-24 | Web | Settings IA for appearance and security | MM-FE-10, MM-FE-22 | Settings contains Appearance/Theming and Security sections without breaking existing M6 visual language. | Done |
-| MM-MOB-13 | Mobile | Clerk Expo integration and custom sign-in | MM-ASP-10 | Mobile integrates Clerk + secure token cache and supports Microsoft sign-in path in custom React Native flow. | In Review |
+| MM-MOB-13 | Mobile | Clerk Expo integration and custom sign-in | MM-ASP-10 | Mobile integrates Clerk + secure token cache and supports Microsoft sign-in path in custom React Native flow. | Blocked |
 | MM-MOB-14 | Mobile | Settings and account-link parity | MM-MOB-13, MM-MOB-10 | Mobile settings exposes appearance/security and Add Account/Plaid entrypoint parity with web intent. | Done |
-| MM-QA-04 | QA | Auth and access regression gate | MM-BE-26, MM-FE-24, MM-MOB-14 | End-to-end pass for auth flows, protected endpoint behavior, and account-link navigation on web/mobile/API. | In Review |
+| MM-QA-04 | QA | Auth and access regression gate | MM-BE-26, MM-FE-24, MM-MOB-14 | End-to-end pass for auth flows, protected endpoint behavior, and account-link navigation on web/mobile/API. | Blocked |
 
 ## Acceptance Criteria
 - Web and mobile can complete Clerk-backed sign-in flows and maintain valid sessions.
@@ -96,3 +96,46 @@ MM-FE-24 and MM-MOB-14 moved to `In Progress` for coordinated implementation of 
 - Mobile compile/regression checks: typecheck + focused vitest suites above
 
 Planner retains final authority on promotion to `Done`.
+
+## Update Note (2026-02-26)
+Planner revalidation moved the following tasks to `Blocked` with explicit reasons:
+- `MM-ASP-10`: AppHost runtime waits on missing Clerk parameter values (`clerk-issuer`, `clerk-publishable-key`, `clerk-secret-key`) and `web-installer` reports `@clerk/nextjs` peer-resolution conflict with current React patch version during orchestration startup.
+- `MM-MOB-13`: blocked until mobile Clerk sign-in is validated end-to-end against a configured Clerk runtime.
+- `MM-QA-04`: blocked by unresolved runtime auth prerequisites plus outstanding full web Playwright regression failures.
+
+## Update Note (2026-02-27)
+Planner verification promoted `MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-BE-26`, `MM-FE-22`, and `MM-FE-23` to `Done` with concrete web/API/DB proof:
+- Clerk runtime parameters validated healthy in AppHost and active local auth sessions established for two sample personas.
+- Authenticated API checks succeeded (`GET /api/v1/households`, `GET /api/v1/transactions?pageSize=5` => `200`) with explicit `X-Mosaic-Household-User-Id` context.
+- DB evidence confirmed Clerk `sub` mapping to `MosaicUsers` and active `HouseholdUsers` membership rows.
+- Web sign-in/protected-route behavior and Accounts Add Account entry path were revalidated.
+
+`MM-QA-04` remains `Blocked` pending full mobile auth-sign-in execution under `MM-MOB-13` so the complete web/mobile/API matrix can be closed.
+
+## Update Note (2026-02-27)
+Planner remediation for mobile auth transport is now in place:
+- Mobile API requests now forward Clerk bearer tokens from app auth context (`src/MosaicMoney.Mobile/app/_layout.tsx` -> `src/MosaicMoney.Mobile/src/shared/services/mobileApiClient.ts`).
+- Existing household-member context mapping header (`X-Mosaic-Household-User-Id`) remains intact for deterministic local/CI identity mapping.
+- Validation evidence is captured in `artifacts/release-gates/mm-qa-04/mobile-clerk-token-forwarding-validation.md` (`npm run typecheck`, `npm run test:sync-recovery`, `npm run test:review-projection` all pass).
+
+`MM-MOB-13` and `MM-QA-04` remain `Blocked` until device-level Clerk OAuth sign-in execution is captured end-to-end and the full auth/access matrix is rerun.
+
+## Update Note (2026-02-27)
+Planner reran live two-persona Clerk web triage and captured refreshed artifacts:
+- `artifacts/release-gates/mm-qa-04/live-triage/summary.json`
+- `artifacts/release-gates/mm-qa-04/live-triage/triage-findings-2026-02-27.md`
+
+Latest evidence confirms:
+- Partner B sign-in and protected-route navigation are healthy (all tested routes `200`; `/dashboard` resolves to `/` with no `404`).
+- Partner A remains blocked at Clerk factor-one with sign-in response code `form_password_incorrect`.
+
+`MM-QA-04` remains `Blocked` pending Partner A credential/account recovery and one final full matrix rerun. `MM-MOB-13` remains `Blocked` pending device-level OAuth sign-in proof.
+
+## Update Note (2026-02-27)
+Planner resolved the remaining web auth blocker and added explicit sign-out UX:
+- Added a dedicated web `Sign Out` button in `src/MosaicMoney.Web/components/layout/Shell.jsx`, wired to Clerk `signOut()`.
+- Sign-out roundtrip evidence at `artifacts/release-gates/mm-qa-04/live-triage/signout-roundtrip-summary.json` verifies A sign-in -> sign-out -> B sign-in succeeds.
+- Full triage rerun at `artifacts/release-gates/mm-qa-04/live-triage/summary.json` confirms both Partner A and Partner B have successful post-login `/` and all tested routes return `200`.
+- API ACL visibility proof at `artifacts/release-gates/mm-qa-04/live-triage/partner-acl-api-validation-summary.json` verifies `Partner A only`, `Partner B only`, and `Joint` visibility behavior.
+
+`MM-QA-04` remains `Blocked` only by pending mobile device-level OAuth validation under `MM-MOB-13`.

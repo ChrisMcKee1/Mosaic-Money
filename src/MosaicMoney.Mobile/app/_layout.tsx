@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useReviewMutationRecovery } from "../src/features/transactions/hooks/useReviewMutationRecovery";
 import { theme } from "../src/theme/tokens";
 import { tokenCache } from "../src/auth/tokenCache";
+import { setAuthTokenProvider } from "../src/shared/services/mobileApiClient";
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
@@ -13,7 +14,7 @@ function ReviewMutationRecoveryHost() {
 }
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -30,6 +31,25 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace("/");
     }
   }, [isSignedIn, isLoaded, segments, router]);
+
+  useEffect(() => {
+    if (!isLoaded) {
+      setAuthTokenProvider(null);
+      return;
+    }
+
+    setAuthTokenProvider(async () => {
+      if (!isSignedIn) {
+        return null;
+      }
+
+      return await getToken();
+    });
+
+    return () => {
+      setAuthTokenProvider(null);
+    };
+  }, [getToken, isLoaded, isSignedIn]);
 
   return <>{children}</>;
 }

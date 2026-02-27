@@ -50,9 +50,12 @@ blob-report/
 .playwright-cli/**/*.webp
 .playwright-cli/**/*.gif
 
-# Generated release-gate snapshots (ephemeral run outputs)
-artifacts/release-gates/**/latest.json
-artifacts/release-gates/**/latest-*.json
+# Generated release-gate artifacts (ephemeral and may contain sensitive data)
+artifacts/release-gates/**
+
+# Local-only partner triage credential stores
+src/MosaicMoney.Web/triage-partners.env.local
+src/MosaicMoney.Web/partner-triage.credentials.local.md
 
 # Environment files (block real secrets)
 .env

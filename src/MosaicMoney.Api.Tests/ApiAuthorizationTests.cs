@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
@@ -47,6 +48,17 @@ public sealed class ApiAuthorizationTests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "not-a-valid-jwt");
 
         var response = await client.GetAsync("/api/v1/households");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FallbackPolicy_UnannotatedRoute_RequiresAuthentication()
+    {
+        await using var app = await CreateApiAsync();
+        var client = app.GetTestClient();
+
+        var response = await client.GetAsync("/api/fallback-auth-probe");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -304,6 +316,9 @@ public sealed class ApiAuthorizationTests
         var app = builder.Build();
         app.UseAuthentication();
         app.UseAuthorization();
+
+        // This endpoint intentionally omits RequireAuthorization() to verify fallback policy enforcement.
+        app.MapGet("/api/fallback-auth-probe", () => Results.Ok(new { ok = true }));
 
         var v1 = app.MapGroup("/api/v1").RequireAuthorization();
         v1.MapHouseholdEndpoints();

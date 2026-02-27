@@ -32,6 +32,8 @@ These instructions are always on for this repository.
 - Keep `appsettings*.json` for non-sensitive defaults; do not commit passwords, API keys, or full connection strings.
 - Treat `NEXT_PUBLIC_*` variables as public and never place sensitive values in them.
 - Redact secret values from logs, docs, screenshots, and sample command output.
+- Store Partner A / Partner B triage login credentials only in local ignored files under `src/MosaicMoney.Web`: `triage-partners.env.local` (for `MM_PARTNER_A_EMAIL`, `MM_PARTNER_A_PASSWORD`, `MM_PARTNER_B_EMAIL`, `MM_PARTNER_B_PASSWORD`) and optional operator notes in `partner-triage.credentials.local.md`.
+- Never commit partner triage credentials or include them in `artifacts/release-gates/**` outputs.
 
 ## Plaid Sandbox And Product Mapping
 - Use Plaid Sandbox as the default non-production data source for local and CI validation; do not require real user banking credentials for development workflows.

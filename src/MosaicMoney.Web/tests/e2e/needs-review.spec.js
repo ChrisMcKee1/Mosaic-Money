@@ -19,7 +19,11 @@ test("supports approve and reclassify flows in needs-review queue", async ({ pag
   const secondItem = page.getByTestId("needs-review-item-nr-200");
   await expect(secondItem).toBeVisible();
   await secondItem.getByTestId("needs-review-reclassify-nr-200").click();
-  await secondItem.getByTestId("needs-review-subcategory-nr-200").fill("33333333-3333-3333-3333-333333333333");
+  await secondItem
+    .getByTestId("needs-review-subcategory-nr-200")
+    .locator("input")
+    .fill("Dining");
+  await page.getByRole("listitem").first().click();
   await secondItem.getByTestId("needs-review-reclassify-reason-nr-200").fill("Deterministic reclassification for test coverage.");
   await secondItem.getByTestId("needs-review-confirm-reclassify-nr-200").click();
 

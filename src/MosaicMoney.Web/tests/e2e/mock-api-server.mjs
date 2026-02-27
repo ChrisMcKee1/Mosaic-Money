@@ -287,6 +287,32 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname === "/api/v1/search/categories") {
+    const query = (searchParams.get("query") ?? "").toLowerCase();
+    const categories = [
+      {
+        id: "33333333-3333-3333-3333-333333333333",
+        name: "Dining Out",
+        categoryName: "Food & Dining",
+      },
+      {
+        id: "44444444-4444-4444-4444-444444444444",
+        name: "Office Supplies",
+        categoryName: "Business",
+      },
+    ];
+
+    const filtered = categories.filter((category) => {
+      return (
+        category.name.toLowerCase().includes(query) ||
+        category.categoryName.toLowerCase().includes(query)
+      );
+    });
+
+    json(res, 200, filtered);
+    return;
+  }
+
   if (req.method === "POST" && pathname === "/api/v1/review-actions") {
     const body = await readJson(req);
     const transactionId = body.transactionId;

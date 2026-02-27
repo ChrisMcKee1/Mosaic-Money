@@ -5,6 +5,8 @@ This playbook is the implementation runbook for:
 - `MM-ASP-08`: Identity claim mapping configuration documented and reproducible across AppHost/API/Web/Mobile for local and CI.
 - `MM-ASP-09`: Migration rollout and rollback playbook for account access migration.
 
+For a concrete two-user Clerk sample persona workflow with household bootstrap and validation evidence, see `docs/agent-context/clerk-sample-users-household-validation-runbook.md`.
+
 ## Source-Of-Truth Files
 - `src/apphost.cs`
 - `src/MosaicMoney.Api/Program.cs`
@@ -31,8 +33,8 @@ Resolution order:
 The resolved value must be a GUID and must map to an active household membership (`MembershipStatus == Active`), or the API returns fail-closed `401/403` responses.
 
 Web and mobile do not mint server identity claims in local runs. For deterministic local and CI testing, inject household-member context through `X-Mosaic-Household-User-Id`:
-- Web server-side calls: env `MOSAIC_HOUSEHOLD_USER_ID`
-- Mobile calls: env `EXPO_PUBLIC_MOSAIC_HOUSEHOLD_USER_ID`
+- Web server-side calls: Clerk bearer token is forwarded automatically by `src/MosaicMoney.Web/lib/api.js`, and env `MOSAIC_HOUSEHOLD_USER_ID` supplies `X-Mosaic-Household-User-Id`
+- Mobile calls: Clerk bearer token is forwarded by `src/MosaicMoney.Mobile/src/shared/services/mobileApiClient.ts` (provider configured in `src/MosaicMoney.Mobile/app/_layout.tsx`), and env `EXPO_PUBLIC_MOSAIC_HOUSEHOLD_USER_ID` supplies `X-Mosaic-Household-User-Id`
 
 ## Local Mapping Steps (AppHost + API + Web + Mobile)
 1. Start the stack.

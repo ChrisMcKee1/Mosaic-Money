@@ -1,3 +1,5 @@
+import { auth } from "@clerk/nextjs/server";
+
 /**
  * Server-side API fetch utility.
  * Uses Aspire-injected service URLs or a fallback API_URL environment variable.
@@ -18,6 +20,26 @@ export function getApiBaseUrl() {
   return baseUrl.replace(/\/$/, ""); // Remove trailing slash if present
 }
 
+async function getAuthorizationHeader() {
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    return {};
+  }
+
+  try {
+    const authContext = await auth();
+    const token = await authContext.getToken();
+
+    if (!token) {
+      return {};
+    }
+
+    return { Authorization: `Bearer ${token}` };
+  } catch (error) {
+    console.error("Failed to resolve Clerk bearer token for API request.", error);
+    return {};
+  }
+}
+
 /**
  * Fetch wrapper for server components/route handlers.
  * @param {string} path - The API path (e.g., '/api/health')
@@ -26,6 +48,7 @@ export function getApiBaseUrl() {
 export async function fetchApi(path, options = {}) {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  const authorizationHeader = await getAuthorizationHeader();
   const householdUserId = process.env.MOSAIC_HOUSEHOLD_USER_ID?.trim();
   const identityHeader = householdUserId
     ? { "X-Mosaic-Household-User-Id": householdUserId }
@@ -35,6 +58,7 @@ export async function fetchApi(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...authorizationHeader,
       ...identityHeader,
       ...options.headers,
     },

@@ -46,15 +46,15 @@ function Find-Matches {
     }
 
     foreach ($path in $Paths) {
-        if (-not (Test-Path $path)) {
+        if (-not (Test-Path -LiteralPath $path)) {
             continue
         }
 
         if ($SimpleMatch) {
-            Select-String -Path $path -Pattern $Pattern -SimpleMatch -AllMatches
+            Select-String -LiteralPath $path -Pattern $Pattern -SimpleMatch -AllMatches
         }
         else {
-            Select-String -Path $path -Pattern $Pattern -AllMatches
+            Select-String -LiteralPath $path -Pattern $Pattern -AllMatches
         }
     }
 }

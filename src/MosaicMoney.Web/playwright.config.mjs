@@ -34,12 +34,14 @@ export default defineConfig({
       },
     },
     {
-      command: `npm run dev -- --port ${webPort}`,
+      command: `npm run dev -- --webpack --port ${webPort}`,
       url: baseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       env: {
         API_URL: mockApiURL,
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "",
+        CLERK_SECRET_KEY: "",
         NEXT_TELEMETRY_DISABLED: "1",
       },
     },
