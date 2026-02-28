@@ -172,7 +172,7 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | MM-ASP-07 | DevOps | Orchestration policy gate checks | MM-ASP-03, MM-ASP-04, MM-ASP-06 | Checks reject `AddNpmApp`, hardcoded endpoints, and missing service-defaults patterns. | Done |
 | MM-BE-11 | Backend | Financial correctness/regression tests | MM-BE-01, MM-BE-02, MM-BE-03, MM-BE-04, MM-BE-05, MM-BE-06, MM-BE-07, MM-BE-08, MM-BE-09, MM-BE-10 | Money/date/matching/review/reimbursement edge-case tests pass. | Done |
 | MM-AI-11 | AI | Agentic eval release gate | MM-AI-10 | Measured criteria enforced for routing correctness, ambiguity fail-closed behavior, external messaging hard-stop denial, and `AgentNote` explainability with a go/no-go artifact output. | Done |
-| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate `.NET` evaluator libraries and Foundry evaluator/graders with source-linked rerun instructions, dataset mappings, and CI evidence artifacts. | In Progress |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Integrate `.NET` evaluator libraries and Foundry evaluator/graders with source-linked rerun instructions, dataset mappings, and CI evidence artifacts. | Done |
 | MM-FE-08 | Web | Playwright regression pack | MM-FE-04, MM-FE-05, MM-FE-06, MM-FE-07 | Desktop/mobile paths, review actions, and projection rendering are validated. | Done |
 | MM-MOB-07 | Mobile | Mobile integration and offline behavior tests | MM-MOB-02, MM-MOB-03, MM-MOB-04, MM-MOB-05, MM-MOB-06 | Offline queue, sync recovery, and review workflows are validated on mobile. | Done |
 | MM-BE-16 | Backend | Plaid Investments Ingestion & API | MM-BE-15 | Schema, ingestion worker, and read-only API for `/investments/holdings/get`. | Done |
@@ -318,6 +318,12 @@ Update note (2026-02-26): `MM-MOB-15` is moved to `In Review`. Victory Native XL
 Update note (2026-02-27): `MM-MOB-GAP-01` (`#125`) is now closed by replacing mobile `InvestmentsOverviewScreen` mock trend history with API-backed `/api/v1/net-worth/history` investment series mapping via `mobileInvestmentsHistoryApi`. Validation evidence: `npm --prefix src/MosaicMoney.Mobile run typecheck`, `npm --prefix src/MosaicMoney.Mobile run test:sync-recovery`, `npm --prefix src/MosaicMoney.Mobile run test:review-projection`, and focused `mobileInvestmentsHistoryApi.test.ts` all pass. With the residual gap resolved, `MM-MOB-15` is promoted to `Done`.
 
 Update note (2026-02-27): Daily kickoff AI audit and specialist delegation review confirms `MM-AI-12` still has outstanding replay-pack evidence gaps (`artifacts/release-gates/mm-ai-12/criteria-dataset-mapping.json` and `artifacts/release-gates/mm-ai-12/replay-pack.md`) plus pending cloud evaluator execution evidence. `MM-AI-12` remains `In Progress` and will not be promoted until those artifacts are produced and validated.
+
+Update note (2026-02-27): Planner closeout promoted `MM-AI-12` (`#78`) to `Done` after replay-pack completion and validation reruns:
+- Regenerated evaluator artifacts via `pwsh .github/scripts/run-mm-ai-11-release-gate.ps1`.
+- Verified official and specialist artifact tests (`AgenticEvalOfficialEvaluatorArtifactsTests`, `AgenticEvalSpecialistEvaluatorArtifactsTests`) and release-gate checks passed (`14` passed, `0` failed in focused suite).
+- Updated source-linked replay references to current `view=foundry` documentation and added a documentation review log section in `artifacts/release-gates/mm-ai-12/replay-pack.md`.
+- Cloud evaluator execution remains an optional configured lane; fail-closed deterministic release-blocking behavior is preserved when cloud prerequisites are unavailable.
 
 Update note (2026-02-27): Planner created M10 runtime-agentic milestone planning artifacts and synchronized GitHub work tracking (`#126` epic and `#127`, `#128`, `#132`, `#134`, `#137`, `#138`, `#139`, `#140`, `#141`, `#142`, `#143`) to Project 1 with `Not Started` status and parent/sub-issue relationships.
 

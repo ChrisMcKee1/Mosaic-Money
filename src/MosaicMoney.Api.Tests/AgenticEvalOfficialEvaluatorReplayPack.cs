@@ -62,6 +62,11 @@ internal static class AgenticEvalOfficialEvaluatorReplayPack
         {
             "# MM-AI-12 Official Evaluator Replay Pack",
             string.Empty,
+            "## Documentation Review Log",
+            $"- ReviewedAtUtc: {snapshot.EvaluatedAtUtc:O}",
+            "- Reviewer: mosaic-money-planner",
+            "- ReviewMethod: Microsoft Learn source-link verification + deterministic replay artifact regeneration.",
+            string.Empty,
             "## Offline Complete Today",
             "- Deterministic MM-AI-11 release-gate criteria remain authoritative and fail-closed.",
             "- Official evaluator stack references and mappings are captured in JSON artifacts for reproducible audit runs.",

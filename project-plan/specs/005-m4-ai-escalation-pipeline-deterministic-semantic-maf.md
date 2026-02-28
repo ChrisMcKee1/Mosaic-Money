@@ -65,7 +65,7 @@ Deliver a bounded, auditable AI escalation pipeline that executes in strict orde
 | MM-AI-08 | AI | External messaging hard-stop guardrail | MM-AI-07 | Send operations are denied and logged; draft content only may be produced for user review. | Done |
 | MM-AI-09 | AI | `AgentNote` summarization enforcement | MM-AI-01, MM-AI-07 | Concise summary notes are persisted; raw transcripts/tool dumps are not stored as `AgentNote`. | Done |
 | MM-AI-10 | AI | End-to-end orchestration flow | MM-AI-04, MM-AI-06, MM-AI-07, MM-AI-08, MM-AI-09 | Pipeline emits final classification or `NeedsReview` with traceable stage-by-stage rationale. | Done |
-| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Add .NET evaluator libraries and Foundry evaluator/graders workflow with rerunnable documentation-backed instructions, dataset mappings, and CI evidence artifacts. | In Progress |
+| MM-AI-12 | AI | Official evaluator stack adoption + research replay pack | MM-AI-11 | Add .NET evaluator libraries and Foundry evaluator/graders workflow with rerunnable documentation-backed instructions, dataset mappings, and CI evidence artifacts. | Done |
 
 Update note (2026-02-26): Planner resumed `MM-AI-12` in `In Progress` for final evidence consolidation in the active completion wave.
 
@@ -83,7 +83,14 @@ Implementation note (2026-02-25): `MM-AI-12` implementation is in review with of
 - Mapping coverage includes all `MM-AI-11` criteria and reusable dataset fields (`query`, `response`, `tool_definitions`, `actions`, `expected_actions`, `ground_truth`) for rerunnable replay scenarios.
 - Task status is now `In Review` after focused offline validation (`AgenticEvalOfficialEvaluatorStackTests`, `AgenticEvalOfficialEvaluatorArtifactsTests`, `AgenticEvalReleaseGateTests`) and release-gate script replay; cloud-run evidence is still required before `Done`.
 
-Implementation note (2026-02-27): Planner-led kickoff audit plus AI specialist review found that official evaluator replay-pack artifact generation is still incomplete (`artifacts/release-gates/mm-ai-12/criteria-dataset-mapping.json` and `artifacts/release-gates/mm-ai-12/replay-pack.md` missing in latest run evidence), and cloud evaluator execution evidence is not yet captured. `MM-AI-12` remains `In Progress` pending those artifacts and validation reruns.
+Implementation note (2026-02-27): Planner-led kickoff audit plus AI specialist review found that official evaluator replay-pack artifact generation was incomplete (`artifacts/release-gates/mm-ai-12/criteria-dataset-mapping.json` and `artifacts/release-gates/mm-ai-12/replay-pack.md` missing in latest run evidence), and cloud evaluator execution evidence was not yet captured.
+
+Implementation note (2026-02-27, closeout): `MM-AI-12` is promoted to `Done` after completing and validating the replay-pack lane:
+- Refreshed source links to current Microsoft Learn Foundry docs (`view=foundry`) in evaluator stack snapshots.
+- Regenerated official artifacts (`artifacts/release-gates/mm-ai-12/latest.json`, `criteria-dataset-mapping.json`, `replay-pack.md`) and specialist companion artifacts via `.github/scripts/run-mm-ai-11-release-gate.ps1`.
+- Added auditable documentation review metadata (`ReviewedAtUtc`, reviewer, review method) in `replay-pack.md`.
+- Validation evidence: release-gate script passed plus focused evaluator suite passed (`14` tests, `0` failed).
+- Cloud evaluator execution remains optional/configured; deterministic MM-AI-11 fail-closed blocking criteria remain authoritative when cloud prerequisites are absent.
 
 ## MM-AI-12 Documentation Replay Pack
 Use this runbook verbatim when restarting evaluator modernization work after a pause. Do not mark `MM-AI-12` done without producing all artifacts listed below.

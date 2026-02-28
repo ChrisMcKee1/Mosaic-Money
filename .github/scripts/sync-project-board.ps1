@@ -111,7 +111,7 @@ $issues = @(
     @{ num=71; nid="I_kwDORVI-G87tUScw"; status="Done" } # MM-FE-16
     @{ num=76; nid="I_kwDORVI-G87tmWNi"; status="Done" } # MM-FE-18
     @{ num=77; nid="I_kwDORVI-G87tmWOJ"; status="Done" } # MM-MOB-09
-    @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="In Progress" } # MM-AI-12
+    @{ num=78; nid="I_kwDORVI-G87tnvvu"; status="Done" } # MM-AI-12
 
     # --- M7: Identity, Household Access Control, and Account Ownership ---
     @{ num=96; nid="I_kwDORVI-G87t4vjw"; status="Done" } # MM-BE-19

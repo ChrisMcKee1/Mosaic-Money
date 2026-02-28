@@ -123,12 +123,13 @@ internal static class AgenticEvalOfficialEvaluatorStack
             "https://learn.microsoft.com/en-us/dotnet/ai/evaluation/libraries",
             "https://learn.microsoft.com/en-us/dotnet/ai/evaluation/evaluate-with-reporting",
             "https://learn.microsoft.com/en-us/dotnet/ai/evaluation/evaluate-safety",
-            "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/built-in-evaluators?view=foundry-classic",
-            "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/evaluation-evaluators/agent-evaluators?view=foundry-classic",
-            "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/evaluation-evaluators/azure-openai-graders?view=foundry-classic",
-            "https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/cloud-evaluation?view=foundry-classic",
-            "https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/evaluate-sdk?view=foundry-classic",
-            "https://learn.microsoft.com/en-us/azure/ai-foundry/tutorials/developer-journey-idea-to-prototype?view=foundry-classic#step-4-evaluate-the-assistant-by-using-cloud-evaluation",
+            "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/built-in-evaluators?view=foundry",
+            "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/evaluation-evaluators/agent-evaluators?view=foundry",
+            "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/evaluation-evaluators/azure-openai-graders?view=foundry",
+            "https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/cloud-evaluation?view=foundry",
+            "https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/evaluate-sdk?view=foundry",
+            "https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/agent-evaluate-sdk?view=foundry",
+            "https://learn.microsoft.com/en-us/azure/ai-foundry/tutorials/developer-journey-idea-to-prototype?view=foundry#step-4-evaluate-the-assistant-by-using-cloud-evaluation",
         ];
     }
 
