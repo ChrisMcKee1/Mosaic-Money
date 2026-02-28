@@ -28,10 +28,10 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 | AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Idempotent baseline taxonomy seed + deterministic backfill + before/after discrepancy metrics output. | Done |
 | AP0-BE-02 | Backend | Scoped ownership model for user and shared categories | AP0-EPIC | Schema and migration path for `User`, `HouseholdShared`, and `Platform` ownership without breaking existing links. | Done |
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Done |
-| AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | In Review |
+| AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | Done |
 | AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile parity for taxonomy management with offline-safe mutation queue and sync reconciliation. | Not Started |
-| AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform-managed taxonomy tables | AP0-BE-03 | Operator-only admin lane with protected access, change provenance, and rollback-safe workflows. | In Review |
-| AP0-AI-01 | AI | Taxonomy readiness gates for ingestion and AI classification fill-rate | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks and evaluator scenarios improving fill-rates without policy regressions. | In Review |
+| AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform-managed taxonomy tables | AP0-BE-03 | Operator-only admin lane with protected access, change provenance, and rollback-safe workflows. | Done |
+| AP0-AI-01 | AI | Taxonomy readiness gates for ingestion and AI classification fill-rate | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks and evaluator scenarios improving fill-rates without policy regressions. | Done |
 | AP0-QA-01 | QA | AP0 discrepancy closure release gate and evidence pack | AP0-BE-01, AP0-BE-02, AP0-BE-03, AP0-FE-01, AP0-MOB-01, AP0-OPS-01, AP0-AI-01 | SQL/API/web/mobile/AI evidence pack proving discrepancy closure and ownership/auth boundary compliance. | Not Started |
 
 ## Acceptance Criteria
@@ -105,3 +105,16 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~DeterministicClassificationOrchestratorTests` (9 passed, 0 failed).
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~PlaidDeltaIngestionServiceTests` (7 passed, 0 failed).
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~TaxonomyReadinessGateServiceTests` (3 passed, 0 failed).
+
+## Update Note (2026-02-28, AP0-FE-01/AP0-OPS-01/AP0-AI-01 Done Promotion)
+- Planner promoted `AP0-FE-01` (`#147`), `AP0-OPS-01` (`#149`), and `AP0-AI-01` (`#150`) to `Done` after hardening review and regression validation.
+- FE hardening added subcategory reorder support fallback and subcategory business-expense edit support in settings category actions/UI, plus stabilized category settings e2e coverage.
+- OPS hardening tightened platform operator gate checks (single operator header enforcement, fixed-length key-hash compare, explicit empty-allowlist deny) and expanded denial/success coverage for platform reorder + subcategory lifecycle mutation paths.
+- AI hardening fail-closed unsupported readiness lanes and compares raw fill-rate against thresholds to avoid rounded pass-through edge cases; ingestion readiness gate injection is now required at construction sites with explicit allow-all stubs in tests.
+- Validation evidence:
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~CategoryLifecycleEndpointsTests` (12 passed, 0 failed).
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~TaxonomyReadinessGateServiceTests` (6 passed, 0 failed).
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~PlaidDeltaIngestionServiceTests` (7 passed, 0 failed).
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~PlaidTransactionsSyncProcessorTests` (3 passed, 0 failed).
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~TransactionEmbeddingQueuePipelineTests` (4 passed, 0 failed).
+- `npm run build` and `npx playwright test tests/e2e/settings-categories.spec.js` in `src/MosaicMoney.Web` (pass).

@@ -7,6 +7,7 @@ using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
 using MosaicMoney.Api.Domain.Ledger.Plaid;
+using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 using Xunit;
 
 namespace MosaicMoney.Api.Tests;
@@ -296,7 +297,7 @@ public sealed class PlaidTransactionsSyncProcessorTests
         return new PlaidTransactionsSyncProcessor(
             dbContext,
             new PlaidItemSyncStateService(dbContext),
-            new PlaidDeltaIngestionService(dbContext),
+            new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance),
             tokenProtector,
             tokenProvider,
             embeddingQueueService,

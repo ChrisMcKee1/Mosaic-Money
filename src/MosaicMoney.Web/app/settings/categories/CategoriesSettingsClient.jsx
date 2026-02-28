@@ -9,6 +9,7 @@ import {
   renameCategoryAction,
   renameSubcategoryAction,
   reorderCategoriesAction,
+  reorderSubcategoriesAction,
   reparentSubcategoryAction,
 } from "./actions";
 
@@ -61,6 +62,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
 
   const [editingSubcategoryId, setEditingSubcategoryId] = useState(null);
   const [editingSubcategoryName, setEditingSubcategoryName] = useState("");
+  const [editingSubcategoryBusiness, setEditingSubcategoryBusiness] = useState(false);
 
   const [movingSubcategoryId, setMovingSubcategoryId] = useState(null);
   const [moveTargetCategoryId, setMoveTargetCategoryId] = useState("");
@@ -91,6 +93,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
     setEditingCategoryName("");
     setEditingSubcategoryId(null);
     setEditingSubcategoryName("");
+    setEditingSubcategoryBusiness(false);
     setMovingSubcategoryId(null);
     setMoveTargetCategoryId("");
   }
@@ -216,6 +219,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
         scope,
         subcategoryId,
         name: editingSubcategoryName,
+        isBusinessExpense: editingSubcategoryBusiness,
       }),
     );
   }
@@ -240,6 +244,26 @@ export function CategoriesSettingsClient({ initialScopes }) {
         scope,
         subcategoryId,
         targetCategoryId: moveTargetCategoryId,
+      }),
+    );
+  }
+
+  function handleReorderSubcategory(categoryId, index, direction, subcategories) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= subcategories.length) {
+      return;
+    }
+
+    const nextIds = subcategories.map((sub) => sub.id);
+    const currentId = nextIds[index];
+    nextIds[index] = nextIds[nextIndex];
+    nextIds[nextIndex] = currentId;
+
+    runMutation((scope) =>
+      reorderSubcategoriesAction({
+        scope,
+        categoryId,
+        subcategoryIds: nextIds,
       }),
     );
   }
@@ -305,6 +329,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
             <input
               type="text"
+              aria-label="Category name"
               value={newCategoryName}
               onChange={(event) => setNewCategoryName(event.target.value)}
               placeholder="Category name"
@@ -345,6 +370,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <input
                           type="text"
+                          aria-label="Category name"
                           value={editingCategoryName}
                           onChange={(event) => setEditingCategoryName(event.target.value)}
                           className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-3 py-2 text-sm text-[var(--color-text-main)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
@@ -431,7 +457,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
                   {subcategories.length === 0 ? (
                     <p className="text-xs text-[var(--color-text-muted)]">No subcategories yet.</p>
                   ) : (
-                    subcategories.map((subcategory) => {
+                    subcategories.map((subcategory, index) => {
                       const isEditingSubcategory = editingSubcategoryId === subcategory.id;
                       const isMovingSubcategory = movingSubcategoryId === subcategory.id;
 
@@ -444,11 +470,21 @@ export function CategoriesSettingsClient({ initialScopes }) {
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                               <input
                                 type="text"
+                                aria-label="Subcategory name"
                                 value={editingSubcategoryName}
                                 onChange={(event) => setEditingSubcategoryName(event.target.value)}
                                 className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-main)] focus:border-[var(--color-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)]"
                                 disabled={isPending}
                               />
+                              <label className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-muted)]">
+                                <input
+                                  type="checkbox"
+                                  checked={editingSubcategoryBusiness}
+                                  onChange={(event) => setEditingSubcategoryBusiness(event.target.checked)}
+                                  disabled={isPending}
+                                />
+                                Business
+                              </label>
                               <div className="flex gap-2">
                                 <button
                                   type="button"
@@ -463,9 +499,10 @@ export function CategoriesSettingsClient({ initialScopes }) {
                                   onClick={() => {
                                     setEditingSubcategoryId(null);
                                     setEditingSubcategoryName("");
+                                    setEditingSubcategoryBusiness(false);
                                   }}
                                   disabled={isPending}
-                                  className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-xs text-[var(--color-text-muted)]"
+                                  className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]"
                                 >
                                   Cancel
                                 </button>
@@ -485,9 +522,28 @@ export function CategoriesSettingsClient({ initialScopes }) {
                                 <div className="flex flex-wrap gap-2">
                                   <button
                                     type="button"
+                                    onClick={() => handleReorderSubcategory(category.id, index, -1, subcategories)}
+                                    disabled={isPending || index === 0}
+                                    className="rounded-lg border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] disabled:opacity-40"
+                                    title="Move up"
+                                  >
+                                    Up
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleReorderSubcategory(category.id, index, 1, subcategories)}
+                                    disabled={isPending || index === subcategories.length - 1}
+                                    className="rounded-lg border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] disabled:opacity-40"
+                                    title="Move down"
+                                  >
+                                    Down
+                                  </button>
+                                  <button
+                                    type="button"
                                     onClick={() => {
                                       setEditingSubcategoryId(subcategory.id);
                                       setEditingSubcategoryName(subcategory.name);
+                                      setEditingSubcategoryBusiness(subcategory.isBusinessExpense);
                                       setMovingSubcategoryId(null);
                                     }}
                                     disabled={isPending}
@@ -572,6 +628,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
                     <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                       <input
                         type="text"
+                        aria-label="Subcategory name"
                         value={subcategoryDraftByCategoryId[category.id] ?? ""}
                         onChange={(event) =>
                           setSubcategoryDraftByCategoryId((previous) => ({

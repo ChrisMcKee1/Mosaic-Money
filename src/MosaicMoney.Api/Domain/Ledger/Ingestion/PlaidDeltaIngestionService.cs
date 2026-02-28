@@ -38,14 +38,14 @@ public sealed record PlaidDeltaIngestionResult(
 
 public sealed class PlaidDeltaIngestionService(
     MosaicMoneyDbContext dbContext,
-    ITaxonomyReadinessGate? readinessGate = null)
+    ITaxonomyReadinessGate readinessGate)
 {
     private const string Source = "plaid";
     private const string DefaultCursor = "no-cursor";
     private const string SupportedDeterministicScoreVersion = "mm-be-07a-v1";
     private const string SupportedTieBreakPolicy = "due_date_distance_then_amount_delta_then_latest_observed";
     private const string RecurringAmbiguityReasonCode = "recurring_competing_candidates";
-    private readonly ITaxonomyReadinessGate taxonomyReadinessGate = readinessGate ?? AllowAllTaxonomyReadinessGate.Instance;
+    private readonly ITaxonomyReadinessGate taxonomyReadinessGate = readinessGate;
 
     public async Task<PlaidDeltaIngestionResult> IngestAsync(
         PlaidDeltaIngestionRequest request,

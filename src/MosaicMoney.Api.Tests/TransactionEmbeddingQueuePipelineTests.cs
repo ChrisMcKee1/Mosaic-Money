@@ -4,6 +4,7 @@ using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
+using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 using Xunit;
 
 namespace MosaicMoney.Api.Tests;
@@ -16,7 +17,7 @@ public sealed class TransactionEmbeddingQueuePipelineTests
         await using var dbContext = CreateDbContext();
         var accountId = await SeedAccountAsync(dbContext);
 
-        var ingestionService = new PlaidDeltaIngestionService(dbContext);
+        var ingestionService = new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance);
         var queueService = new TransactionEmbeddingQueueService(
             dbContext,
             NullLogger<TransactionEmbeddingQueueService>.Instance);

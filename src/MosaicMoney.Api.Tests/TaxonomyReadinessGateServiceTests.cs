@@ -84,6 +84,79 @@ public sealed class TaxonomyReadinessGateServiceTests
         Assert.Equal(0.6667m, result.Snapshot.ExpenseFillRate);
     }
 
+    [Fact]
+    public async Task EvaluateAsync_UnsupportedLane_ReturnsNotReady()
+    {
+        await using var dbContext = CreateDbContext();
+        var householdId = await SeedHouseholdWithAccountAsync(dbContext);
+
+        var service = CreateService(dbContext, new TaxonomyReadinessOptions
+        {
+            EnableClassificationGate = true,
+            EnableIngestionGate = true,
+            MinimumPlatformSubcategoryCount = 1,
+            MinimumTotalSubcategoryCount = 1,
+            MinimumExpenseSampleCount = 1,
+            MinimumExpenseFillRate = 0.7m,
+        });
+
+        var result = await service.EvaluateAsync(householdId, (TaxonomyReadinessLane)999);
+
+        Assert.False(result.IsReady);
+        Assert.Equal(TaxonomyReadinessReasonCodes.UnsupportedLane, result.ReasonCode);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_FillRateBelowThreshold_BelowMinimumSample_ReturnsReady()
+    {
+        await using var dbContext = CreateDbContext();
+        var householdId = await SeedHouseholdWithAccountAsync(dbContext);
+        var subcategoryId = await SeedPlatformSubcategoriesAsync(dbContext, count: 1);
+        await SeedExpenseTransactionsAsync(dbContext, householdId, subcategoryId, totalExpenseCount: 2, categorizedExpenseCount: 0);
+
+        var service = CreateService(dbContext, new TaxonomyReadinessOptions
+        {
+            EnableClassificationGate = true,
+            EnableIngestionGate = true,
+            MinimumPlatformSubcategoryCount = 1,
+            MinimumTotalSubcategoryCount = 1,
+            MinimumExpenseSampleCount = 3,
+            MinimumExpenseFillRate = 0.9m,
+        });
+
+        var result = await service.EvaluateAsync(householdId, TaxonomyReadinessLane.Ingestion);
+
+        Assert.True(result.IsReady);
+        Assert.Equal(TaxonomyReadinessReasonCodes.Ready, result.ReasonCode);
+        Assert.Equal(2, result.Snapshot.ExpenseTransactionCount);
+        Assert.Equal(0.0000m, result.Snapshot.ExpenseFillRate);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_FillRateRoundedAtThresholdButRawBelow_ReturnsNotReady()
+    {
+        await using var dbContext = CreateDbContext();
+        var householdId = await SeedHouseholdWithAccountAsync(dbContext);
+        var subcategoryId = await SeedPlatformSubcategoriesAsync(dbContext, count: 1);
+        await SeedExpenseTransactionsAsync(dbContext, householdId, subcategoryId, totalExpenseCount: 6, categorizedExpenseCount: 1);
+
+        var service = CreateService(dbContext, new TaxonomyReadinessOptions
+        {
+            EnableClassificationGate = true,
+            EnableIngestionGate = true,
+            MinimumPlatformSubcategoryCount = 1,
+            MinimumTotalSubcategoryCount = 1,
+            MinimumExpenseSampleCount = 6,
+            MinimumExpenseFillRate = 0.1667m,
+        });
+
+        var result = await service.EvaluateAsync(householdId, TaxonomyReadinessLane.Classification);
+
+        Assert.False(result.IsReady);
+        Assert.Equal(TaxonomyReadinessReasonCodes.FillRateBelowThreshold, result.ReasonCode);
+        Assert.Equal(0.1667m, result.Snapshot.ExpenseFillRate);
+    }
+
     private static TaxonomyReadinessGateService CreateService(MosaicMoneyDbContext dbContext, TaxonomyReadinessOptions options)
     {
         return new TaxonomyReadinessGateService(

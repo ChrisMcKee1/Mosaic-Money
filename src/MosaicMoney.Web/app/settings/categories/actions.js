@@ -275,23 +275,34 @@ export async function renameSubcategoryAction(input) {
 
   const subcategoryId = input?.subcategoryId;
   const name = input?.name?.trim();
+  const isBusinessExpense = input?.isBusinessExpense;
 
   if (!subcategoryId) {
     return { success: false, error: "Subcategory id is required." };
   }
 
-  if (!name) {
-    return { success: false, error: "Subcategory name is required." };
+  const body = {};
+  if (name !== undefined) {
+    if (!name) {
+      return { success: false, error: "Subcategory name is required." };
+    }
+    body.name = name;
+  }
+  
+  if (isBusinessExpense !== undefined) {
+    body.isBusinessExpense = isBusinessExpense;
   }
 
   const result = await callTaxonomyApi(`/api/v1/subcategories/${subcategoryId}`, {
     method: "PATCH",
-    body: {
-      name,
-    },
+    body,
   });
 
-  return withScopeRefresh(scopeResult.scope, result, `Renamed subcategory to \"${name}\".`);
+  const successMessage = name
+    ? `Updated subcategory to \"${name}\".`
+    : "Updated subcategory settings.";
+
+  return withScopeRefresh(scopeResult.scope, result, successMessage);
 }
 
 export async function archiveSubcategoryAction(input) {
@@ -343,3 +354,32 @@ export async function reparentSubcategoryAction(input) {
 
   return withScopeRefresh(scopeResult.scope, result, "Moved subcategory to new parent.");
 }
+
+export async function reorderSubcategoriesAction(input) {
+  const scopeResult = validateMutableScope(input?.scope);
+  if (!scopeResult.success) {
+    return scopeResult;
+  }
+
+  const subcategoryIds = Array.isArray(input?.subcategoryIds) ? input.subcategoryIds : [];
+  if (subcategoryIds.length === 0) {
+    return { success: false, error: "SubcategoryIds are required to reorder." };
+  }
+
+  // Fallback pattern since API lacks bulk subcategory reorder
+  let lastResult = null;
+  for (let i = 0; i < subcategoryIds.length; i++) {
+    const subcategoryId = subcategoryIds[i];
+    lastResult = await callTaxonomyApi(`/api/v1/subcategories/${subcategoryId}`, {
+      method: "PATCH",
+      body: {
+        displayOrder: i,
+      },
+    });
+    // Break on first failure to avoid mangled state
+    if (!lastResult.success) break;
+  }
+
+  return withScopeRefresh(scopeResult.scope, lastResult ?? { success: true }, "Updated subcategory ordering.");
+}
+

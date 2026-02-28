@@ -8,6 +8,7 @@ public static class TaxonomyReadinessReasonCodes
 {
     public const string Ready = "taxonomy_readiness_ready";
     public const string GateDisabled = "taxonomy_readiness_gate_disabled";
+    public const string UnsupportedLane = "taxonomy_readiness_unsupported_lane";
     public const string MissingSubcategoryCoverage = "taxonomy_readiness_missing_subcategory_coverage";
     public const string FillRateBelowThreshold = "taxonomy_readiness_fill_rate_below_threshold";
 }
@@ -72,7 +73,25 @@ public sealed class TaxonomyReadinessGateService(
         CancellationToken cancellationToken = default)
     {
         var resolvedOptions = options.Value;
-        if (!IsLaneEnabled(lane, resolvedOptions))
+        var laneEnabled = ResolveLaneEnabled(lane, resolvedOptions);
+        if (!laneEnabled.HasValue)
+        {
+            var unsupportedSnapshot = await BuildSnapshotAsync(householdId, ownerUserId, cancellationToken);
+            var rationale = $"Taxonomy readiness gate blocked because lane '{lane}' is unsupported.";
+
+            logger.LogWarning(
+                "Taxonomy readiness gate blocked unsupported lane {Lane} for household {HouseholdId}",
+                lane,
+                householdId);
+
+            return new TaxonomyReadinessEvaluation(
+                IsReady: false,
+                ReasonCode: TaxonomyReadinessReasonCodes.UnsupportedLane,
+                Rationale: rationale,
+                Snapshot: unsupportedSnapshot);
+        }
+
+        if (!laneEnabled.Value)
         {
             var bypassSnapshot = await BuildSnapshotAsync(householdId, ownerUserId, cancellationToken);
             return new TaxonomyReadinessEvaluation(
@@ -88,6 +107,9 @@ public sealed class TaxonomyReadinessGateService(
         var minimumExpenseFillRate = decimal.Clamp(resolvedOptions.MinimumExpenseFillRate, 0m, 1m);
 
         var snapshot = await BuildSnapshotAsync(householdId, ownerUserId, cancellationToken);
+        var rawExpenseFillRate = snapshot.ExpenseTransactionCount == 0
+            ? 1m
+            : snapshot.CategorizedExpenseTransactionCount / (decimal)snapshot.ExpenseTransactionCount;
 
         if (snapshot.PlatformSubcategoryCount < minimumPlatformSubcategoryCount
             || snapshot.TotalEligibleSubcategoryCount < minimumTotalSubcategoryCount)
@@ -110,10 +132,11 @@ public sealed class TaxonomyReadinessGateService(
         }
 
         if (snapshot.ExpenseTransactionCount >= minimumExpenseSampleCount
-            && snapshot.ExpenseFillRate < minimumExpenseFillRate)
+            && rawExpenseFillRate < minimumExpenseFillRate)
         {
+            var roundedRawExpenseFillRate = decimal.Round(rawExpenseFillRate, 4, MidpointRounding.AwayFromZero);
             var rationale = $"Taxonomy readiness blocked because expense fill-rate is below threshold. "
-                + $"FillRate={snapshot.ExpenseFillRate:F4}/{minimumExpenseFillRate:F4}, "
+                + $"FillRate={roundedRawExpenseFillRate:F4}/{minimumExpenseFillRate:F4}, "
                 + $"Sample={snapshot.ExpenseTransactionCount}.";
 
             logger.LogInformation(
@@ -136,13 +159,13 @@ public sealed class TaxonomyReadinessGateService(
             Snapshot: snapshot);
     }
 
-    private static bool IsLaneEnabled(TaxonomyReadinessLane lane, TaxonomyReadinessOptions options)
+    private static bool? ResolveLaneEnabled(TaxonomyReadinessLane lane, TaxonomyReadinessOptions options)
     {
         return lane switch
         {
             TaxonomyReadinessLane.Classification => options.EnableClassificationGate,
             TaxonomyReadinessLane.Ingestion => options.EnableIngestionGate,
-            _ => false,
+            _ => null,
         };
     }
 

@@ -177,6 +177,183 @@ public sealed class CategoryLifecycleEndpointsTests
     }
 
     [Fact]
+    public async Task PostCategory_PlatformScopeMutation_WithWrongOperatorKey_ReturnsForbidden()
+    {
+        Guid actorHouseholdUserId = Guid.Empty;
+
+        await using var app = await CreateApiAsync(dbContext =>
+        {
+            var seeded = SeedActorMembership(dbContext);
+            actorHouseholdUserId = seeded.ActorHouseholdUserId;
+        });
+
+        var client = CreateAuthorizedClient(
+            app,
+            actorHouseholdUserId,
+            includeOperatorKey: true,
+            operatorKeyOverride: "taxonomy-operator-incorrect-key");
+
+        var response = await client.PostAsJsonAsync("/api/v1/categories", new CreateCategoryRequest
+        {
+            Name = "Platform wrong-key attempt",
+            Scope = nameof(CategoryOwnerType.Platform),
+        });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostCategory_PlatformScopeMutation_WithMultipleOperatorKeyHeaders_ReturnsForbidden()
+    {
+        Guid actorHouseholdUserId = Guid.Empty;
+
+        await using var app = await CreateApiAsync(dbContext =>
+        {
+            var seeded = SeedActorMembership(dbContext);
+            actorHouseholdUserId = seeded.ActorHouseholdUserId;
+        });
+
+        var client = CreateAuthorizedClient(app, actorHouseholdUserId, includeOperatorKey: true);
+        client.DefaultRequestHeaders.Remove(TaxonomyOperatorOptions.OperatorApiKeyHeaderName);
+        client.DefaultRequestHeaders.Add(
+            TaxonomyOperatorOptions.OperatorApiKeyHeaderName,
+            [TestOperatorApiKey, TestOperatorApiKey]);
+
+        var response = await client.PostAsJsonAsync("/api/v1/categories", new CreateCategoryRequest
+        {
+            Name = "Platform duplicate-header attempt",
+            Scope = nameof(CategoryOwnerType.Platform),
+        });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostCategory_PlatformScopeMutation_WithUnauthorizedSubject_ReturnsForbidden()
+    {
+        Guid actorHouseholdUserId = Guid.Empty;
+
+        await using var app = await CreateApiAsync(
+            dbContext =>
+            {
+                var seeded = SeedActorMembership(dbContext);
+                actorHouseholdUserId = seeded.ActorHouseholdUserId;
+            },
+            allowedAuthSubjectsCsv: "some-other-operator-subject");
+
+        var client = CreateAuthorizedClient(app, actorHouseholdUserId, includeOperatorKey: true);
+
+        var response = await client.PostAsJsonAsync("/api/v1/categories", new CreateCategoryRequest
+        {
+            Name = "Platform unauthorized subject attempt",
+            Scope = nameof(CategoryOwnerType.Platform),
+        });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PlatformScopeReorderAndSubcategoryLifecycle_WithOperatorAccess_Succeeds_AndWritesAuditEntries()
+    {
+        Guid actorHouseholdUserId = Guid.Empty;
+
+        await using var app = await CreateApiAsync(dbContext =>
+        {
+            var seeded = SeedActorMembership(dbContext);
+            actorHouseholdUserId = seeded.ActorHouseholdUserId;
+        });
+
+        var client = CreateAuthorizedClient(app, actorHouseholdUserId, includeOperatorKey: true);
+
+        var createPrimaryCategoryResponse = await client.PostAsJsonAsync("/api/v1/categories", new CreateCategoryRequest
+        {
+            Name = "Platform Primary",
+            Scope = nameof(CategoryOwnerType.Platform),
+        });
+        Assert.Equal(HttpStatusCode.Created, createPrimaryCategoryResponse.StatusCode);
+
+        var createSecondaryCategoryResponse = await client.PostAsJsonAsync("/api/v1/categories", new CreateCategoryRequest
+        {
+            Name = "Platform Secondary",
+            Scope = nameof(CategoryOwnerType.Platform),
+        });
+        Assert.Equal(HttpStatusCode.Created, createSecondaryCategoryResponse.StatusCode);
+
+        var primaryCategory = await createPrimaryCategoryResponse.Content.ReadFromJsonAsync<CategoryLifecycleDto>();
+        var secondaryCategory = await createSecondaryCategoryResponse.Content.ReadFromJsonAsync<CategoryLifecycleDto>();
+        Assert.NotNull(primaryCategory);
+        Assert.NotNull(secondaryCategory);
+
+        var reorderResponse = await client.PostAsJsonAsync("/api/v1/categories/reorder", new ReorderCategoriesRequest
+        {
+            Scope = nameof(CategoryOwnerType.Platform),
+            CategoryIds = [secondaryCategory!.Id, primaryCategory!.Id],
+        });
+        Assert.Equal(HttpStatusCode.OK, reorderResponse.StatusCode);
+
+        var createSubcategoryResponse = await client.PostAsJsonAsync("/api/v1/subcategories", new CreateSubcategoryRequest
+        {
+            CategoryId = primaryCategory.Id,
+            Name = "Platform Subcategory",
+        });
+        Assert.Equal(HttpStatusCode.Created, createSubcategoryResponse.StatusCode);
+
+        var createdSubcategory = await createSubcategoryResponse.Content.ReadFromJsonAsync<CategorySubcategoryDto>();
+        Assert.NotNull(createdSubcategory);
+
+        var renameSubcategoryResponse = await client.PatchAsJsonAsync($"/api/v1/subcategories/{createdSubcategory!.Id}", new UpdateSubcategoryRequest
+        {
+            Name = "Platform Subcategory Renamed",
+        });
+        Assert.Equal(HttpStatusCode.OK, renameSubcategoryResponse.StatusCode);
+
+        var reparentResponse = await client.PostAsJsonAsync($"/api/v1/subcategories/{createdSubcategory.Id}/reparent", new ReparentSubcategoryRequest
+        {
+            TargetCategoryId = secondaryCategory.Id,
+        });
+        Assert.Equal(HttpStatusCode.OK, reparentResponse.StatusCode);
+
+        var archiveSubcategoryResponse = await client.DeleteAsync($"/api/v1/subcategories/{createdSubcategory.Id}?allowLinkedTransactions=true");
+        Assert.Equal(HttpStatusCode.OK, archiveSubcategoryResponse.StatusCode);
+
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<MosaicMoneyDbContext>();
+
+        var reorderedCategories = await dbContext.Categories
+            .AsNoTracking()
+            .Where(x => x.Id == primaryCategory.Id || x.Id == secondaryCategory.Id)
+            .OrderBy(x => x.DisplayOrder)
+            .ToListAsync();
+
+        Assert.Equal(secondaryCategory.Id, reorderedCategories[0].Id);
+        Assert.Equal(primaryCategory.Id, reorderedCategories[1].Id);
+
+        var storedSubcategory = await dbContext.Subcategories
+            .AsNoTracking()
+            .FirstAsync(x => x.Id == createdSubcategory.Id);
+
+        Assert.Equal(secondaryCategory.Id, storedSubcategory.CategoryId);
+        Assert.True(storedSubcategory.IsArchived);
+
+        var reorderedOperations = await dbContext.TaxonomyLifecycleAuditEntries
+            .AsNoTracking()
+            .Where(x => x.EntityType == "Category" && x.Operation == "Reordered")
+            .CountAsync();
+        Assert.True(reorderedOperations >= 1);
+
+        var subcategoryOperations = await dbContext.TaxonomyLifecycleAuditEntries
+            .AsNoTracking()
+            .Where(x => x.EntityType == "Subcategory" && x.EntityId == createdSubcategory.Id)
+            .Select(x => x.Operation)
+            .ToListAsync();
+
+        Assert.Contains("Created", subcategoryOperations);
+        Assert.Contains("Updated", subcategoryOperations);
+        Assert.Contains("Reparented", subcategoryOperations);
+        Assert.Contains("Archived", subcategoryOperations);
+    }
+
+    [Fact]
     public async Task CategoryNameDuplicate_IsScopedPerOwnershipLane()
     {
         Guid actorHouseholdUserId = Guid.Empty;
@@ -443,14 +620,16 @@ public sealed class CategoryLifecycleEndpointsTests
     private static HttpClient CreateAuthorizedClient(
         WebApplication app,
         Guid actorHouseholdUserId,
-        bool includeOperatorKey = false)
+        bool includeOperatorKey = false,
+        string? operatorKeyOverride = null,
+        string? authSubjectOverride = null)
     {
         var client = app.GetTestClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateValidToken());
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateValidToken(authSubjectOverride));
         client.DefaultRequestHeaders.Add("X-Mosaic-Household-User-Id", actorHouseholdUserId.ToString());
         if (includeOperatorKey)
         {
-            client.DefaultRequestHeaders.Add(TaxonomyOperatorOptions.OperatorApiKeyHeaderName, TestOperatorApiKey);
+            client.DefaultRequestHeaders.Add(TaxonomyOperatorOptions.OperatorApiKeyHeaderName, operatorKeyOverride ?? TestOperatorApiKey);
         }
 
         return client;
@@ -493,14 +672,16 @@ public sealed class CategoryLifecycleEndpointsTests
         return new SeededActorMembership(householdId, actorHouseholdUserId);
     }
 
-    private static async Task<WebApplication> CreateApiAsync(Action<MosaicMoneyDbContext>? seed = null)
+    private static async Task<WebApplication> CreateApiAsync(
+        Action<MosaicMoneyDbContext>? seed = null,
+        string? allowedAuthSubjectsCsv = null)
     {
         var configurationValues = new Dictionary<string, string?>
         {
             ["Authentication:Clerk:Issuer"] = TestIssuer,
             ["Authentication:Clerk:SecretKey"] = "test-secret-key",
             ["TaxonomyOperator:ApiKey"] = TestOperatorApiKey,
-            ["TaxonomyOperator:AllowedAuthSubjectsCsv"] = TestAuthSubject,
+            ["TaxonomyOperator:AllowedAuthSubjectsCsv"] = allowedAuthSubjectsCsv ?? TestAuthSubject,
         };
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -563,7 +744,7 @@ public sealed class CategoryLifecycleEndpointsTests
         return app;
     }
 
-    private static string CreateValidToken()
+    private static string CreateValidToken(string? authSubjectOverride = null)
     {
         var signingCredentials = new SigningCredentials(
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestSigningKey)),
@@ -573,7 +754,7 @@ public sealed class CategoryLifecycleEndpointsTests
             issuer: TestIssuer,
             claims: new[]
             {
-                new Claim("sub", TestAuthSubject),
+                new Claim("sub", authSubjectOverride ?? TestAuthSubject),
             },
             notBefore: DateTime.UtcNow.AddMinutes(-1),
             expires: DateTime.UtcNow.AddMinutes(5),

@@ -14,7 +14,7 @@ public sealed class PlaidDeltaIngestionServiceTests
     {
         await using var dbContext = CreateDbContext();
         var accountId = await SeedAccountAsync(dbContext);
-        var service = new PlaidDeltaIngestionService(dbContext);
+        var service = new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance);
 
         var request = BuildRequest(
             accountId,
@@ -47,7 +47,7 @@ public sealed class PlaidDeltaIngestionServiceTests
     {
         await using var dbContext = CreateDbContext();
         var accountId = await SeedAccountAsync(dbContext);
-        var service = new PlaidDeltaIngestionService(dbContext);
+        var service = new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance);
 
         var firstRequest = BuildRequest(
             accountId,
@@ -108,7 +108,7 @@ public sealed class PlaidDeltaIngestionServiceTests
         });
         await dbContext.SaveChangesAsync();
 
-        var service = new PlaidDeltaIngestionService(dbContext);
+        var service = new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance);
         var request = BuildRequest(
             accountId,
             "cursor-3",
@@ -132,7 +132,7 @@ public sealed class PlaidDeltaIngestionServiceTests
     {
         await using var dbContext = CreateDbContext();
         var accountId = await SeedAccountAsync(dbContext);
-        var service = new PlaidDeltaIngestionService(dbContext);
+        var service = new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance);
 
         var ambiguousRequest = BuildRequest(
             accountId,
@@ -249,7 +249,7 @@ public sealed class PlaidDeltaIngestionServiceTests
         dbContext.RecurringItems.Add(recurringItem);
         await dbContext.SaveChangesAsync();
 
-        var service = new PlaidDeltaIngestionService(dbContext);
+        var service = new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance);
         var request = BuildRequest(
             accountId,
             "cursor-6",
@@ -327,7 +327,7 @@ public sealed class PlaidDeltaIngestionServiceTests
         dbContext.RecurringItems.AddRange(recurringA, recurringB);
         await dbContext.SaveChangesAsync();
 
-        var service = new PlaidDeltaIngestionService(dbContext);
+        var service = new PlaidDeltaIngestionService(dbContext, AllowAllTaxonomyReadinessGate.Instance);
         var request = BuildRequest(
             accountId,
             "cursor-7",

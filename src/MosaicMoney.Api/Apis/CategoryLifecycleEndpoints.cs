@@ -1005,7 +1005,8 @@ public static class CategoryLifecycleEndpoints
 
     private static bool HasValidPlatformMutationAccess(HttpContext httpContext, TaxonomyOperatorOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.ApiKey))
+        var expectedApiKey = options.ApiKey.Trim();
+        if (string.IsNullOrWhiteSpace(expectedApiKey))
         {
             return false;
         }
@@ -1015,15 +1016,21 @@ public static class CategoryLifecycleEndpoints
             return false;
         }
 
-        var suppliedApiKey = headerValues.FirstOrDefault();
+        // Reject ambiguous multi-value operator headers to avoid accidental fail-open behavior.
+        if (headerValues.Count != 1)
+        {
+            return false;
+        }
+
+        var suppliedApiKey = headerValues[0];
         if (string.IsNullOrWhiteSpace(suppliedApiKey))
         {
             return false;
         }
 
-        var expectedKeyBytes = Encoding.UTF8.GetBytes(options.ApiKey);
-        var suppliedKeyBytes = Encoding.UTF8.GetBytes(suppliedApiKey.Trim());
-        if (!CryptographicOperations.FixedTimeEquals(expectedKeyBytes, suppliedKeyBytes))
+        var expectedKeyHash = SHA256.HashData(Encoding.UTF8.GetBytes(expectedApiKey));
+        var suppliedKeyHash = SHA256.HashData(Encoding.UTF8.GetBytes(suppliedApiKey.Trim()));
+        if (!CryptographicOperations.FixedTimeEquals(expectedKeyHash, suppliedKeyHash))
         {
             return false;
         }
@@ -1037,6 +1044,11 @@ public static class CategoryLifecycleEndpoints
 
         var allowedSubjects = options.AllowedAuthSubjectsCsv
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (allowedSubjects.Length == 0)
+        {
+            return false;
+        }
 
         return allowedSubjects
             .Any(subject => string.Equals(subject, authSubject, StringComparison.Ordinal));
