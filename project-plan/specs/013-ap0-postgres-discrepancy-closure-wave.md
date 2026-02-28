@@ -28,7 +28,7 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 | AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Idempotent baseline taxonomy seed + deterministic backfill + before/after discrepancy metrics output. | Done |
 | AP0-BE-02 | Backend | Scoped ownership model for user and shared categories | AP0-EPIC | Schema and migration path for `User`, `HouseholdShared`, and `Platform` ownership without breaking existing links. | Done |
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Done |
-| AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | Not Started |
+| AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | In Review |
 | AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile parity for taxonomy management with offline-safe mutation queue and sync reconciliation. | Not Started |
 | AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform-managed taxonomy tables | AP0-BE-03 | Operator-only admin lane with protected access, change provenance, and rollback-safe workflows. | Not Started |
 | AP0-AI-01 | AI | Taxonomy readiness gates for ingestion and AI classification fill-rate | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks and evaluator scenarios improving fill-rates without policy regressions. | Not Started |
@@ -79,3 +79,11 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~DeterministicClassificationOrchestratorTests|FullyQualifiedName~DeterministicClassificationEngineTests|FullyQualifiedName~TaxonomyBootstrapBackfillServiceTests"` (15 passed, 0 failed).
 - Azure schema application evidence:
 - `dotnet ef database update --project src/MosaicMoney.Api/MosaicMoney.Api.csproj --startup-project src/MosaicMoney.Api/MosaicMoney.Api.csproj --connection <azure-mosaicmoneydb-connection>` applied migrations `20260228013646_AddScopedCategoryOwnershipModel` and `20260228015637_AddCategoryLifecycleArchiveAndAudit` to Azure PostgreSQL Flexible Server (`mosaicpostgres-t4s4nroixqd7c`).
+
+## Update Note (2026-02-28, AP0-FE-01 Implementation)
+- Planner moved `AP0-FE-01` (`#147`) to `In Review` after implementing the web settings taxonomy management lane at `/settings/categories`.
+- Scope-aware UX now supports create/rename/archive/reorder for categories and create/rename/reparent/archive for subcategories in `User` and `HouseholdShared` scopes.
+- `Platform` scope is explicitly rendered as read-only in web settings, preserving operator-only mutation boundaries.
+- Validation evidence:
+- `npm run build` in `src/MosaicMoney.Web` (pass).
+- `npx playwright test tests/e2e/settings.spec.js tests/e2e/settings-categories.spec.js` in `src/MosaicMoney.Web` (4 passed, 0 failed).

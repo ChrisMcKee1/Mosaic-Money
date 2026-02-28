@@ -11,6 +11,10 @@ test.describe('Settings Page', () => {
     
     // Security section
     await expect(page.getByRole('heading', { name: 'Security & Authentication' })).toBeVisible();
+
+    // Category taxonomy section
+    await expect(page.getByRole('heading', { name: 'Category Taxonomy' })).toBeVisible();
+    await expect(page.getByTestId('settings-manage-categories-link')).toBeVisible();
     
     // Since Clerk is not configured in tests, it should show the fallback
     await expect(page.getByText('Authentication Disabled')).toBeVisible();

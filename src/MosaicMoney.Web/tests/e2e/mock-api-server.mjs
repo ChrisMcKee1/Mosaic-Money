@@ -133,6 +133,92 @@ const fixture = {
       needsReviewByUserId: "22222222-2222-2222-2222-222222222222",
     },
   ],
+  taxonomyByScope: {
+    User: [
+      {
+        id: "10000000-0000-0000-0000-000000000001",
+        name: "Personal Care",
+        displayOrder: 0,
+        isSystem: false,
+        ownerType: "User",
+        householdId: "11111111-1111-1111-1111-111111111111",
+        ownerUserId: "11111111-1111-1111-1111-111111111111",
+        isArchived: false,
+        createdAtUtc: "2026-02-20T00:00:00.000Z",
+        lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+        archivedAtUtc: null,
+        subcategories: [
+          {
+            id: "20000000-0000-0000-0000-000000000001",
+            categoryId: "10000000-0000-0000-0000-000000000001",
+            name: "Haircuts",
+            isBusinessExpense: false,
+            displayOrder: 0,
+            isArchived: false,
+            createdAtUtc: "2026-02-20T00:00:00.000Z",
+            lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+            archivedAtUtc: null,
+          },
+        ],
+      },
+    ],
+    HouseholdShared: [
+      {
+        id: "10000000-0000-0000-0000-000000000002",
+        name: "Household Groceries",
+        displayOrder: 0,
+        isSystem: false,
+        ownerType: "HouseholdShared",
+        householdId: "11111111-1111-1111-1111-111111111111",
+        ownerUserId: null,
+        isArchived: false,
+        createdAtUtc: "2026-02-20T00:00:00.000Z",
+        lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+        archivedAtUtc: null,
+        subcategories: [
+          {
+            id: "20000000-0000-0000-0000-000000000002",
+            categoryId: "10000000-0000-0000-0000-000000000002",
+            name: "Weekly Groceries",
+            isBusinessExpense: false,
+            displayOrder: 0,
+            isArchived: false,
+            createdAtUtc: "2026-02-20T00:00:00.000Z",
+            lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+            archivedAtUtc: null,
+          },
+        ],
+      },
+    ],
+    Platform: [
+      {
+        id: "10000000-0000-0000-0000-000000000003",
+        name: "Utilities",
+        displayOrder: 0,
+        isSystem: true,
+        ownerType: "Platform",
+        householdId: null,
+        ownerUserId: null,
+        isArchived: false,
+        createdAtUtc: "2026-02-20T00:00:00.000Z",
+        lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+        archivedAtUtc: null,
+        subcategories: [
+          {
+            id: "20000000-0000-0000-0000-000000000003",
+            categoryId: "10000000-0000-0000-0000-000000000003",
+            name: "Water",
+            isBusinessExpense: false,
+            displayOrder: 0,
+            isArchived: false,
+            createdAtUtc: "2026-02-20T00:00:00.000Z",
+            lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+            archivedAtUtc: null,
+          },
+        ],
+      },
+    ],
+  },
 };
 
 function createState() {
@@ -310,6 +396,25 @@ const server = createServer(async (req, res) => {
     });
 
     json(res, 200, filtered);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/v1/categories") {
+    const scope = searchParams.get("scope") ?? "User";
+    const categories = state.data.taxonomyByScope[scope];
+
+    if (!categories) {
+      json(res, 400, {
+        error: {
+          code: "validation_failed",
+          message: "Scope must be one of: Platform, HouseholdShared, User.",
+          traceId: "mock-trace-id",
+        },
+      });
+      return;
+    }
+
+    json(res, 200, categories);
     return;
   }
 
