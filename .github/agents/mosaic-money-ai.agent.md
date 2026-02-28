@@ -21,6 +21,8 @@ Primary skills to load before implementation:
 - `microsoft-docs`
 
 On-demand skills to load when relevant:
+- `.github/skills/ai-sdk/SKILL.md` when implementing or reviewing Vercel AI SDK flows in TypeScript/Next.js surfaces.
+- `.github/skills/ai-elements/SKILL.md` and `.github/skills/streamdown/SKILL.md` when AI responses must be rendered in rich React chat UIs.
 - `microsoft-foundry` and `agent-workflow-builder_ai_toolkit` for Foundry-hosted agents/models and Agent Framework workflow delivery.
 - `azure-ai` and `azure-aigateway` for Azure AI Search/Speech/OpenAI and APIM AI gateway patterns.
 - `azure-observability` and `azure-compliance` for AI telemetry/compliance review.

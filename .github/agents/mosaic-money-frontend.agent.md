@@ -19,10 +19,20 @@ Primary skills to load before implementation:
 - `.github/skills/agent-governance/SKILL.md`
 - `.github/skills/agentic-eval/SKILL.md`
 - `.github/skills/frontend-design/SKILL.md`
+- `.github/skills/vercel-react-best-practices/SKILL.md`
+- `.github/skills/vercel-composition-patterns/SKILL.md`
+- `.github/skills/next-best-practices/SKILL.md`
+- `.github/skills/web-design-guidelines/SKILL.md`
+- `.github/skills/building-components/SKILL.md`
 - `.github/skills/git-commit/SKILL.md` — load before committing changes to ensure conventional commit hygiene.
 - `microsoft-docs`
 
 On-demand skills to load when relevant:
+- `.github/skills/ai-sdk/SKILL.md` for Vercel AI SDK APIs, provider wiring, and type-safe chat/agent flows.
+- `.github/skills/ai-elements/SKILL.md` for AI-native chat components and interaction patterns.
+- `.github/skills/streamdown/SKILL.md` for secure, streaming-first markdown rendering in chat responses.
+- `.github/skills/next-cache-components/SKILL.md` for Next.js 16 Cache Components and PPR strategies.
+- `.github/skills/next-upgrade/SKILL.md` for safe Next.js upgrade/codemod planning.
 - `mcp-app` when building or wiring an interactive MCP app UI.
 - `azure-hosted-copilot-sdk` when building/deploying Copilot SDK frontends on Azure.
 - `azure-observability` for App Insights/Azure Monitor dashboards and telemetry analysis.

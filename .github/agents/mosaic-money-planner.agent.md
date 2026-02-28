@@ -12,7 +12,7 @@ handoffs:
     send: false
   - label: Build Frontend Slice
     agent: mosaic-money-frontend
-    prompt: Implement the frontend tasks from the approved plan. Follow all Mosaic Money guardrails. Research first. For runtime/UI validation, load Aspire skills first and use Aspire workflow to start/verify app resources. Then use Playwright skills for browser interaction and end-to-end checks. If the task is only writing/refactoring Playwright tests (without interactive browser driving), proceed with test authoring using webapp-testing conventions.
+    prompt: Implement the frontend tasks from the approved plan. Follow all Mosaic Money guardrails. Research first. For frontend architecture and AI UX work, load these skills as relevant: `.github/skills/vercel-react-best-practices/SKILL.md`, `.github/skills/vercel-composition-patterns/SKILL.md`, `.github/skills/next-best-practices/SKILL.md`, `.github/skills/next-cache-components/SKILL.md`, `.github/skills/web-design-guidelines/SKILL.md`, `.github/skills/building-components/SKILL.md`, `.github/skills/ai-sdk/SKILL.md`, `.github/skills/ai-elements/SKILL.md`, and `.github/skills/streamdown/SKILL.md`. For runtime/UI validation, load Aspire skills first and use Aspire workflow to start/verify app resources. Then use Playwright skills for browser interaction and end-to-end checks. If the task is only writing/refactoring Playwright tests (without interactive browser driving), proceed with test authoring using webapp-testing conventions.
     send: false
   - label: Build Mobile Slice
     agent: mosaic-money-mobile
@@ -56,6 +56,9 @@ Primary skills to load before planning or delegation:
 On-demand skills to load when relevant:
 - `git` for branch strategy, rebase/squash choices, and PR flow planning.
 - `microsoft-code-reference` for validating SDK/API feasibility before delegation.
+- `.github/skills/vercel-react-best-practices/SKILL.md`, `.github/skills/vercel-composition-patterns/SKILL.md`, `.github/skills/next-best-practices/SKILL.md`, `.github/skills/next-cache-components/SKILL.md`, and `.github/skills/next-upgrade/SKILL.md` for frontend architecture and Next.js quality/upgrade planning.
+- `.github/skills/web-design-guidelines/SKILL.md` and `.github/skills/building-components/SKILL.md` for UX, accessibility, and component system planning.
+- `.github/skills/ai-sdk/SKILL.md`, `.github/skills/ai-elements/SKILL.md`, and `.github/skills/streamdown/SKILL.md` for AI-native React experience planning.
 - `azure-prepare`, `azure-validate`, `azure-deploy` for Azure delivery planning.
 - `azure-resource-lookup`, `azure-compliance`, `azure-cost-optimization`, `azure-observability` for Azure ops planning and triage.
 - `agent-customization` when creating/fixing `.agent.md`, `.instructions.md`, or `SKILL.md` files.

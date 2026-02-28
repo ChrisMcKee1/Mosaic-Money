@@ -2,6 +2,8 @@
 
 This catalog tracks all currently available skills across repository, user, and extension locations, and maps them to Mosaic Money agents for just-in-time loading.
 
+Canonical project-local location: `.github/skills/`. If skills are installed into `.agents/skills/` by the Skills CLI, copy/migrate them into `.github/skills/` and reference the repo-local path in agent files.
+
 ## Skill directories audited
 - Repo-local skills: `.github/skills/`
 - User-level Copilot skills: `C:\Users\chrismckee\.copilot\skills\`
@@ -14,15 +16,25 @@ This catalog tracks all currently available skills across repository, user, and 
 ## Installed project-local skills
 - `.github/skills/agent-governance/SKILL.md`: risk classification, safety checks, and escalation workflow.
 - `.github/skills/agentic-eval/SKILL.md`: evaluation loop for quality-critical feature changes.
+- `.github/skills/ai-sdk/SKILL.md`: Vercel AI SDK usage, API verification workflow, and common error avoidance.
+- `.github/skills/ai-elements/SKILL.md`: AI-native chat component and UI composition guidance.
 - `.github/skills/aspire/SKILL.md`: Aspire CLI, MCP, orchestration and diagnostics baseline.
 - `.github/skills/aspire-mosaic-money/SKILL.md`: Mosaic Money-specific Aspire package/wiring policy.
+- `.github/skills/building-components/SKILL.md`: composable component API, accessibility, and theming guidance.
 - `.github/skills/frontend-design/SKILL.md`: distinctive production UI implementation guidance.
 - `.github/skills/gh-cli/SKILL.md`: GitHub CLI operations for repo/issue/PR/release/project flows.
 - `.github/skills/git-commit/SKILL.md`: conventional commit flow and safe staging.
 - `.github/skills/github-projects/SKILL.md`: Projects V2 IDs, status options, and GraphQL sync mutations.
+- `.github/skills/next-best-practices/SKILL.md`: Next.js architecture and runtime best practices.
+- `.github/skills/next-cache-components/SKILL.md`: Next.js 16 Cache Components and PPR guidance.
+- `.github/skills/next-upgrade/SKILL.md`: version upgrade and codemod guidance for Next.js.
 - `.github/skills/nuget-manager/SKILL.md`: safe NuGet add/update/remove workflow.
 - `.github/skills/playwright-cli/SKILL.md`: browser automation and interactive UI validation.
 - `.github/skills/prd/SKILL.md`: decomposition into scope, acceptance criteria, and delivery slices.
+- `.github/skills/streamdown/SKILL.md`: secure markdown streaming/rendering guidance for chat UX.
+- `.github/skills/vercel-composition-patterns/SKILL.md`: scalable React composition patterns.
+- `.github/skills/vercel-react-best-practices/SKILL.md`: React and Next.js performance optimization guidance.
+- `.github/skills/web-design-guidelines/SKILL.md`: web UX/accessibility/performance review standards.
 - `.github/skills/webapp-testing/SKILL.md`: Playwright UX/integration testing workflow.
 
 ## User-level shared skills
@@ -96,19 +108,19 @@ This catalog tracks all currently available skills across repository, user, and 
 ## Agent-to-skill mapping
 - Planner:
   - Baseline: `prd`, `agent-governance`, `agentic-eval`, `aspire-mosaic-money`, `github-projects`, `gh-cli`, `git-commit`, `microsoft-docs`.
-  - On-demand: `git`, `microsoft-code-reference`, `azure-prepare`, `azure-validate`, `azure-deploy`, `azure-compliance`, `azure-cost-optimization`, `azure-resource-lookup`, `agent-customization`.
+  - On-demand: `git`, `microsoft-code-reference`, `vercel-react-best-practices`, `vercel-composition-patterns`, `next-best-practices`, `next-cache-components`, `next-upgrade`, `web-design-guidelines`, `building-components`, `ai-sdk`, `ai-elements`, `streamdown`, `azure-prepare`, `azure-validate`, `azure-deploy`, `azure-compliance`, `azure-cost-optimization`, `azure-resource-lookup`, `agent-customization`.
 - Backend:
   - Baseline: `aspire`, `aspire-mosaic-money`, `nuget-manager`, `agent-governance`, `agentic-eval`, `git-commit`, `microsoft-code-reference`, `microsoft-docs`.
   - On-demand: `azure-postgres`, `azure-rbac`, `azure-observability`, `azure-diagnostics`, `azure-prepare`, `azure-validate`, `azure-deploy`.
 - Frontend:
-  - Baseline: `aspire`, `aspire-mosaic-money`, `webapp-testing`, `playwright-cli`, `agent-governance`, `agentic-eval`, `frontend-design`, `git-commit`.
-  - On-demand: `mcp-app`, `azure-hosted-copilot-sdk`, `azure-observability`, `azure-prepare`, `azure-validate`, `azure-deploy`.
+  - Baseline: `aspire`, `aspire-mosaic-money`, `webapp-testing`, `playwright-cli`, `agent-governance`, `agentic-eval`, `frontend-design`, `vercel-react-best-practices`, `vercel-composition-patterns`, `next-best-practices`, `web-design-guidelines`, `building-components`, `git-commit`.
+  - On-demand: `ai-sdk`, `ai-elements`, `streamdown`, `next-cache-components`, `next-upgrade`, `mcp-app`, `azure-hosted-copilot-sdk`, `azure-observability`, `azure-prepare`, `azure-validate`, `azure-deploy`.
 - Mobile:
   - Baseline: `agent-governance`, `agentic-eval`, `prd`, `frontend-design`, `git-commit`.
   - On-demand: `building-native-ui`, `native-data-fetching`, `expo-api-routes`, `expo-cicd-workflows`, `expo-deployment`, `expo-dev-client`, `expo-tailwind-setup`, `upgrading-expo`, `use-dom`.
 - AI:
   - Baseline: `agent-governance`, `agentic-eval`, `aspire`, `aspire-mosaic-money`, `nuget-manager`, `git-commit`, `microsoft-docs`, `microsoft-code-reference`.
-  - On-demand: `microsoft-foundry`, `agent-workflow-builder_ai_toolkit`, `azure-ai`, `azure-aigateway`, `azure-observability`, `azure-compliance`.
+  - On-demand: `ai-sdk`, `ai-elements`, `streamdown`, `microsoft-foundry`, `agent-workflow-builder_ai_toolkit`, `azure-ai`, `azure-aigateway`, `azure-observability`, `azure-compliance`.
 - DevOps:
   - Baseline: `aspire`, `aspire-mosaic-money`, `agent-governance`, `nuget-manager`, `gh-cli`, `github-projects`, `git-commit`, `microsoft-docs`.
   - On-demand: `azure-prepare`, `azure-validate`, `azure-deploy`, `azure-resource-lookup`, `azure-resource-visualizer`, `azure-compliance`, `azure-cost-optimization`, `azure-diagnostics`, `azure-observability`, `azure-rbac`.
