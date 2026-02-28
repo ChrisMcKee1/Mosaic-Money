@@ -11,6 +11,7 @@ test.describe('Plaid Onboarding Flow', () => {
     // Check if the Get Started button is visible
     const getStartedButton = page.locator('button', { hasText: 'Get Started' });
     await expect(getStartedButton).toBeVisible();
+    await expect(getStartedButton).toHaveClass(/bg-\[var\(--color-primary\)\]/);
 
     // Click the Get Started button
     await getStartedButton.click();
@@ -18,5 +19,6 @@ test.describe('Plaid Onboarding Flow', () => {
     // Wait for the Plaid Link button to appear
     const plaidLinkButton = page.locator('button', { hasText: 'Open Plaid Link' });
     await expect(plaidLinkButton).toBeVisible();
+    await expect(plaidLinkButton).toHaveClass(/bg-\[var\(--color-primary\)\]/);
   });
 });

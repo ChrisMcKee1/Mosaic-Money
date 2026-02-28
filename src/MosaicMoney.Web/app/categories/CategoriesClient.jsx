@@ -44,7 +44,7 @@ export function CategoriesClient({ transactions }) {
     name,
     spent: categorySpending[name],
     budget: mockBudgets[name] || 500, // Default budget if not found
-    color: `hsl(var(--chart-${(Object.keys(categorySpending).indexOf(name) % 5) + 1}))`
+    color: `var(--color-chart-${(Object.keys(categorySpending).indexOf(name) % 5) + 1})`
   })).sort((a, b) => b.spent - a.spent);
 
   const [selectedCategory, setSelectedCategory] = useState(categories[0] || null);
@@ -183,7 +183,7 @@ export function CategoriesClient({ transactions }) {
               height="100%"
             />
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <CurrencyDisplay amount={totalSpent} className="text-2xl font-display font-bold" />
+              <CurrencyDisplay amount={totalSpent} className="text-2xl font-display font-bold text-[var(--color-text-main)]" />
               <span className="text-xs text-[var(--color-text-muted)]">of ${totalBudget.toFixed(0)}</span>
             </div>
           </div>

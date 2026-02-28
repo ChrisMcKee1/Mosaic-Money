@@ -24,21 +24,38 @@ public static class CategoryLifecycleEndpoints
             bool includeArchived,
             CancellationToken cancellationToken) =>
         {
-            var actor = await ResolveActiveMemberAsync(httpContext, dbContext, cancellationToken);
-            if (actor.ErrorResult is not null)
+            ScopeResolutionResult resolvedScopeResult;
+            if (ApiEndpointHelpers.TryParseEnum<CategoryOwnerType>(scope, out var parsedScope)
+                && parsedScope == CategoryOwnerType.Platform)
             {
-                return actor.ErrorResult;
+                // Platform reads are auth-protected but do not require active household membership context.
+                resolvedScopeResult = ResolveScope(
+                    httpContext,
+                    scope,
+                    householdId,
+                    ownerUserId,
+                    actor: new ActiveMemberContext(Guid.Empty, Guid.Empty),
+                    allowPlatformMutation: true);
+            }
+            else
+            {
+                var actor = await ResolveActiveMemberAsync(httpContext, dbContext, cancellationToken);
+                if (actor.ErrorResult is not null)
+                {
+                    return actor.ErrorResult;
+                }
+
+                var actorContext = actor.Value!;
+
+                resolvedScopeResult = ResolveScope(
+                    httpContext,
+                    scope,
+                    householdId,
+                    ownerUserId,
+                    actorContext,
+                    allowPlatformMutation: true);
             }
 
-            var actorContext = actor.Value!;
-
-            var resolvedScopeResult = ResolveScope(
-                httpContext,
-                scope,
-                householdId,
-                ownerUserId,
-                actorContext,
-                allowPlatformMutation: true);
             if (resolvedScopeResult.ErrorResult is not null)
             {
                 return resolvedScopeResult.ErrorResult;

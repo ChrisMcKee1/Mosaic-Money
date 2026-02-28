@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
+using MosaicMoney.Api.Domain.Ledger.Embeddings;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -179,8 +180,12 @@ public static class TransactionsEndpoints
         group.MapPost("/transactions", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            CreateTransactionRequest request) =>
+            ITransactionEmbeddingQueueService embeddingQueueService,
+            ILoggerFactory loggerFactory,
+            CreateTransactionRequest request,
+            CancellationToken cancellationToken = default) =>
         {
+            var logger = loggerFactory.CreateLogger("MosaicMoney.Api.Transactions");
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
 
             if (request.Amount == 0)
@@ -301,17 +306,29 @@ public static class TransactionsEndpoints
 
             try
             {
-                await dbContext.SaveChangesAsync();
+                await dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException) when (!string.IsNullOrWhiteSpace(request.PlaidTransactionId))
             {
                 return ApiValidation.ToConflictResult(httpContext, "idempotency_conflict", "A transaction with the same PlaidTransactionId already exists.");
             }
 
+            try
+            {
+                await embeddingQueueService.EnqueueTransactionsAsync([transaction.Id], cancellationToken);
+            }
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                logger.LogError(
+                    ex,
+                    "Transaction {TransactionId} was created but enqueueing semantic embeddings failed.",
+                    transaction.Id);
+            }
+
             var response = await dbContext.EnrichedTransactions
                 .AsNoTracking()
                 .Include(x => x.Splits)
-                .FirstAsync(x => x.Id == transaction.Id);
+                .FirstAsync(x => x.Id == transaction.Id, cancellationToken);
 
             return Results.Created($"/api/v1/transactions/{transaction.Id}", ApiEndpointHelpers.MapTransaction(response));
         });

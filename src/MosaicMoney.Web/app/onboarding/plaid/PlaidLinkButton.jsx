@@ -35,7 +35,7 @@ export default function PlaidLinkButton({
     <button 
       onClick={() => open()} 
       disabled={!ready}
-      className="bg-black hover:bg-gray-800 text-[var(--color-button-ink)] font-medium py-2 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-primary-text)] font-medium py-2 px-6 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
     >
       Open Plaid Link
     </button>

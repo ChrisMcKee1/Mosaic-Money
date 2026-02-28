@@ -75,23 +75,23 @@ export default async function HomePage() {
   const rightPanel = (
     <div className="space-y-8">
       {/* Action Required Widget */}
-      <div className="group relative overflow-hidden rounded-2xl p-[1px] transition-all hover:shadow-[0_0_2rem_-0.5rem_var(--color-warning)]">
-        <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-warning)] via-orange-500 to-red-600 opacity-80 group-hover:opacity-100 transition-opacity" />
-        <div className="relative bg-black/40 backdrop-blur-xl rounded-[15px] p-5 h-full flex flex-col justify-between">
+      <div className="group relative overflow-hidden rounded-2xl p-[1px] transition-all hover:shadow-[0_0_2rem_-0.5rem_var(--color-warning)] border border-[var(--color-warning)]/30">
+        <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-warning-bg)] to-[var(--color-negative-bg)] opacity-100 transition-opacity" />
+        <div className="relative bg-[var(--color-surface)]/60 backdrop-blur-sm rounded-[15px] p-5 h-full flex flex-col justify-between">
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-sm font-medium text-white/90 flex items-center gap-2 uppercase tracking-wider">
-                <AlertCircle className="w-4 h-4 text-orange-400 animate-pulse" />
+              <h3 className="text-sm font-medium text-[var(--color-text-main)] flex items-center gap-2 uppercase tracking-wider">
+                <AlertCircle className="w-4 h-4 text-[var(--color-warning)] animate-pulse" />
                 Action Required
               </h3>
               <div className="mt-3 flex items-baseline gap-2">
-                <p className="text-4xl font-display font-bold text-white tracking-tight">{needsReviewCount}</p>
-                <p className="text-sm text-white/70 font-medium">transactions</p>
+                <p className="text-4xl font-display font-bold text-[var(--color-text-main)] tracking-tight">{needsReviewCount}</p>
+                <p className="text-sm text-[var(--color-text-muted)] font-medium">transactions</p>
               </div>
-              <p className="text-xs text-white/50 mt-1">Need your review to categorize</p>
+              <p className="text-xs text-[var(--color-text-subtle)] mt-1">Need your review to categorize</p>
             </div>
-            <Link href="/needs-review" className="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-all hover:scale-105 hover:-translate-y-0.5 border border-white/10">
-              <ArrowRight className="w-4 h-4 text-white" />
+            <Link href="/needs-review" className="p-2.5 bg-[var(--color-warning)]/10 hover:bg-[var(--color-warning)]/20 rounded-xl transition-all hover:scale-105 hover:-translate-y-0.5 border border-[var(--color-warning)]/20">
+              <ArrowRight className="w-4 h-4 text-[var(--color-warning)]" />
             </Link>
           </div>
         </div>

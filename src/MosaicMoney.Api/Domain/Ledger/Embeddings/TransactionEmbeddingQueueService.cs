@@ -30,7 +30,14 @@ public sealed class TransactionEmbeddingQueueService(
 
         var transactions = await dbContext.EnrichedTransactions
             .Where(x => ids.Contains(x.Id))
-            .Select(x => new { x.Id, x.Description })
+            .Select(x => new
+            {
+                x.Id,
+                x.Description,
+                x.Amount,
+                x.UserNote,
+                x.AgentNote,
+            })
             .ToListAsync(cancellationToken);
 
         if (transactions.Count == 0)
@@ -51,13 +58,17 @@ public sealed class TransactionEmbeddingQueueService(
         var enqueuedCount = 0;
         foreach (var transaction in transactions)
         {
-            var normalizedDescription = EmbeddingTextHasher.Normalize(transaction.Description);
-            if (normalizedDescription.Length == 0)
+            var semanticDocument = TransactionSemanticSearchDocument.BuildSearchDocument(
+                transaction.Description,
+                transaction.Amount,
+                transaction.UserNote,
+                transaction.AgentNote);
+            if (semanticDocument.Length == 0)
             {
                 continue;
             }
 
-            var hash = EmbeddingTextHasher.ComputeHash(normalizedDescription);
+            var hash = EmbeddingTextHasher.ComputeHash(semanticDocument);
 
             var key = BuildKey(transaction.Id, hash);
             if (!existingByKey.TryGetValue(key, out var queueItem))

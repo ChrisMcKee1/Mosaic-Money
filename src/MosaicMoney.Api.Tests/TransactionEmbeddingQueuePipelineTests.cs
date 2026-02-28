@@ -66,7 +66,7 @@ public sealed class TransactionEmbeddingQueuePipelineTests
         {
             Id = Guid.NewGuid(),
             TransactionId = transaction.Id,
-            DescriptionHash = EmbeddingTextHasher.ComputeHash(transaction.Description),
+            DescriptionHash = TransactionSemanticSearchDocument.ComputeHash(transaction),
             Status = EmbeddingQueueStatus.Pending,
             AttemptCount = 0,
             MaxAttempts = 2,
@@ -105,7 +105,7 @@ public sealed class TransactionEmbeddingQueuePipelineTests
     {
         await using var dbContext = CreateDbContext();
         var transaction = await SeedTransactionAsync(dbContext, "Duplicate Merchant", -44.10m);
-        var descriptionHash = EmbeddingTextHasher.ComputeHash(transaction.Description);
+        var descriptionHash = TransactionSemanticSearchDocument.ComputeHash(transaction);
 
         dbContext.TransactionEmbeddingQueueItems.AddRange(
             new TransactionEmbeddingQueueItem
@@ -158,7 +158,7 @@ public sealed class TransactionEmbeddingQueuePipelineTests
         {
             Id = Guid.NewGuid(),
             TransactionId = transaction.Id,
-            DescriptionHash = EmbeddingTextHasher.ComputeHash("Old Merchant"),
+            DescriptionHash = TransactionSemanticSearchDocument.ComputeHash("Old Merchant", transaction.Amount, null, null),
             Status = EmbeddingQueueStatus.Pending,
             AttemptCount = 0,
             MaxAttempts = 5,
@@ -183,6 +183,44 @@ public sealed class TransactionEmbeddingQueuePipelineTests
         Assert.Equal(EmbeddingQueueStatus.Succeeded, queueItem.Status);
         Assert.Equal("stale_payload_skipped", queueItem.LastError);
         Assert.Null(transaction.DescriptionEmbeddingHash);
+    }
+
+    [Fact]
+    public async Task ProcessDueItemsAsync_UsesNotesInSemanticDocumentHash()
+    {
+        await using var dbContext = CreateDbContext();
+        var transaction = await SeedTransactionAsync(dbContext, "Coffee shop purchase", -11.25m);
+        transaction.UserNote = "weekly cappuccino";
+        await dbContext.SaveChangesAsync();
+
+        var originalHash = TransactionSemanticSearchDocument.ComputeHash(transaction);
+
+        dbContext.TransactionEmbeddingQueueItems.Add(new TransactionEmbeddingQueueItem
+        {
+            Id = Guid.NewGuid(),
+            TransactionId = transaction.Id,
+            DescriptionHash = originalHash,
+            Status = EmbeddingQueueStatus.Pending,
+            AttemptCount = 0,
+            MaxAttempts = 5,
+            EnqueuedAtUtc = DateTime.UtcNow,
+            NextAttemptAtUtc = DateTime.UtcNow.AddSeconds(-1),
+        });
+
+        transaction.UserNote = "weekly cappuccino and pastry";
+        await dbContext.SaveChangesAsync();
+
+        var processor = new TransactionEmbeddingQueueProcessor(
+            dbContext,
+            new CountingEmbeddingGenerator(),
+            NullLogger<TransactionEmbeddingQueueProcessor>.Instance);
+
+        var result = await processor.ProcessDueItemsAsync(1);
+        var queueItem = await dbContext.TransactionEmbeddingQueueItems.SingleAsync();
+
+        Assert.Equal(1, result.SkippedStaleCount);
+        Assert.Equal(EmbeddingQueueStatus.Succeeded, queueItem.Status);
+        Assert.Equal("stale_payload_skipped", queueItem.LastError);
     }
 
     private static MosaicMoneyDbContext CreateDbContext()

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
+using MosaicMoney.Api.Domain.Ledger.Embeddings;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -12,8 +13,12 @@ public static class ReviewActionEndpoints
         group.MapPost("/review-actions", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            ReviewActionRequest request) =>
+            ITransactionEmbeddingQueueService embeddingQueueService,
+            ILoggerFactory loggerFactory,
+            ReviewActionRequest request,
+            CancellationToken cancellationToken = default) =>
         {
+            var logger = loggerFactory.CreateLogger("MosaicMoney.Api.ReviewActions");
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
             var actionValue = request.Action?.Trim() ?? string.Empty;
             var parsedAction = default(TransactionReviewAction);
@@ -107,7 +112,19 @@ public static class ReviewActionEndpoints
             transaction.AgentNote = request.AgentNote ?? transaction.AgentNote;
             transaction.LastModifiedAtUtc = DateTime.UtcNow;
 
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            try
+            {
+                await embeddingQueueService.EnqueueTransactionsAsync([transaction.Id], cancellationToken);
+            }
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                logger.LogError(
+                    ex,
+                    "Review action saved for transaction {TransactionId}, but semantic embedding enqueue failed.",
+                    transaction.Id);
+            }
 
             return Results.Ok(ApiEndpointHelpers.MapTransaction(transaction));
         });

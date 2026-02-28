@@ -51,8 +51,9 @@ public sealed class TransactionEmbeddingQueueProcessor(
                     throw new InvalidOperationException("Queue item references a transaction that no longer exists.");
                 }
 
-                var currentDescriptionHash = EmbeddingTextHasher.ComputeHash(transaction.Description);
-                if (!string.Equals(currentDescriptionHash, queueItem.DescriptionHash, StringComparison.Ordinal))
+                var semanticDocument = TransactionSemanticSearchDocument.BuildSearchDocument(transaction);
+                var currentDocumentHash = EmbeddingTextHasher.ComputeHash(semanticDocument);
+                if (!string.Equals(currentDocumentHash, queueItem.DescriptionHash, StringComparison.Ordinal))
                 {
                     MarkSucceeded(queueItem, now, "stale_payload_skipped");
                     skippedStaleCount++;
@@ -70,7 +71,7 @@ public sealed class TransactionEmbeddingQueueProcessor(
                     continue;
                 }
 
-                var embedding = await embeddingGenerator.GenerateEmbeddingAsync(transaction.Description, cancellationToken);
+                var embedding = await embeddingGenerator.GenerateEmbeddingAsync(semanticDocument, cancellationToken);
                 transaction.DescriptionEmbedding = new Vector(embedding);
                 transaction.DescriptionEmbeddingHash = queueItem.DescriptionHash;
                 transaction.LastModifiedAtUtc = now;

@@ -80,6 +80,7 @@ These instructions are always on for this repository.
 - `docs/agent-context/prd-agentic-context.md`
 - `docs/agent-context/aspire-dotnet-integration-policy.md`
 - `docs/agent-context/aspire-javascript-frontend-policy.md`
+- `docs/agent-context/semantic-search-pattern.md`
 - `docs/agent-context/secrets-and-configuration-playbook.md`
 - `docs/agent-context/skills-catalog.md`
 - `.github/instructions/*.instructions.md`

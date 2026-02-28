@@ -124,6 +124,39 @@ public sealed class CategoryLifecycleEndpointsTests
     }
 
     [Fact]
+    public async Task GetCategories_PlatformScope_DoesNotRequireHouseholdMemberContext_ButSharedScopeStillDoes()
+    {
+        await using var app = await CreateApiAsync(dbContext =>
+        {
+            dbContext.Categories.Add(new Category
+            {
+                Id = Guid.CreateVersion7(),
+                Name = "Platform Baseline",
+                DisplayOrder = 0,
+                OwnerType = CategoryOwnerType.Platform,
+                HouseholdId = null,
+                OwnerUserId = null,
+                CreatedAtUtc = DateTime.UtcNow,
+                LastModifiedAtUtc = DateTime.UtcNow,
+            });
+        });
+
+        var client = CreateAuthorizedClientWithoutHouseholdContext(app);
+
+        var platformResponse = await client.GetAsync("/api/v1/categories?scope=Platform&includeArchived=false");
+        Assert.Equal(HttpStatusCode.OK, platformResponse.StatusCode);
+
+        var platformCategories = await platformResponse.Content.ReadFromJsonAsync<List<CategoryLifecycleDto>>();
+        Assert.NotNull(platformCategories);
+        var platformCategory = Assert.Single(platformCategories!);
+        Assert.Equal("Platform", platformCategory.OwnerType);
+        Assert.Equal("Platform Baseline", platformCategory.Name);
+
+        var sharedResponse = await client.GetAsync("/api/v1/categories?scope=HouseholdShared&includeArchived=false");
+        Assert.Equal(HttpStatusCode.Forbidden, sharedResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task PlatformScopeCategoryCrud_WithOperatorAccess_Succeeds_AndWritesAuditEntries()
     {
         Guid actorHouseholdUserId = Guid.Empty;
@@ -632,6 +665,14 @@ public sealed class CategoryLifecycleEndpointsTests
             client.DefaultRequestHeaders.Add(TaxonomyOperatorOptions.OperatorApiKeyHeaderName, operatorKeyOverride ?? TestOperatorApiKey);
         }
 
+        return client;
+    }
+
+    private static HttpClient CreateAuthorizedClientWithoutHouseholdContext(WebApplication app)
+    {
+        var client = app.GetTestClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateValidToken());
+        client.DefaultRequestHeaders.Remove("X-Mosaic-Household-User-Id");
         return client;
     }
 

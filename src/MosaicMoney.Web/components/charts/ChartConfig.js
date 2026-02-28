@@ -106,7 +106,9 @@ export const getDonutOptions = (theme = "dark") => {
       mode,
     },
     stroke: {
-      show: false,
+      show: true,
+      colors: ['var(--color-surface)'],
+      width: 2,
     },
     dataLabels: {
       enabled: false,

@@ -194,7 +194,7 @@ export function AccountsClient({ initialAccounts }) {
       actions={
         <Link 
           href="/onboarding/plaid"
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-white text-sm font-medium rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-primary)] text-[var(--color-primary-text)] text-sm font-medium rounded-lg hover:bg-[var(--color-primary-hover)] transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Add Account

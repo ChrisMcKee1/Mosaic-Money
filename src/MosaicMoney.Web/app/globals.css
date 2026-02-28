@@ -8,6 +8,7 @@
 
   --color-primary: #00F0FF;
   --color-primary-hover: #38BDF8;
+  --color-primary-text: #000000;
 
   --color-positive: #00FF94;
   --color-positive-bg: rgba(0, 255, 148, 0.1);
@@ -44,6 +45,12 @@
     --color-secondary-text: #E5E7EB;
     --color-button-ink: #f8fafc;
 
+    --color-chart-1: #00F0FF;
+    --color-chart-2: #FF3366;
+    --color-chart-3: #F59E0B;
+    --color-chart-4: #00FF94;
+    --color-chart-5: #A855F7;
+
     --sidebar-brand-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
     color-scheme: dark;
   }
@@ -56,6 +63,7 @@
 
     --color-primary: #0ea5e9;
     --color-primary-hover: #0284c7;
+    --color-primary-text: #ffffff;
 
     --color-positive: #15803d;
     --color-positive-bg: rgba(21, 128, 61, 0.1);
@@ -84,6 +92,12 @@
     --color-secondary-border: #cbd5e1;
     --color-secondary-text: #1e293b;
     --color-button-ink: #f8fafc;
+
+    --color-chart-1: #0ea5e9;
+    --color-chart-2: #be123c;
+    --color-chart-3: #b45309;
+    --color-chart-4: #15803d;
+    --color-chart-5: #7e22ce;
 
     --sidebar-brand-shadow: 0 8px 20px rgba(15, 23, 42, 0.14);
     color-scheme: light;
