@@ -30,7 +30,7 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Done |
 | AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | In Review |
 | AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile parity for taxonomy management with offline-safe mutation queue and sync reconciliation. | Not Started |
-| AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform-managed taxonomy tables | AP0-BE-03 | Operator-only admin lane with protected access, change provenance, and rollback-safe workflows. | Not Started |
+| AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform-managed taxonomy tables | AP0-BE-03 | Operator-only admin lane with protected access, change provenance, and rollback-safe workflows. | In Review |
 | AP0-AI-01 | AI | Taxonomy readiness gates for ingestion and AI classification fill-rate | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks and evaluator scenarios improving fill-rates without policy regressions. | Not Started |
 | AP0-QA-01 | QA | AP0 discrepancy closure release gate and evidence pack | AP0-BE-01, AP0-BE-02, AP0-BE-03, AP0-FE-01, AP0-MOB-01, AP0-OPS-01, AP0-AI-01 | SQL/API/web/mobile/AI evidence pack proving discrepancy closure and ownership/auth boundary compliance. | Not Started |
 
@@ -87,3 +87,11 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 - Validation evidence:
 - `npm run build` in `src/MosaicMoney.Web` (pass).
 - `npx playwright test tests/e2e/settings.spec.js tests/e2e/settings-categories.spec.js` in `src/MosaicMoney.Web` (4 passed, 0 failed).
+
+## Update Note (2026-02-27, AP0-OPS-01 Implementation)
+- Planner moved `AP0-OPS-01` (`#149`) to `In Review` after implementing operator-only platform taxonomy mutation controls in the backend lifecycle lane.
+- Platform category/subcategory mutations now require both a valid `X-Mosaic-Operator-Key` and an allowlisted authenticated Clerk subject (`TaxonomyOperator:AllowedAuthSubjectsCsv`), preserving fail-closed behavior when operator credentials are absent.
+- Change provenance and rollback safety remain enforced through existing taxonomy lifecycle audit entries and archive-first delete semantics.
+- Configuration and secret contract updates were applied in AppHost/API placeholders and documented in `docs/agent-context/secrets-and-configuration-playbook.md`.
+- Validation evidence:
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~CategoryLifecycleEndpointsTests"` (8 passed, 0 failed), including operator-authorized platform CRUD coverage and existing platform-deny regression checks.

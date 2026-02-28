@@ -168,7 +168,7 @@ $issues = @(
     @{ num=146; nid="I_kwDORVI-G87unDtL"; status="Done" } # AP0-BE-02
     @{ num=147; nid="I_kwDORVI-G87unDuS"; status="In Review" } # AP0-FE-01
     @{ num=148; nid="I_kwDORVI-G87unDvJ"; status="Not Started" } # AP0-MOB-01
-    @{ num=149; nid="I_kwDORVI-G87unDw8"; status="Not Started" } # AP0-OPS-01
+    @{ num=149; nid="I_kwDORVI-G87unDw8"; status="In Review" } # AP0-OPS-01
     @{ num=150; nid="I_kwDORVI-G87unDx4"; status="Not Started" } # AP0-AI-01
     @{ num=151; nid="I_kwDORVI-G87unDy1"; status="Not Started" } # AP0-QA-01
     @{ num=152; nid="I_kwDORVI-G87unEX6"; status="Done" } # AP0-BE-03

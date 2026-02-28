@@ -40,6 +40,8 @@ var plaidSecret = builder.AddParameter("plaid-secret", secret: true);
 var clerkPublishableKey = builder.AddParameter("clerk-publishable-key");
 var clerkSecretKey = builder.AddParameter("clerk-secret-key", secret: true);
 var clerkIssuer = builder.AddParameter("clerk-issuer");
+var taxonomyOperatorApiKey = builder.AddParameter("taxonomy-operator-api-key", secret: true);
+var taxonomyOperatorAllowedSubjects = builder.AddParameter("taxonomy-operator-allowed-subjects");
 var azureOpenAiEndpoint = builder.AddParameter("azure-openai-endpoint");
 var azureOpenAiApiKey = builder.AddParameter("azure-openai-api-key", secret: true);
 var azureOpenAiEmbeddingDeployment = builder.AddParameter("azure-openai-embedding-deployment");
@@ -72,6 +74,8 @@ var api = builder
 	.WithEnvironment("Plaid__Secret", plaidSecret)
 	.WithEnvironment("Authentication__Clerk__Issuer", clerkIssuer)
 	.WithEnvironment("Authentication__Clerk__SecretKey", clerkSecretKey)
+	.WithEnvironment("TaxonomyOperator__ApiKey", taxonomyOperatorApiKey)
+	.WithEnvironment("TaxonomyOperator__AllowedAuthSubjectsCsv", taxonomyOperatorAllowedSubjects)
 	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Embeddings__AzureOpenAI__Deployment", azureOpenAiEmbeddingDeployment)

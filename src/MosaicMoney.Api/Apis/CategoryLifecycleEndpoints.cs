@@ -1,4 +1,9 @@
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using MosaicMoney.Api.Authentication;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
@@ -59,6 +64,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             CreateCategoryRequest request,
             CancellationToken cancellationToken) =>
         {
@@ -80,6 +86,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var resolvedScopeResult = ResolveScope(
                 httpContext,
@@ -87,7 +94,7 @@ public static class CategoryLifecycleEndpoints
                 request.HouseholdId,
                 request.OwnerUserId,
                 actorContext,
-                allowPlatformMutation: false);
+                allowPlatformMutation);
             if (resolvedScopeResult.ErrorResult is not null)
             {
                 return resolvedScopeResult.ErrorResult;
@@ -147,6 +154,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             Guid id,
             UpdateCategoryRequest request,
             CancellationToken cancellationToken) =>
@@ -169,6 +177,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var category = await dbContext.Categories
                 .Include(x => x.Subcategories)
@@ -178,7 +187,7 @@ public static class CategoryLifecycleEndpoints
                 return ApiValidation.ToNotFoundResult(httpContext, "category_not_found", "The requested category was not found.");
             }
 
-            var authorizationResult = AuthorizeCategoryMutation(httpContext, category, actorContext);
+            var authorizationResult = AuthorizeCategoryMutation(httpContext, category, actorContext, allowPlatformMutation);
             if (authorizationResult is not null)
             {
                 return authorizationResult;
@@ -245,6 +254,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             Guid id,
             bool? allowLinkedTransactions,
             CancellationToken cancellationToken) =>
@@ -258,6 +268,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var category = await dbContext.Categories
                 .Include(x => x.Subcategories)
@@ -267,7 +278,7 @@ public static class CategoryLifecycleEndpoints
                 return ApiValidation.ToNotFoundResult(httpContext, "category_not_found", "The requested category was not found.");
             }
 
-            var authorizationResult = AuthorizeCategoryMutation(httpContext, category, actorContext);
+            var authorizationResult = AuthorizeCategoryMutation(httpContext, category, actorContext, allowPlatformMutation);
             if (authorizationResult is not null)
             {
                 return authorizationResult;
@@ -342,6 +353,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             ReorderCategoriesRequest request,
             CancellationToken cancellationToken) =>
         {
@@ -366,6 +378,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var resolvedScopeResult = ResolveScope(
                 httpContext,
@@ -373,7 +386,7 @@ public static class CategoryLifecycleEndpoints
                 request.HouseholdId,
                 request.OwnerUserId,
                 actorContext,
-                allowPlatformMutation: false);
+                allowPlatformMutation);
             if (resolvedScopeResult.ErrorResult is not null)
             {
                 return resolvedScopeResult.ErrorResult;
@@ -460,6 +473,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             CreateSubcategoryRequest request,
             CancellationToken cancellationToken) =>
         {
@@ -481,6 +495,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var parentCategory = await dbContext.Categories
                 .Include(x => x.Subcategories)
@@ -492,7 +507,7 @@ public static class CategoryLifecycleEndpoints
                     [new ApiValidationError(nameof(request.CategoryId), "CategoryId does not exist.")]);
             }
 
-            var authorizationResult = AuthorizeCategoryMutation(httpContext, parentCategory, actorContext);
+            var authorizationResult = AuthorizeCategoryMutation(httpContext, parentCategory, actorContext, allowPlatformMutation);
             if (authorizationResult is not null)
             {
                 return authorizationResult;
@@ -559,6 +574,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             Guid id,
             UpdateSubcategoryRequest request,
             CancellationToken cancellationToken) =>
@@ -581,6 +597,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var subcategory = await dbContext.Subcategories
                 .Include(x => x.Category)
@@ -590,7 +607,7 @@ public static class CategoryLifecycleEndpoints
                 return ApiValidation.ToNotFoundResult(httpContext, "subcategory_not_found", "The requested subcategory was not found.");
             }
 
-            var authorizationResult = AuthorizeCategoryMutation(httpContext, subcategory.Category, actorContext);
+            var authorizationResult = AuthorizeCategoryMutation(httpContext, subcategory.Category, actorContext, allowPlatformMutation);
             if (authorizationResult is not null)
             {
                 return authorizationResult;
@@ -671,6 +688,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             Guid id,
             ReparentSubcategoryRequest request,
             CancellationToken cancellationToken) =>
@@ -693,6 +711,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var subcategory = await dbContext.Subcategories
                 .Include(x => x.Category)
@@ -702,7 +721,7 @@ public static class CategoryLifecycleEndpoints
                 return ApiValidation.ToNotFoundResult(httpContext, "subcategory_not_found", "The requested subcategory was not found.");
             }
 
-            var sourceAuthorizationResult = AuthorizeCategoryMutation(httpContext, subcategory.Category, actorContext);
+            var sourceAuthorizationResult = AuthorizeCategoryMutation(httpContext, subcategory.Category, actorContext, allowPlatformMutation);
             if (sourceAuthorizationResult is not null)
             {
                 return sourceAuthorizationResult;
@@ -718,7 +737,7 @@ public static class CategoryLifecycleEndpoints
                     [new ApiValidationError(nameof(request.TargetCategoryId), "TargetCategoryId does not exist.")]);
             }
 
-            var targetAuthorizationResult = AuthorizeCategoryMutation(httpContext, targetCategory, actorContext);
+            var targetAuthorizationResult = AuthorizeCategoryMutation(httpContext, targetCategory, actorContext, allowPlatformMutation);
             if (targetAuthorizationResult is not null)
             {
                 return targetAuthorizationResult;
@@ -795,6 +814,7 @@ public static class CategoryLifecycleEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ICategoryLifecycleAuditTrail auditTrail,
+            IOptions<TaxonomyOperatorOptions> operatorOptions,
             Guid id,
             bool? allowLinkedTransactions,
             CancellationToken cancellationToken) =>
@@ -808,6 +828,7 @@ public static class CategoryLifecycleEndpoints
             }
 
             var actorContext = actor.Value!;
+            var allowPlatformMutation = HasValidPlatformMutationAccess(httpContext, operatorOptions.Value);
 
             var subcategory = await dbContext.Subcategories
                 .Include(x => x.Category)
@@ -817,7 +838,7 @@ public static class CategoryLifecycleEndpoints
                 return ApiValidation.ToNotFoundResult(httpContext, "subcategory_not_found", "The requested subcategory was not found.");
             }
 
-            var authorizationResult = AuthorizeCategoryMutation(httpContext, subcategory.Category, actorContext);
+            var authorizationResult = AuthorizeCategoryMutation(httpContext, subcategory.Category, actorContext, allowPlatformMutation);
             if (authorizationResult is not null)
             {
                 return authorizationResult;
@@ -948,10 +969,19 @@ public static class CategoryLifecycleEndpoints
         return (maxDisplayOrder ?? -1) + 1;
     }
 
-    private static IResult? AuthorizeCategoryMutation(HttpContext httpContext, Category category, ActiveMemberContext actor)
+    private static IResult? AuthorizeCategoryMutation(
+        HttpContext httpContext,
+        Category category,
+        ActiveMemberContext actor,
+        bool allowPlatformMutation)
     {
         if (category.OwnerType == CategoryOwnerType.Platform)
         {
+            if (allowPlatformMutation)
+            {
+                return null;
+            }
+
             return ApiValidation.ToForbiddenResult(
                 httpContext,
                 "platform_scope_mutation_denied",
@@ -971,6 +1001,45 @@ public static class CategoryLifecycleEndpoints
                 httpContext,
                 "category_scope_access_denied",
                 "The authenticated household member does not have access to mutate this category scope.");
+    }
+
+    private static bool HasValidPlatformMutationAccess(HttpContext httpContext, TaxonomyOperatorOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.ApiKey))
+        {
+            return false;
+        }
+
+        if (!httpContext.Request.Headers.TryGetValue(TaxonomyOperatorOptions.OperatorApiKeyHeaderName, out var headerValues))
+        {
+            return false;
+        }
+
+        var suppliedApiKey = headerValues.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(suppliedApiKey))
+        {
+            return false;
+        }
+
+        var expectedKeyBytes = Encoding.UTF8.GetBytes(options.ApiKey);
+        var suppliedKeyBytes = Encoding.UTF8.GetBytes(suppliedApiKey.Trim());
+        if (!CryptographicOperations.FixedTimeEquals(expectedKeyBytes, suppliedKeyBytes))
+        {
+            return false;
+        }
+
+        var authSubject = httpContext.User.FindFirstValue("sub")
+            ?? httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(authSubject))
+        {
+            return false;
+        }
+
+        var allowedSubjects = options.AllowedAuthSubjectsCsv
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        return allowedSubjects
+            .Any(subject => string.Equals(subject, authSubject, StringComparison.Ordinal));
     }
 
     private static ScopeResolutionResult ResolveScope(

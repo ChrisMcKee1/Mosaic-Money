@@ -24,6 +24,7 @@ builder.AddNpgsqlDbContext<MosaicMoneyDbContext>(
     configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
 builder.Services.AddDataProtection();
 builder.Services.AddClerkJwtAuthentication(builder.Configuration);
+builder.Services.Configure<TaxonomyOperatorOptions>(builder.Configuration.GetSection(TaxonomyOperatorOptions.SectionName));
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AccountAccessPolicyBackfillService>();
 builder.Services.Configure<TaxonomyBackfillOptions>(builder.Configuration.GetSection(TaxonomyBackfillOptions.SectionName));

@@ -255,6 +255,42 @@ Notes:
 - Treat `NEXT_PUBLIC_*` and `EXPO_PUBLIC_*` values as public.
 - For complete tenant/provider steps (Microsoft SSO and passkeys), follow `docs/agent-context/clerk-tenant-provider-runbook.md`.
 
+## Platform taxonomy operator lane contract (AP0-OPS-01)
+
+Platform taxonomy mutations are fail-closed by default and require both:
+
+1. A valid operator API key header: `X-Mosaic-Operator-Key`
+2. An authenticated Clerk subject (`sub`) present in an operator allowlist
+
+Required AppHost parameter keys:
+
+1. `Parameters:taxonomy-operator-api-key` (secret)
+2. `Parameters:taxonomy-operator-allowed-subjects` (comma-separated non-secret `sub` allowlist)
+
+Injected runtime keys (API):
+
+1. `TaxonomyOperator__ApiKey`
+2. `TaxonomyOperator__AllowedAuthSubjectsCsv`
+
+API placeholder contract keys (`src/MosaicMoney.Api/appsettings.json`):
+
+1. `TaxonomyOperator:ApiKey`
+2. `TaxonomyOperator:AllowedAuthSubjectsCsv`
+
+File-based AppHost commands (this repository):
+
+```bash
+dotnet user-secrets set "Parameters:taxonomy-operator-api-key" "<strong-operator-key>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:taxonomy-operator-allowed-subjects" "<clerk-sub-1>,<clerk-sub-2>" --file src/apphost.cs
+dotnet user-secrets list --file src/apphost.cs
+```
+
+Notes:
+
+- Never commit operator API keys or real allowlist values.
+- The operator key must only be supplied by trusted internal tooling/server actions, never exposed via `NEXT_PUBLIC_*` variables.
+- Keep platform taxonomy actions archive-first for rollback-safe workflows.
+
 ## Azure AI Foundry and Azure OpenAI local setup contract
 
 Mosaic Money keeps AI model routing keys in AppHost user-secrets and injects them into API/worker through `WithEnvironment(...)`.

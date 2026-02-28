@@ -30,6 +30,7 @@ public sealed class CategoryLifecycleEndpointsTests
     private const string TestSigningKey = "mosaic-money-auth-tests-signing-key-2026";
     private const string TestAuthProvider = "clerk";
     private const string TestAuthSubject = "category_lifecycle_test_user";
+    private const string TestOperatorApiKey = "taxonomy-operator-test-key";
 
     [Fact]
     public async Task PostCategory_UserScopeOwnerMismatch_ReturnsForbidden()
@@ -120,6 +121,59 @@ public sealed class CategoryLifecycleEndpointsTests
         });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PlatformScopeCategoryCrud_WithOperatorAccess_Succeeds_AndWritesAuditEntries()
+    {
+        Guid actorHouseholdUserId = Guid.Empty;
+
+        await using var app = await CreateApiAsync(dbContext =>
+        {
+            var seeded = SeedActorMembership(dbContext);
+            actorHouseholdUserId = seeded.ActorHouseholdUserId;
+        });
+
+        var client = CreateAuthorizedClient(app, actorHouseholdUserId, includeOperatorKey: true);
+
+        var createResponse = await client.PostAsJsonAsync("/api/v1/categories", new CreateCategoryRequest
+        {
+            Name = "Platform Ops",
+            Scope = nameof(CategoryOwnerType.Platform),
+        });
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+        var createdCategory = await createResponse.Content.ReadFromJsonAsync<CategoryLifecycleDto>();
+        Assert.NotNull(createdCategory);
+
+        var renameResponse = await client.PatchAsJsonAsync($"/api/v1/categories/{createdCategory!.Id}", new UpdateCategoryRequest
+        {
+            Name = "Platform Ops Renamed",
+        });
+
+        Assert.Equal(HttpStatusCode.OK, renameResponse.StatusCode);
+
+        var archiveResponse = await client.DeleteAsync($"/api/v1/categories/{createdCategory.Id}?allowLinkedTransactions=true");
+        Assert.Equal(HttpStatusCode.OK, archiveResponse.StatusCode);
+
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<MosaicMoneyDbContext>();
+
+        var category = await dbContext.Categories
+            .AsNoTracking()
+            .FirstAsync(x => x.Id == createdCategory.Id);
+        Assert.True(category.IsArchived);
+        Assert.Equal(CategoryOwnerType.Platform, category.OwnerType);
+
+        var operations = await dbContext.TaxonomyLifecycleAuditEntries
+            .AsNoTracking()
+            .Where(x => x.EntityType == "Category" && x.EntityId == createdCategory.Id)
+            .Select(x => x.Operation)
+            .ToListAsync();
+
+        Assert.Contains("Created", operations);
+        Assert.Contains("Updated", operations);
+        Assert.Contains("Archived", operations);
     }
 
     [Fact]
@@ -386,11 +440,19 @@ public sealed class CategoryLifecycleEndpointsTests
         Assert.Equal(subcategoryId, transaction.SubcategoryId);
     }
 
-    private static HttpClient CreateAuthorizedClient(WebApplication app, Guid actorHouseholdUserId)
+    private static HttpClient CreateAuthorizedClient(
+        WebApplication app,
+        Guid actorHouseholdUserId,
+        bool includeOperatorKey = false)
     {
         var client = app.GetTestClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateValidToken());
         client.DefaultRequestHeaders.Add("X-Mosaic-Household-User-Id", actorHouseholdUserId.ToString());
+        if (includeOperatorKey)
+        {
+            client.DefaultRequestHeaders.Add(TaxonomyOperatorOptions.OperatorApiKeyHeaderName, TestOperatorApiKey);
+        }
+
         return client;
     }
 
@@ -437,6 +499,8 @@ public sealed class CategoryLifecycleEndpointsTests
         {
             ["Authentication:Clerk:Issuer"] = TestIssuer,
             ["Authentication:Clerk:SecretKey"] = "test-secret-key",
+            ["TaxonomyOperator:ApiKey"] = TestOperatorApiKey,
+            ["TaxonomyOperator:AllowedAuthSubjectsCsv"] = TestAuthSubject,
         };
 
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -455,6 +519,7 @@ public sealed class CategoryLifecycleEndpointsTests
         builder.Services.AddSingleton(TimeProvider.System);
 
         builder.Services.AddClerkJwtAuthentication(builder.Configuration);
+        builder.Services.Configure<TaxonomyOperatorOptions>(builder.Configuration.GetSection(TaxonomyOperatorOptions.SectionName));
 
         builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
         {
