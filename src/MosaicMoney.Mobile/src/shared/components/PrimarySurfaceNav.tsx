@@ -5,6 +5,7 @@ import { theme } from "../../theme/tokens";
 const primaryRoutes = [
   { label: "Needs Review", route: "/" },
   { label: "Dashboard", route: "/dashboard" },
+  { label: "Assistant", route: "/assistant" },
   { label: "Transactions", route: "/transactions" },
   { label: "Accounts", route: "/accounts" },
   { label: "Categories", route: "/categories" },

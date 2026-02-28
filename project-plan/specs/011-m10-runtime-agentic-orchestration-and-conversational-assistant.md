@@ -47,8 +47,8 @@ Close the runtime product-agent architecture gap by introducing a worker-owned, 
 | MM-AI-15 | AI | Specialist evaluator packs and replay artifacts | MM-AI-12, MM-AI-13, MM-AI-14 | Role-level evaluator datasets, pass/fail thresholds, and reproducible replay artifacts for each specialist lane. | Done |
 | MM-FE-27 | Web | Assistant shell and approval card UX | MM-AI-14, MM-FE-22 | Global assistant panel with conversational thread, approval cards, and explicit high-impact action confirmations. | Done |
 | MM-FE-28 | Web | Agent provenance and explainability timeline | MM-FE-27, MM-BE-27 | UI for run/stage provenance, confidence, and rationale summaries without exposing disallowed transcript/tool dumps. | Done |
-| MM-MOB-16 | Mobile | Assistant parity with offline-safe queue | MM-AI-14, MM-MOB-14 | Mobile assistant screen with queued outbound prompts, async update handling, and parity approval interactions. | Not Started |
-| MM-QA-06 | QA | Multi-agent runtime release gate | MM-ASP-13, MM-AI-15, MM-FE-28, MM-MOB-16 | Cross-surface gate validating routing correctness, policy denials, replay safety, and assistant UX acceptance. | Not Started |
+| MM-MOB-16 | Mobile | Assistant parity with offline-safe queue | MM-AI-14, MM-MOB-14 | Mobile assistant screen with queued outbound prompts, async update handling, and parity approval interactions. | Done |
+| MM-QA-06 | QA | Multi-agent runtime release gate | MM-ASP-13, MM-AI-15, MM-FE-28, MM-MOB-16 | Cross-surface gate validating routing correctness, policy denials, replay safety, and assistant UX acceptance. | Done |
 
 ## Acceptance Criteria
 - Worker, not API request handlers, owns orchestration command execution for runtime agent pipelines.
@@ -103,3 +103,25 @@ Close the runtime product-agent architecture gap by introducing a worker-owned, 
 	- Focused backend/AI tests passed (`22` passed, `0` failed): `AgentWorkflowLifecycleModelContractTests`, `RuntimeMessagingBackboneOptionsTests`, `ClassificationSpecialistRoutingPolicyTests`, `AgenticEvalReleaseGateTests`, `AgenticEvalSpecialistEvaluatorPackTests`, and `AgenticEvalSpecialistEvaluatorArtifactsTests`.
 	- Web assistant/provenance validation passed via production build (`npm --prefix src/MosaicMoney.Web run build`).
 	- Mobile auth deferral preserved per planner directive: `MM-MOB-13` remains `Blocked` and outside this closeout scope.
+
+## Update Note (2026-02-28, MM-MOB-16 In-Review Promotion)
+- Planner moved `MM-MOB-16` to `In Review` after implementing mobile assistant parity with offline-safe prompt queue and async provenance updates:
+	- Added mobile assistant screen/route (`/assistant`) with conversation + provenance tabs, policy-aware approval cards, and explicit approve/reject interactions.
+	- Added assistant mobile API contracts/services for invoke/approval/stream paths under `/api/v1/assistant/conversations/*`.
+	- Added AsyncStorage-backed outbound prompt queue with retry backoff + replay recovery hook, wired at app root for periodic/background replay.
+	- Added focused queue/recovery tests for assistant offline behavior and replay semantics.
+- Validation evidence: `npm --prefix src/MosaicMoney.Mobile run typecheck` succeeded; `npm --prefix src/MosaicMoney.Mobile run test:assistant-queue` passed (`7` tests, `0` failed).
+
+## Update Note (2026-02-28, MM-QA-06 + M10 Final Gate Closeout)
+- Planner promoted `MM-MOB-16` and `MM-QA-06` to `Done` after completing cross-surface runtime gate validation.
+- Runtime readiness and orchestration evidence:
+	- AppHost runtime recovered with local-container PostgreSQL fallback and healthy core services (`api`, `worker`, `web`) plus healthy runtime messaging/telemetry lanes (`runtime-*`) via `aspire resources --project src/apphost.cs`.
+	- Assistant endpoint denial proof captured with unauthenticated requests returning `401` for both `GET /api/v1/assistant/conversations/{id}/stream` and `POST /api/v1/assistant/conversations/{id}/messages`.
+- Backend/AI validation evidence:
+	- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~AgentWorkflowLifecycleModelContractTests|FullyQualifiedName~RuntimeMessagingBackboneOptionsTests|FullyQualifiedName~ClassificationSpecialistRoutingPolicyTests"` passed (`11` tests).
+	- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~ApiAuthorizationTests"` passed (`8` tests).
+	- `pwsh .github/scripts/run-mm-ai-11-release-gate.ps1` passed and regenerated `MM-AI-11`, `MM-AI-12`, and `MM-AI-15` release-gate artifacts.
+	- `pwsh .github/scripts/test-orchestration-policy-gates.ps1` passed after removing hardcoded localhost defaults from web triage scripts.
+- UX acceptance evidence:
+	- Web assistant shell/provenance surface remains healthy via `npm --prefix src/MosaicMoney.Web run build` (successful build; known non-blocking API base URL warning during static generation outside orchestrated runtime).
+	- Mobile assistant parity + replay safety validated via `npm --prefix src/MosaicMoney.Mobile run typecheck` and `npm --prefix src/MosaicMoney.Mobile run test:assistant-queue` (`7` tests).

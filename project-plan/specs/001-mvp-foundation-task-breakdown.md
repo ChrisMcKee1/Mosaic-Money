@@ -245,8 +245,8 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | MM-AI-15 | AI | Specialist evaluator packs and replay artifacts | MM-AI-12, MM-AI-13, MM-AI-14 | Role-level evaluator datasets, pass/fail thresholds, and reproducible replay artifacts for each specialist lane. | Done |
 | MM-FE-27 | Web | Assistant shell and approval card UX | MM-AI-14, MM-FE-22 | Global assistant panel with conversational thread, approval cards, and explicit high-impact action confirmations. | Done |
 | MM-FE-28 | Web | Agent provenance and explainability timeline | MM-FE-27, MM-BE-27 | UI for run/stage provenance, confidence, and rationale summaries without exposing disallowed transcript/tool dumps. | Done |
-| MM-MOB-16 | Mobile | Assistant parity with offline-safe queue | MM-AI-14, MM-MOB-14 | Mobile assistant screen with queued outbound prompts, async update handling, and parity approval interactions. | Not Started |
-| MM-QA-06 | QA | Multi-agent runtime release gate | MM-ASP-13, MM-AI-15, MM-FE-28, MM-MOB-16 | Cross-surface gate validating routing correctness, policy denials, replay safety, and assistant UX acceptance. | Not Started |
+| MM-MOB-16 | Mobile | Assistant parity with offline-safe queue | MM-AI-14, MM-MOB-14 | Mobile assistant screen with queued outbound prompts, async update handling, and parity approval interactions. | Done |
+| MM-QA-06 | QA | Multi-agent runtime release gate | MM-ASP-13, MM-AI-15, MM-FE-28, MM-MOB-16 | Cross-surface gate validating routing correctness, policy denials, replay safety, and assistant UX acceptance. | Done |
 
 ### AP0 PostgreSQL Discrepancy Closure Wave
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
@@ -262,6 +262,8 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | AP0-QA-01 | QA | AP0 discrepancy closure release gate and evidence pack | AP0-BE-01, AP0-BE-02, AP0-BE-03, AP0-FE-01, AP0-MOB-01, AP0-OPS-01, AP0-AI-01 | End-to-end SQL/API/web/mobile/AI evidence confirms discrepancy closure and ownership/security boundaries. | Done |
 
 Update note (2026-02-28): AP0 closure wave is fully complete. `AP0-MOB-01`, `AP0-QA-01`, and `AP0-EPIC` are promoted to `Done` with evidence pack at `artifacts/release-gates/ap0-qa-01/ap0-qa-01-evidence.md` and synced board status for issues `#144`-`#152`.
+
+Update note (2026-02-28): M10 closeout completed. `MM-MOB-16` and `MM-QA-06` are promoted to `Done` after runtime readiness, policy-denial checks, backend/AI gate tests, web build validation, and mobile assistant offline replay validation.
 
 Update note (2026-02-25): Planner kickoff for M8 is created from Clerk authentication requirements. Initial implementation slice tasks (`MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-FE-22`, `MM-FE-23`, `MM-MOB-13`) are set to `In Progress` prior to specialist delegation.
 

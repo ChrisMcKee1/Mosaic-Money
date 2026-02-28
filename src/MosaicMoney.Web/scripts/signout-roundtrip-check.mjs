@@ -5,7 +5,21 @@ import { loadLocalTriageEnv } from "./load-local-triage-env.mjs";
 
 loadLocalTriageEnv();
 
-const baseUrl = process.env.MM_TRIAGE_BASE_URL ?? "http://localhost:53832";
+function resolveRequiredUrl(primaryEnvKey, fallbackEnvKey) {
+  const primaryValue = process.env[primaryEnvKey]?.trim();
+  if (primaryValue) {
+    return primaryValue;
+  }
+
+  const fallbackValue = process.env[fallbackEnvKey]?.trim();
+  if (fallbackValue) {
+    return fallbackValue;
+  }
+
+  throw new Error(`Missing required base URL env. Set ${primaryEnvKey} or ${fallbackEnvKey}.`);
+}
+
+const baseUrl = resolveRequiredUrl("MM_TRIAGE_BASE_URL", "MM_WEB_BASE_URL");
 const outputDir = path.resolve("../../artifacts/release-gates/mm-qa-04/live-triage");
 
 const partnerA = {

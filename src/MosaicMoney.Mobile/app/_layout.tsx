@@ -3,6 +3,7 @@ import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { useEffect } from "react";
 import { useReviewMutationRecovery } from "../src/features/transactions/hooks/useReviewMutationRecovery";
 import { useCategoryMutationRecovery } from "../src/features/settings/offline/useCategoryMutationRecovery";
+import { useAssistantPromptRecovery } from "../src/features/assistant/offline/useAssistantPromptRecovery";
 import { theme } from "../src/theme/tokens";
 import { tokenCache } from "../src/auth/tokenCache";
 import { setAuthTokenProvider } from "../src/shared/services/mobileApiClient";
@@ -16,6 +17,11 @@ function ReviewMutationRecoveryHost() {
 
 function CategoryMutationRecoveryHost() {
   useCategoryMutationRecovery();
+  return null;
+}
+
+function AssistantPromptRecoveryHost() {
+  useAssistantPromptRecovery();
   return null;
 }
 
@@ -67,6 +73,7 @@ export default function RootLayout() {
       <>
         <ReviewMutationRecoveryHost />
         <CategoryMutationRecoveryHost />
+        <AssistantPromptRecoveryHost />
         <RootStack />
       </>
     );
@@ -77,6 +84,7 @@ export default function RootLayout() {
       <ClerkLoaded>
         <ReviewMutationRecoveryHost />
         <CategoryMutationRecoveryHost />
+        <AssistantPromptRecoveryHost />
         <AuthGuard>
           <RootStack />
         </AuthGuard>
@@ -113,6 +121,13 @@ function RootStack() {
         name="dashboard"
         options={{
           title: "Dashboard",
+          headerLargeTitle: true,
+        }}
+      />
+      <Stack.Screen
+        name="assistant"
+        options={{
+          title: "Assistant",
           headerLargeTitle: true,
         }}
       />
