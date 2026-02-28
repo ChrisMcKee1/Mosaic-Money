@@ -7,10 +7,10 @@ function normalizeError(error) {
     return error.message;
   }
 
-  return "Assistant request failed.";
+  return "Agent request failed.";
 }
 
-export async function postAssistantMessage(input) {
+export async function postAgentMessage(input) {
   try {
     const conversationId = input?.conversationId;
     const message = input?.message?.trim();
@@ -32,12 +32,12 @@ export async function postAssistantMessage(input) {
 
     return { success: true, data };
   } catch (error) {
-    console.error("Failed to post assistant message.", error);
+    console.error("Failed to post agent message.", error);
     return { success: false, error: normalizeError(error) };
   }
 }
 
-export async function submitAssistantApproval(input) {
+export async function submitAgentApproval(input) {
   try {
     const conversationId = input?.conversationId;
     const approvalId = input?.approvalId;
@@ -60,12 +60,12 @@ export async function submitAssistantApproval(input) {
 
     return { success: true, data };
   } catch (error) {
-    console.error("Failed to submit assistant approval.", error);
+    console.error("Failed to submit agent approval.", error);
     return { success: false, error: normalizeError(error) };
   }
 }
 
-export async function getAssistantConversationStream(input) {
+export async function getAgentConversationStream(input) {
   try {
     const conversationId = input?.conversationId;
     if (!conversationId) {
@@ -76,7 +76,7 @@ export async function getAssistantConversationStream(input) {
     const data = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/stream${sinceUtc}`);
     return { success: true, data };
   } catch (error) {
-    console.error("Failed to fetch assistant stream.", error);
+    console.error("Failed to fetch agent stream.", error);
     return { success: false, error: normalizeError(error), data: null };
   }
 }

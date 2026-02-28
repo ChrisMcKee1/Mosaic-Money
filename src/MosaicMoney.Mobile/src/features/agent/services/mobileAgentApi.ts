@@ -4,17 +4,17 @@ import {
   toReadableError as toReadableErrorBase,
 } from "../../../shared/services/mobileApiClient";
 import type {
-  AssistantApprovalRequest,
-  AssistantCommandAcceptedDto,
-  AssistantConversationMessageRequest,
-  AssistantConversationStreamDto,
+  AgentApprovalRequest,
+  AgentCommandAcceptedDto,
+  AgentConversationMessageRequest,
+  AgentConversationStreamDto,
 } from "../contracts";
 
 export function toReadableError(error: unknown): string {
-  return toReadableErrorBase(error, "Assistant request failed.");
+  return toReadableErrorBase(error, "Agent request failed.");
 }
 
-export function isRetriableAssistantError(error: unknown): boolean {
+export function isRetriableAgentError(error: unknown): boolean {
   if (!(error instanceof MobileApiError)) {
     return true;
   }
@@ -22,7 +22,7 @@ export function isRetriableAssistantError(error: unknown): boolean {
   return error.status >= 500 || error.status === 408 || error.status === 429;
 }
 
-export function getAssistantErrorCode(error: unknown): string | undefined {
+export function getAgentErrorCode(error: unknown): string | undefined {
   if (!(error instanceof MobileApiError)) {
     return undefined;
   }
@@ -30,12 +30,12 @@ export function getAssistantErrorCode(error: unknown): string | undefined {
   return error.code ?? `HTTP_${error.status}`;
 }
 
-export async function postAssistantMessage(
+export async function postAgentMessage(
   conversationId: string,
-  request: AssistantConversationMessageRequest,
+  request: AgentConversationMessageRequest,
   signal?: AbortSignal,
-): Promise<AssistantCommandAcceptedDto> {
-  return requestJson<AssistantCommandAcceptedDto, AssistantConversationMessageRequest>(
+): Promise<AgentCommandAcceptedDto> {
+  return requestJson<AgentCommandAcceptedDto, AgentConversationMessageRequest>(
     `/api/v1/assistant/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: "POST",
@@ -45,13 +45,13 @@ export async function postAssistantMessage(
   );
 }
 
-export async function submitAssistantApproval(
+export async function submitAgentApproval(
   conversationId: string,
   approvalId: string,
-  request: AssistantApprovalRequest,
+  request: AgentApprovalRequest,
   signal?: AbortSignal,
-): Promise<AssistantCommandAcceptedDto> {
-  return requestJson<AssistantCommandAcceptedDto, AssistantApprovalRequest>(
+): Promise<AgentCommandAcceptedDto> {
+  return requestJson<AgentCommandAcceptedDto, AgentApprovalRequest>(
     `/api/v1/assistant/conversations/${encodeURIComponent(conversationId)}/approvals/${encodeURIComponent(approvalId)}`,
     {
       method: "POST",
@@ -61,13 +61,13 @@ export async function submitAssistantApproval(
   );
 }
 
-export async function getAssistantConversationStream(
+export async function getAgentConversationStream(
   conversationId: string,
   options?: {
     sinceUtc?: string;
     signal?: AbortSignal;
   },
-): Promise<AssistantConversationStreamDto> {
+): Promise<AgentConversationStreamDto> {
   const query = new URLSearchParams();
   if (options?.sinceUtc) {
     query.set("sinceUtc", options.sinceUtc);
@@ -75,7 +75,7 @@ export async function getAssistantConversationStream(
 
   const suffix = query.size > 0 ? `?${query.toString()}` : "";
 
-  return requestJson<AssistantConversationStreamDto>(
+  return requestJson<AgentConversationStreamDto>(
     `/api/v1/assistant/conversations/${encodeURIComponent(conversationId)}/stream${suffix}`,
     {
       signal: options?.signal,

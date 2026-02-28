@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MobileApiError } from "../../../shared/services/mobileApiClient";
 import {
-  enqueueAssistantPrompt,
-  listAssistantPromptQueueEntries,
-} from "./assistantPromptQueue";
-import { replayQueuedAssistantPrompts } from "./assistantPromptRecovery";
+  enqueueAgentPrompt,
+  listAgentPromptQueueEntries,
+} from "./agentPromptQueue";
+import { replayQueuedAgentPrompts } from "./agentPromptRecovery";
 
 const storage = new Map<string, string>();
-const postAssistantMessageMock = vi.fn();
+const postAgentMessageMock = vi.fn();
 
 vi.mock("@react-native-async-storage/async-storage", () => ({
   default: {
@@ -22,17 +22,17 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
 }));
 
 vi.mock("../services/mobileAgentApi", () => ({
-  postAssistantMessage: (...args: unknown[]) => postAssistantMessageMock(...args),
+  postAgentMessage: (...args: unknown[]) => postAgentMessageMock(...args),
 }));
 
-describe("assistantPromptRecovery", () => {
+describe("agentPromptRecovery", () => {
   beforeEach(() => {
     storage.clear();
-    postAssistantMessageMock.mockReset();
+    postAgentMessageMock.mockReset();
   });
 
   it("replays queued prompts and removes them on success", async () => {
-    await enqueueAssistantPrompt({
+    await enqueueAgentPrompt({
       conversationId: "conv-success",
       replayKey: "conv-success|message-1",
       summary: "Need a spending summary.",
@@ -42,9 +42,9 @@ describe("assistantPromptRecovery", () => {
       },
     });
 
-    postAssistantMessageMock.mockResolvedValue({ commandId: "cmd-1" });
+    postAgentMessageMock.mockResolvedValue({ commandId: "cmd-1" });
 
-    const result = await replayQueuedAssistantPrompts();
+    const result = await replayQueuedAgentPrompts();
 
     expect(result).toEqual({
       scannedCount: 1,
@@ -54,13 +54,13 @@ describe("assistantPromptRecovery", () => {
       reconciledCount: 0,
     });
 
-    const queue = await listAssistantPromptQueueEntries();
+    const queue = await listAgentPromptQueueEntries();
     expect(queue).toHaveLength(0);
-    expect(postAssistantMessageMock).toHaveBeenCalledTimes(1);
+    expect(postAgentMessageMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps queued prompts with backoff on retriable errors", async () => {
-    await enqueueAssistantPrompt({
+    await enqueueAgentPrompt({
       conversationId: "conv-retry",
       replayKey: "conv-retry|message-2",
       summary: "Route this transaction to review.",
@@ -70,11 +70,11 @@ describe("assistantPromptRecovery", () => {
       },
     });
 
-    postAssistantMessageMock.mockRejectedValue(
+    postAgentMessageMock.mockRejectedValue(
       new MobileApiError(503, "Service unavailable.", "service_unavailable"),
     );
 
-    const result = await replayQueuedAssistantPrompts();
+    const result = await replayQueuedAgentPrompts();
 
     expect(result).toEqual({
       scannedCount: 1,
@@ -84,14 +84,14 @@ describe("assistantPromptRecovery", () => {
       reconciledCount: 0,
     });
 
-    const queue = await listAssistantPromptQueueEntries();
+    const queue = await listAgentPromptQueueEntries();
     expect(queue).toHaveLength(1);
     expect(queue[0]?.attemptCount).toBe(1);
     expect(queue[0]?.lastErrorCode).toBe("service_unavailable");
   });
 
   it("reconciles non-retriable errors by removing queued prompts", async () => {
-    await enqueueAssistantPrompt({
+    await enqueueAgentPrompt({
       conversationId: "conv-reconcile",
       replayKey: "conv-reconcile|message-3",
       summary: "Queue this high impact request.",
@@ -101,11 +101,11 @@ describe("assistantPromptRecovery", () => {
       },
     });
 
-    postAssistantMessageMock.mockRejectedValue(
+    postAgentMessageMock.mockRejectedValue(
       new MobileApiError(400, "Invalid payload.", "validation_failed"),
     );
 
-    const result = await replayQueuedAssistantPrompts();
+    const result = await replayQueuedAgentPrompts();
 
     expect(result).toEqual({
       scannedCount: 1,
@@ -115,7 +115,7 @@ describe("assistantPromptRecovery", () => {
       reconciledCount: 1,
     });
 
-    const queue = await listAssistantPromptQueueEntries();
+    const queue = await listAgentPromptQueueEntries();
     expect(queue).toHaveLength(0);
   });
 });

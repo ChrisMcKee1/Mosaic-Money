@@ -17,7 +17,7 @@ import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { ThemeSwitcher } from "../theme/ThemeSwitcher";
 import { SignedIn, SignedOut, SignInButton, UserButton, useClerk } from "@clerk/nextjs";
-import { GlobalAgentPanel } from "../assistant/GlobalAgentPanel";
+import { GlobalAgentPanel } from "../agent/GlobalAgentPanel";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -80,7 +80,7 @@ function ClerkControls() {
 
 export function Shell({ children, isClerkConfigured }) {
   const pathname = usePathname();
-  const showAssistantPanel = !pathname.startsWith("/sign-in") && !pathname.startsWith("/sign-up");
+  const showAgentPanel = !pathname.startsWith("/sign-in") && !pathname.startsWith("/sign-up");
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)] text-[var(--color-text-main)]">
@@ -146,7 +146,7 @@ export function Shell({ children, isClerkConfigured }) {
         {children}
       </main>
 
-      {showAssistantPanel ? <GlobalAgentPanel /> : null}
+      {showAgentPanel ? <GlobalAgentPanel /> : null}
     </div>
   );
 }

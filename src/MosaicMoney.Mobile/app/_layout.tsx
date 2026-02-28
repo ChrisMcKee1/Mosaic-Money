@@ -3,7 +3,7 @@ import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { useEffect } from "react";
 import { useReviewMutationRecovery } from "../src/features/transactions/hooks/useReviewMutationRecovery";
 import { useCategoryMutationRecovery } from "../src/features/settings/offline/useCategoryMutationRecovery";
-import { useAgentPromptRecovery } from "../src/features/assistant/offline/useAgentPromptRecovery";
+import { useAgentPromptRecovery } from "../src/features/agent/offline/useAgentPromptRecovery";
 import { theme } from "../src/theme/tokens";
 import { tokenCache } from "../src/auth/tokenCache";
 import { setAuthTokenProvider } from "../src/shared/services/mobileApiClient";
@@ -20,7 +20,7 @@ function CategoryMutationRecoveryHost() {
   return null;
 }
 
-function AssistantPromptRecoveryHost() {
+function AgentPromptRecoveryHost() {
   useAgentPromptRecovery();
   return null;
 }
@@ -73,7 +73,7 @@ export default function RootLayout() {
       <>
         <ReviewMutationRecoveryHost />
         <CategoryMutationRecoveryHost />
-        <AssistantPromptRecoveryHost />
+        <AgentPromptRecoveryHost />
         <RootStack />
       </>
     );
@@ -84,7 +84,7 @@ export default function RootLayout() {
       <ClerkLoaded>
         <ReviewMutationRecoveryHost />
         <CategoryMutationRecoveryHost />
-        <AssistantPromptRecoveryHost />
+        <AgentPromptRecoveryHost />
         <AuthGuard>
           <RootStack />
         </AuthGuard>
@@ -125,9 +125,9 @@ function RootStack() {
         }}
       />
       <Stack.Screen
-        name="assistant"
+        name="agent"
         options={{
-          title: "Assistant",
+          title: "Agent",
           headerLargeTitle: true,
         }}
       />

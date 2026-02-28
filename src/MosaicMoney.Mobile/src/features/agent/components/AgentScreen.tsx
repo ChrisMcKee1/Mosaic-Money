@@ -12,47 +12,47 @@ import {
   View,
 } from "react-native";
 import type {
-  AssistantApprovalDecision,
-  AssistantCommandAcceptedDto,
-  AssistantConversationRunStatusDto,
+  AgentApprovalDecision,
+  AgentCommandAcceptedDto,
+  AgentConversationRunStatusDto,
 } from "../contracts";
 import {
-  getAssistantConversationStream,
-  isRetriableAssistantError,
-  postAssistantMessage,
-  submitAssistantApproval,
+  getAgentConversationStream,
+  isRetriableAgentError,
+  postAgentMessage,
+  submitAgentApproval,
   toReadableError,
 } from "../services/mobileAgentApi";
 import {
-  enqueueAssistantPrompt,
-  listAssistantPromptQueueEntries,
-} from "../offline/assistantPromptQueue";
-import { replayQueuedAssistantPrompts } from "../offline/assistantPromptRecovery";
+  enqueueAgentPrompt,
+  listAgentPromptQueueEntries,
+} from "../offline/agentPromptQueue";
+import { replayQueuedAgentPrompts } from "../offline/agentPromptRecovery";
 import { PrimarySurfaceNav } from "../../../shared/components/PrimarySurfaceNav";
 import { theme } from "../../../theme/tokens";
 
-const ASSISTANT_CONVERSATION_ID_STORAGE_KEY = "mosaic_money.mobile.assistant.conversation_id.v1";
+const AGENT_CONVERSATION_ID_STORAGE_KEY = "mosaic_money.mobile.assistant.conversation_id.v1";
 const POLL_INTERVAL_MS = 7_000;
 
-type AssistantTab = "conversation" | "timeline";
-type AssistantMessageRole = "user" | "assistant" | "system";
-type AssistantMessageTone = "normal" | "warning" | "error";
-type AssistantApprovalCardStatus = "pending" | "submitting" | "approved" | "rejected";
+type AgentTab = "conversation" | "timeline";
+type AgentMessageRole = "user" | "agent" | "system";
+type AgentMessageTone = "normal" | "warning" | "error";
+type AgentApprovalCardStatus = "pending" | "submitting" | "approved" | "rejected";
 
-interface LocalAssistantMessage {
+interface LocalAgentMessage {
   id: string;
-  role: AssistantMessageRole;
+  role: AgentMessageRole;
   text: string;
   createdAt: string;
-  tone: AssistantMessageTone;
+  tone: AgentMessageTone;
 }
 
-interface AssistantApprovalCard {
+interface AgentApprovalCard {
   id: string;
   commandId: string;
   summary: string;
   createdAt: string;
-  status: AssistantApprovalCardStatus;
+  status: AgentApprovalCardStatus;
 }
 
 function createClientId(prefix: string): string {
@@ -121,7 +121,7 @@ function resolveRunStatusStyle(status: string): {
   };
 }
 
-function buildAssistantQueueReplaySummary(result: {
+function buildAgentQueueReplaySummary(result: {
   replayedCount: number;
   retriedCount: number;
   reconciledCount: number;
@@ -141,7 +141,7 @@ function buildAssistantQueueReplaySummary(result: {
   }
 
   if (parts.length === 0) {
-    return "No queued assistant prompts were replayed.";
+    return "No queued agent prompts were replayed.";
   }
 
   return `Replay summary: ${parts.join(", ")}.`;
@@ -149,11 +149,11 @@ function buildAssistantQueueReplaySummary(result: {
 
 export function AgentScreen() {
   const [conversationId, setConversationId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<AssistantTab>("conversation");
+  const [activeTab, setActiveTab] = useState<AgentTab>("conversation");
   const [inputValue, setInputValue] = useState<string>("");
-  const [messages, setMessages] = useState<LocalAssistantMessage[]>([]);
-  const [approvalCards, setApprovalCards] = useState<AssistantApprovalCard[]>([]);
-  const [timelineRuns, setTimelineRuns] = useState<AssistantConversationRunStatusDto[]>([]);
+  const [messages, setMessages] = useState<LocalAgentMessage[]>([]);
+  const [approvalCards, setApprovalCards] = useState<AgentApprovalCard[]>([]);
+  const [timelineRuns, setTimelineRuns] = useState<AgentConversationRunStatusDto[]>([]);
   const [queuedPromptCount, setQueuedPromptCount] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isRefreshingStream, setIsRefreshingStream] = useState<boolean>(false);
@@ -169,7 +169,7 @@ export function AgentScreen() {
   );
 
   const refreshQueueMetrics = useCallback(async () => {
-    const queue = await listAssistantPromptQueueEntries();
+    const queue = await listAgentPromptQueueEntries();
     setQueuedPromptCount(queue.length);
   }, []);
 
@@ -181,7 +181,7 @@ export function AgentScreen() {
     setIsRefreshingStream(true);
 
     try {
-      const stream = await getAssistantConversationStream(conversationId);
+      const stream = await getAgentConversationStream(conversationId);
       setTimelineRuns(stream.runs ?? []);
       setError("");
     } catch (streamError) {
@@ -191,14 +191,14 @@ export function AgentScreen() {
     }
   }, [conversationId]);
 
-  const applyAcceptedMessageState = useCallback((accepted: AssistantCommandAcceptedDto, prompt: string) => {
+  const applyAcceptedMessageState = useCallback((accepted: AgentCommandAcceptedDto, prompt: string) => {
     const policyDisposition = accepted.policyDisposition ?? "advisory_only";
 
     setMessages((previous) => [
       ...previous,
       {
         id: `${accepted.commandId}-queued`,
-        role: "assistant",
+        role: "agent",
         text:
           policyDisposition === "approval_required"
             ? "This request is high-impact and now requires your explicit approval."
@@ -228,14 +228,14 @@ export function AgentScreen() {
     async function loadConversationId(): Promise<void> {
       try {
         const storedConversationId = await AsyncStorage.getItem(
-          ASSISTANT_CONVERSATION_ID_STORAGE_KEY,
+          AGENT_CONVERSATION_ID_STORAGE_KEY,
         );
 
         const nextConversationId = storedConversationId?.trim() || createConversationId();
 
         if (!storedConversationId?.trim()) {
           await AsyncStorage.setItem(
-            ASSISTANT_CONVERSATION_ID_STORAGE_KEY,
+            AGENT_CONVERSATION_ID_STORAGE_KEY,
             nextConversationId,
           );
         }
@@ -293,8 +293,8 @@ export function AgentScreen() {
     setIsSyncingQueue(true);
 
     try {
-      const result = await replayQueuedAssistantPrompts();
-      setStatusMessage(buildAssistantQueueReplaySummary(result));
+      const result = await replayQueuedAgentPrompts();
+      setStatusMessage(buildAgentQueueReplaySummary(result));
       setError("");
       await refreshQueueMetrics();
       void refreshStream();
@@ -329,7 +329,7 @@ export function AgentScreen() {
     ]);
 
     try {
-      const accepted = await postAssistantMessage(conversationId, {
+      const accepted = await postAgentMessage(conversationId, {
         message: prompt,
         clientMessageId,
       });
@@ -338,8 +338,8 @@ export function AgentScreen() {
       void refreshStream();
       await refreshQueueMetrics();
     } catch (sendError) {
-      if (isRetriableAssistantError(sendError)) {
-        await enqueueAssistantPrompt({
+      if (isRetriableAgentError(sendError)) {
+        await enqueueAgentPrompt({
           conversationId,
           replayKey: `${conversationId}|${clientMessageId}`,
           summary: truncateSummary(prompt),
@@ -353,7 +353,7 @@ export function AgentScreen() {
           ...previous,
           {
             id: `${clientMessageId}-queued`,
-            role: "assistant",
+            role: "agent",
             text: "Connection is unstable. Your prompt was queued offline and will replay automatically.",
             createdAt: new Date().toISOString(),
             tone: "warning",
@@ -369,7 +369,7 @@ export function AgentScreen() {
           {
             id: `${clientMessageId}-error`,
             role: "system",
-            text: "Assistant prompt failed. Please retry once connectivity stabilizes.",
+            text: "Agent prompt failed. Please retry once connectivity stabilizes.",
             createdAt: new Date().toISOString(),
             tone: "error",
           },
@@ -389,7 +389,7 @@ export function AgentScreen() {
 
   const handleApprovalDecision = useCallback(async (
     cardId: string,
-    decision: AssistantApprovalDecision,
+    decision: AgentApprovalDecision,
   ) => {
     const target = approvalCards.find((card) => card.id === cardId);
     if (!target || target.status !== "pending") {
@@ -408,13 +408,13 @@ export function AgentScreen() {
     );
 
     try {
-      await submitAssistantApproval(conversationId, target.commandId, {
+      await submitAgentApproval(conversationId, target.commandId, {
         decision,
         clientApprovalId: createClientId("approval"),
         rationale:
           decision === "Approve"
-            ? "Approved by user from mobile assistant screen."
-            : "Rejected by user from mobile assistant screen.",
+            ? "Approved by user from mobile agent screen."
+            : "Rejected by user from mobile agent screen.",
       });
 
       setApprovalCards((previous) =>
@@ -453,7 +453,7 @@ export function AgentScreen() {
   return (
     <SafeAreaView style={styles.page}>
       <View style={styles.headerContainer}>
-        <Text style={styles.heading}>Assistant</Text>
+        <Text style={styles.heading}>Agent</Text>
         <Text style={styles.subheading}>
           Policy-aware conversation lane with explicit approval controls.
         </Text>
@@ -522,7 +522,7 @@ export function AgentScreen() {
             </View>
 
             {approvalCards.length === 0 ? (
-              <Text style={styles.emptyApprovalText}>No high-impact assistant actions are waiting for review.</Text>
+              <Text style={styles.emptyApprovalText}>No high-impact agent actions are waiting for review.</Text>
             ) : (
               <ScrollView style={styles.approvalScroll} contentContainerStyle={styles.approvalScrollContent}>
                 {approvalCards.map((card) => (
@@ -604,7 +604,7 @@ export function AgentScreen() {
                           ? styles.messageCardWarning
                           : message.tone === "error"
                             ? styles.messageCardError
-                            : styles.messageCardAssistant,
+                            : styles.messageCardAgent,
                     ]}
                   >
                     <View style={styles.messageMetaRow}>
@@ -622,7 +622,7 @@ export function AgentScreen() {
                 multiline
                 editable={!isSubmitting}
                 onChangeText={setInputValue}
-                placeholder="Ask assistant..."
+                placeholder="Ask agent..."
                 placeholderTextColor={theme.colors.textSubtle}
                 style={styles.composeInput}
                 value={inputValue}
@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0, 240, 255, 0.35)",
     maxWidth: "88%",
   },
-  messageCardAssistant: {
+  messageCardAgent: {
     alignSelf: "flex-start",
     backgroundColor: theme.colors.surface,
     borderColor: theme.colors.border,

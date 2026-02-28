@@ -1,27 +1,27 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SchemaValidationError } from "../../../../../../packages/shared/src/validation";
-import type { AssistantConversationMessageRequest } from "../contracts";
+import type { AgentConversationMessageRequest } from "../contracts";
 
-const ASSISTANT_PROMPT_QUEUE_STORAGE_KEY = "mosaic_money.mobile.assistant_prompt_queue.v1";
-const ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION = 1;
+const AGENT_PROMPT_QUEUE_STORAGE_KEY = "mosaic_money.mobile.assistant_prompt_queue.v1";
+const AGENT_PROMPT_QUEUE_SCHEMA_VERSION = 1;
 const RETRY_BASE_DELAY_MS = 15_000;
 const RETRY_MAX_DELAY_MS = 15 * 60_000;
 
-export interface QueuedAssistantPromptRequest {
+export interface QueuedAgentPromptRequest {
   conversationId: string;
   replayKey: string;
   summary: string;
-  request: AssistantConversationMessageRequest;
+  request: AgentConversationMessageRequest;
 }
 
-export interface AssistantPromptQueueEntry {
+export interface AgentPromptQueueEntry {
   id: string;
   schemaVersion: 1;
   mutationType: "assistant-prompt";
   conversationId: string;
   replayKey: string;
   summary: string;
-  request: AssistantConversationMessageRequest;
+  request: AgentConversationMessageRequest;
   createdAtUtc: string;
   updatedAtUtc: string;
   attemptCount: number;
@@ -30,14 +30,14 @@ export interface AssistantPromptQueueEntry {
   lastErrorCode?: string;
 }
 
-interface AssistantPromptQueueDocument {
+interface AgentPromptQueueDocument {
   version: 1;
-  entries: AssistantPromptQueueEntry[];
+  entries: AgentPromptQueueEntry[];
 }
 
-function createEmptyQueueDocument(): AssistantPromptQueueDocument {
+function createEmptyQueueDocument(): AgentPromptQueueDocument {
   return {
-    version: ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION,
+    version: AGENT_PROMPT_QUEUE_SCHEMA_VERSION,
     entries: [],
   };
 }
@@ -72,17 +72,17 @@ function readNumber(value: unknown, path: string): number {
 
 function readSchemaVersion(value: unknown, path: string): 1 {
   const version = readNumber(value, path);
-  if (version !== ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION) {
-    throw new SchemaValidationError(`${path} must be ${ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION}.`);
+  if (version !== AGENT_PROMPT_QUEUE_SCHEMA_VERSION) {
+    throw new SchemaValidationError(`${path} must be ${AGENT_PROMPT_QUEUE_SCHEMA_VERSION}.`);
   }
 
-  return ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION;
+  return AGENT_PROMPT_QUEUE_SCHEMA_VERSION;
 }
 
 function normalizePromptRequest(
-  value: AssistantConversationMessageRequest,
+  value: AgentConversationMessageRequest,
   path: string,
-): AssistantConversationMessageRequest {
+): AgentConversationMessageRequest {
   const message = value.message?.trim();
   if (!message) {
     throw new SchemaValidationError(`${path}.message is required.`);
@@ -98,7 +98,7 @@ function normalizePromptRequest(
   };
 }
 
-function parsePromptRequest(value: unknown, path: string): AssistantConversationMessageRequest {
+function parsePromptRequest(value: unknown, path: string): AgentConversationMessageRequest {
   if (!isRecord(value)) {
     throw new SchemaValidationError(`${path} must be an object.`);
   }
@@ -115,7 +115,7 @@ function parsePromptRequest(value: unknown, path: string): AssistantConversation
   };
 }
 
-function parseQueueEntry(value: unknown, path: string): AssistantPromptQueueEntry {
+function parseQueueEntry(value: unknown, path: string): AgentPromptQueueEntry {
   if (!isRecord(value)) {
     throw new SchemaValidationError(`${path} must be an object.`);
   }
@@ -148,19 +148,19 @@ function parseQueueEntry(value: unknown, path: string): AssistantPromptQueueEntr
   };
 }
 
-function parseQueueDocument(value: unknown): AssistantPromptQueueDocument {
+function parseQueueDocument(value: unknown): AgentPromptQueueDocument {
   if (!isRecord(value)) {
-    throw new SchemaValidationError("assistantPromptQueue must be an object.");
+    throw new SchemaValidationError("agentPromptQueue must be an object.");
   }
 
-  const version = readSchemaVersion(value.version, "assistantPromptQueue.version");
+  const version = readSchemaVersion(value.version, "agentPromptQueue.version");
   if (!Array.isArray(value.entries)) {
-    throw new SchemaValidationError("assistantPromptQueue.entries must be an array.");
+    throw new SchemaValidationError("agentPromptQueue.entries must be an array.");
   }
 
   return {
     version,
-    entries: value.entries.map((entry, index) => parseQueueEntry(entry, `assistantPromptQueue.entries[${index}]`)),
+    entries: value.entries.map((entry, index) => parseQueueEntry(entry, `agentPromptQueue.entries[${index}]`)),
   };
 }
 
@@ -173,8 +173,8 @@ function computeNextRetryDelayMs(attemptCount: number): number {
   return Math.min(RETRY_MAX_DELAY_MS, RETRY_BASE_DELAY_MS * (2 ** boundedExponent));
 }
 
-async function readQueueDocument(): Promise<AssistantPromptQueueDocument> {
-  const raw = await AsyncStorage.getItem(ASSISTANT_PROMPT_QUEUE_STORAGE_KEY);
+async function readQueueDocument(): Promise<AgentPromptQueueDocument> {
+  const raw = await AsyncStorage.getItem(AGENT_PROMPT_QUEUE_STORAGE_KEY);
   if (!raw) {
     return createEmptyQueueDocument();
   }
@@ -183,22 +183,22 @@ async function readQueueDocument(): Promise<AssistantPromptQueueDocument> {
     const parsed = JSON.parse(raw) as unknown;
     return parseQueueDocument(parsed);
   } catch {
-    await AsyncStorage.removeItem(ASSISTANT_PROMPT_QUEUE_STORAGE_KEY);
+    await AsyncStorage.removeItem(AGENT_PROMPT_QUEUE_STORAGE_KEY);
     return createEmptyQueueDocument();
   }
 }
 
-async function writeQueueDocument(document: AssistantPromptQueueDocument): Promise<void> {
-  await AsyncStorage.setItem(ASSISTANT_PROMPT_QUEUE_STORAGE_KEY, JSON.stringify(document));
+async function writeQueueDocument(document: AgentPromptQueueDocument): Promise<void> {
+  await AsyncStorage.setItem(AGENT_PROMPT_QUEUE_STORAGE_KEY, JSON.stringify(document));
 }
 
-export async function listAssistantPromptQueueEntries(): Promise<AssistantPromptQueueEntry[]> {
+export async function listAgentPromptQueueEntries(): Promise<AgentPromptQueueEntry[]> {
   const queue = await readQueueDocument();
   return [...queue.entries].sort((left, right) => left.createdAtUtc.localeCompare(right.createdAtUtc));
 }
 
-export function isAssistantPromptReadyForReplay(
-  entry: AssistantPromptQueueEntry,
+export function isAgentPromptReadyForReplay(
+  entry: AgentPromptQueueEntry,
   nowUtc: Date = new Date(),
 ): boolean {
   if (!entry.nextAttemptAtUtc) {
@@ -208,25 +208,25 @@ export function isAssistantPromptReadyForReplay(
   return entry.nextAttemptAtUtc <= nowUtc.toISOString();
 }
 
-export async function enqueueAssistantPrompt(
-  input: QueuedAssistantPromptRequest,
-): Promise<AssistantPromptQueueEntry> {
+export async function enqueueAgentPrompt(
+  input: QueuedAgentPromptRequest,
+): Promise<AgentPromptQueueEntry> {
   const normalizedConversationId = input.conversationId.trim();
   if (!normalizedConversationId) {
-    throw new SchemaValidationError("assistantPrompt.conversationId is required.");
+    throw new SchemaValidationError("agentPrompt.conversationId is required.");
   }
 
   const replayKey = input.replayKey.trim();
   if (!replayKey) {
-    throw new SchemaValidationError("assistantPrompt.replayKey is required.");
+    throw new SchemaValidationError("agentPrompt.replayKey is required.");
   }
 
   const summary = input.summary.trim();
   if (!summary) {
-    throw new SchemaValidationError("assistantPrompt.summary is required.");
+    throw new SchemaValidationError("agentPrompt.summary is required.");
   }
 
-  const normalizedRequest = normalizePromptRequest(input.request, "assistantPrompt.request");
+  const normalizedRequest = normalizePromptRequest(input.request, "agentPrompt.request");
 
   const queue = await readQueueDocument();
   const existing = queue.entries.find((entry) => entry.replayKey === replayKey);
@@ -235,9 +235,9 @@ export async function enqueueAssistantPrompt(
   }
 
   const nowUtc = new Date().toISOString();
-  const entry: AssistantPromptQueueEntry = {
+  const entry: AgentPromptQueueEntry = {
     id: createQueueEntryId(),
-    schemaVersion: ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION,
+    schemaVersion: AGENT_PROMPT_QUEUE_SCHEMA_VERSION,
     mutationType: "assistant-prompt",
     conversationId: normalizedConversationId,
     replayKey,
@@ -255,7 +255,7 @@ export async function enqueueAssistantPrompt(
   return entry;
 }
 
-export async function removeAssistantPrompt(entryId: string): Promise<void> {
+export async function removeAgentPrompt(entryId: string): Promise<void> {
   const queue = await readQueueDocument();
   const nextEntries = queue.entries.filter((entry) => entry.id !== entryId);
 
@@ -264,15 +264,15 @@ export async function removeAssistantPrompt(entryId: string): Promise<void> {
   }
 
   await writeQueueDocument({
-    version: ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION,
+    version: AGENT_PROMPT_QUEUE_SCHEMA_VERSION,
     entries: nextEntries,
   });
 }
 
-export async function markAssistantPromptReplayFailure(
+export async function markAgentPromptReplayFailure(
   entryId: string,
   errorCode?: string,
-): Promise<AssistantPromptQueueEntry | null> {
+): Promise<AgentPromptQueueEntry | null> {
   const queue = await readQueueDocument();
   const targetIndex = queue.entries.findIndex((entry) => entry.id === entryId);
   if (targetIndex < 0) {
@@ -286,7 +286,7 @@ export async function markAssistantPromptReplayFailure(
     Date.parse(attemptedAtUtc) + computeNextRetryDelayMs(attemptCount),
   ).toISOString();
 
-  const updated: AssistantPromptQueueEntry = {
+  const updated: AgentPromptQueueEntry = {
     ...existing,
     attemptCount,
     updatedAtUtc: attemptedAtUtc,
@@ -299,14 +299,14 @@ export async function markAssistantPromptReplayFailure(
   nextEntries[targetIndex] = updated;
 
   await writeQueueDocument({
-    version: ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION,
+    version: AGENT_PROMPT_QUEUE_SCHEMA_VERSION,
     entries: nextEntries,
   });
 
   return updated;
 }
 
-export async function clearAssistantPromptBackoff(entryId: string): Promise<AssistantPromptQueueEntry | null> {
+export async function clearAgentPromptBackoff(entryId: string): Promise<AgentPromptQueueEntry | null> {
   const queue = await readQueueDocument();
   const targetIndex = queue.entries.findIndex((entry) => entry.id === entryId);
   if (targetIndex < 0) {
@@ -314,7 +314,7 @@ export async function clearAssistantPromptBackoff(entryId: string): Promise<Assi
   }
 
   const existing = queue.entries[targetIndex];
-  const updated: AssistantPromptQueueEntry = {
+  const updated: AgentPromptQueueEntry = {
     ...existing,
     updatedAtUtc: new Date().toISOString(),
     nextAttemptAtUtc: undefined,
@@ -325,16 +325,16 @@ export async function clearAssistantPromptBackoff(entryId: string): Promise<Assi
   nextEntries[targetIndex] = updated;
 
   await writeQueueDocument({
-    version: ASSISTANT_PROMPT_QUEUE_SCHEMA_VERSION,
+    version: AGENT_PROMPT_QUEUE_SCHEMA_VERSION,
     entries: nextEntries,
   });
 
   return updated;
 }
 
-export function getAssistantQueuedPromptReplayRequest(
-  entry: AssistantPromptQueueEntry,
-): AssistantConversationMessageRequest {
+export function getAgentQueuedPromptReplayRequest(
+  entry: AgentPromptQueueEntry,
+): AgentConversationMessageRequest {
   return {
     message: entry.request.message,
     clientMessageId: entry.request.clientMessageId ?? null,

@@ -1,14 +1,14 @@
 import { MobileApiError } from "../../../shared/services/mobileApiClient";
-import { postAssistantMessage } from "../services/mobileAgentApi";
+import { postAgentMessage } from "../services/mobileAgentApi";
 import {
-  getAssistantQueuedPromptReplayRequest,
-  isAssistantPromptReadyForReplay,
-  listAssistantPromptQueueEntries,
-  markAssistantPromptReplayFailure,
-  removeAssistantPrompt,
-} from "./assistantPromptQueue";
+  getAgentQueuedPromptReplayRequest,
+  isAgentPromptReadyForReplay,
+  listAgentPromptQueueEntries,
+  markAgentPromptReplayFailure,
+  removeAgentPrompt,
+} from "./agentPromptQueue";
 
-export interface AssistantPromptRecoveryResult {
+export interface AgentPromptRecoveryResult {
   scannedCount: number;
   replayReadyCount: number;
   replayedCount: number;
@@ -21,7 +21,7 @@ interface ReplayErrorClassification {
   errorCode?: string;
 }
 
-let activeReplayRun: Promise<AssistantPromptRecoveryResult> | null = null;
+let activeReplayRun: Promise<AgentPromptRecoveryResult> | null = null;
 
 function readErrorCode(error: unknown): string | undefined {
   if (!(error instanceof MobileApiError)) {
@@ -52,11 +52,11 @@ function classifyReplayError(error: unknown): ReplayErrorClassification {
   };
 }
 
-async function replayReadyAssistantPrompts(): Promise<AssistantPromptRecoveryResult> {
-  const queueEntries = await listAssistantPromptQueueEntries();
-  const replayReadyEntries = queueEntries.filter((entry) => isAssistantPromptReadyForReplay(entry));
+async function replayReadyAgentPrompts(): Promise<AgentPromptRecoveryResult> {
+  const queueEntries = await listAgentPromptQueueEntries();
+  const replayReadyEntries = queueEntries.filter((entry) => isAgentPromptReadyForReplay(entry));
 
-  const result: AssistantPromptRecoveryResult = {
+  const result: AgentPromptRecoveryResult = {
     scannedCount: queueEntries.length,
     replayReadyCount: replayReadyEntries.length,
     replayedCount: 0,
@@ -66,20 +66,20 @@ async function replayReadyAssistantPrompts(): Promise<AssistantPromptRecoveryRes
 
   for (const queueEntry of replayReadyEntries) {
     try {
-      const request = getAssistantQueuedPromptReplayRequest(queueEntry);
-      await postAssistantMessage(queueEntry.conversationId, request);
-      await removeAssistantPrompt(queueEntry.id);
+      const request = getAgentQueuedPromptReplayRequest(queueEntry);
+      await postAgentMessage(queueEntry.conversationId, request);
+      await removeAgentPrompt(queueEntry.id);
       result.replayedCount += 1;
     } catch (error) {
       const classification = classifyReplayError(error);
 
       if (classification.retriable) {
-        await markAssistantPromptReplayFailure(queueEntry.id, classification.errorCode);
+        await markAgentPromptReplayFailure(queueEntry.id, classification.errorCode);
         result.retriedCount += 1;
         continue;
       }
 
-      await removeAssistantPrompt(queueEntry.id);
+      await removeAgentPrompt(queueEntry.id);
       result.reconciledCount += 1;
     }
   }
@@ -87,12 +87,12 @@ async function replayReadyAssistantPrompts(): Promise<AssistantPromptRecoveryRes
   return result;
 }
 
-export function replayQueuedAssistantPrompts(): Promise<AssistantPromptRecoveryResult> {
+export function replayQueuedAgentPrompts(): Promise<AgentPromptRecoveryResult> {
   if (activeReplayRun) {
     return activeReplayRun;
   }
 
-  const replayPromise = replayReadyAssistantPrompts();
+  const replayPromise = replayReadyAgentPrompts();
   const trackedReplayPromise = replayPromise.finally(() => {
     if (activeReplayRun === trackedReplayPromise) {
       activeReplayRun = null;

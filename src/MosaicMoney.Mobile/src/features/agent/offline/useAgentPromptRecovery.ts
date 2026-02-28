@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
-import { replayQueuedAssistantPrompts } from "./assistantPromptRecovery";
+import { replayQueuedAgentPrompts } from "./agentPromptRecovery";
 
 const DEFAULT_RECOVERY_INTERVAL_MS = 45_000;
 
@@ -16,7 +16,7 @@ export function useAgentPromptRecovery(options?: {
       return localRunRef.current;
     }
 
-    const runPromise = replayQueuedAssistantPrompts();
+    const runPromise = replayQueuedAgentPrompts();
     const trackedRunPromise = runPromise.finally(() => {
       if (localRunRef.current === trackedRunPromise) {
         localRunRef.current = null;

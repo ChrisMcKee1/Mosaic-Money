@@ -15,10 +15,10 @@ import {
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import {
-  getAssistantConversationStream,
-  postAssistantMessage,
-  submitAssistantApproval,
-} from "../../app/assistant/actions";
+  getAgentConversationStream,
+  postAgentMessage,
+  submitAgentApproval,
+} from "../../app/agent/actions";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -31,7 +31,7 @@ function createConversationId() {
     return crypto.randomUUID();
   }
 
-  return `${Date.now()}-assistant-conversation`;
+  return `${Date.now()}-agent-conversation`;
 }
 
 function formatTime(value) {
@@ -79,9 +79,9 @@ export function GlobalAgentPanel() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("mosaic-assistant-conversation-id");
+      const stored = localStorage.getItem("mosaic-agent-conversation-id");
       const nextId = stored && stored.length > 0 ? stored : createConversationId();
-      localStorage.setItem("mosaic-assistant-conversation-id", nextId);
+      localStorage.setItem("mosaic-agent-conversation-id", nextId);
       setConversationId(nextId);
     } catch {
       setConversationId(createConversationId());
@@ -94,11 +94,11 @@ export function GlobalAgentPanel() {
     }
 
     setIsRefreshing(true);
-    const result = await getAssistantConversationStream({ conversationId });
+    const result = await getAgentConversationStream({ conversationId });
     setIsRefreshing(false);
 
     if (!result.success) {
-      setError(result.error || "Could not refresh assistant timeline.");
+      setError(result.error || "Could not refresh agent timeline.");
       return;
     }
 
@@ -145,7 +145,7 @@ export function GlobalAgentPanel() {
     setMessages((previous) => [...previous, optimisticMessage]);
     setInputValue("");
 
-    const result = await postAssistantMessage({
+    const result = await postAgentMessage({
       conversationId,
       message,
       clientMessageId: optimisticMessage.id,
@@ -154,13 +154,13 @@ export function GlobalAgentPanel() {
     setIsSubmitting(false);
 
     if (!result.success) {
-      setError(result.error || "Assistant message failed.");
+      setError(result.error || "Agent message failed.");
       setMessages((previous) => [
         ...previous,
         {
           id: `${Date.now()}-error`,
           role: "system",
-          text: "The assistant could not queue that message. Please retry.",
+          text: "The agent could not queue that message. Please retry.",
           createdAt: new Date().toISOString(),
           tone: "error",
         },
@@ -175,7 +175,7 @@ export function GlobalAgentPanel() {
       ...previous,
       {
         id: `${accepted.commandId}-queued`,
-        role: "assistant",
+        role: "agent",
         text:
           policyDisposition === "approval_required"
             ? "This request is marked high-impact. Review and approve before execution."
@@ -210,8 +210,8 @@ export function GlobalAgentPanel() {
     }
 
     const confirmText = decision === "Approve"
-      ? "Approve this high-impact assistant action?"
-      : "Reject this high-impact assistant action?";
+      ? "Approve this high-impact agent action?"
+      : "Reject this high-impact agent action?";
 
     if (typeof window !== "undefined" && !window.confirm(confirmText)) {
       return;
@@ -224,12 +224,12 @@ export function GlobalAgentPanel() {
       ),
     );
 
-    const result = await submitAssistantApproval({
+    const result = await submitAgentApproval({
       conversationId,
       approvalId: card.commandId,
       decision,
       clientApprovalId: `${cardId}-${decision.toLowerCase()}`,
-      rationale: decision === "Approve" ? "Approved by user in web assistant panel." : "Rejected by user in web assistant panel.",
+      rationale: decision === "Approve" ? "Approved by user in web agent panel." : "Rejected by user in web agent panel.",
     });
 
     if (!result.success) {
@@ -269,14 +269,14 @@ export function GlobalAgentPanel() {
       <header className="border-b border-[var(--color-border)] px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Mosaic Assistant</p>
-            <h2 className="text-base font-semibold text-[var(--color-text-main)]">Policy-aware runtime assistant</h2>
+            <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Mosaic Agent</p>
+            <h2 className="text-base font-semibold text-[var(--color-text-main)]">Policy-aware runtime agent</h2>
           </div>
           <button
             type="button"
             onClick={() => setIsOpen(false)}
             className="rounded-md border border-[var(--color-border)] p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-main)]"
-            aria-label="Close assistant"
+            aria-label="Close agent"
           >
             <PanelRightClose className="h-4 w-4" />
           </button>
@@ -417,15 +417,15 @@ export function GlobalAgentPanel() {
           </section>
 
           <form onSubmit={handleSendMessage} className="border-t border-[var(--color-border)] px-4 py-3">
-            <label htmlFor="assistant-input" className="sr-only">
-              Ask assistant
+            <label htmlFor="agent-input" className="sr-only">
+              Ask agent
             </label>
             <div className="flex items-end gap-2">
               <textarea
-                id="assistant-input"
+                id="agent-input"
                 value={inputValue}
                 onChange={(event) => setInputValue(event.target.value)}
-                placeholder="Ask assistant..."
+                placeholder="Ask agent..."
                 rows={2}
                 className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none"
               />
@@ -523,14 +523,14 @@ export function GlobalAgentPanel() {
         type="button"
         onClick={() => setIsOpen((current) => !current)}
         className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-semibold text-[var(--color-text-main)] shadow-xl hover:bg-[var(--color-surface-hover)]"
-        aria-label={isOpen ? "Close assistant" : "Open assistant"}
+        aria-label={isOpen ? "Close agent" : "Open agent"}
       >
         {isOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-        Assistant
+        Agent
       </button>
 
       <section
-        aria-label="Global assistant panel"
+        aria-label="Global agent panel"
         className={cn(
           "fixed right-0 top-0 z-50 h-full w-full max-w-md border-l border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl transition-transform duration-300",
           isOpen ? "translate-x-0" : "translate-x-full",

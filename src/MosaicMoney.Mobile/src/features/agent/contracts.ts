@@ -1,18 +1,18 @@
-export type AssistantApprovalDecision = "Approve" | "Reject";
+export type AgentApprovalDecision = "Approve" | "Reject";
 
-export interface AssistantConversationMessageRequest {
+export interface AgentConversationMessageRequest {
   message: string;
   clientMessageId?: string | null;
   userNote?: string | null;
 }
 
-export interface AssistantApprovalRequest {
-  decision: AssistantApprovalDecision;
+export interface AgentApprovalRequest {
+  decision: AgentApprovalDecision;
   clientApprovalId?: string | null;
   rationale?: string | null;
 }
 
-export interface AssistantCommandAcceptedDto {
+export interface AgentCommandAcceptedDto {
   commandId: string;
   correlationId: string;
   conversationId: string;
@@ -23,7 +23,7 @@ export interface AssistantCommandAcceptedDto {
   status: string;
 }
 
-export interface AssistantConversationRunStatusDto {
+export interface AgentConversationRunStatusDto {
   runId: string;
   correlationId: string;
   status: string;
@@ -39,7 +39,7 @@ export interface AssistantConversationRunStatusDto {
   assignmentHint?: string | null;
 }
 
-export interface AssistantConversationStreamDto {
+export interface AgentConversationStreamDto {
   conversationId: string;
-  runs: AssistantConversationRunStatusDto[];
+  runs: AgentConversationRunStatusDto[];
 }

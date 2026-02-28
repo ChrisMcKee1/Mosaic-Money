@@ -11,7 +11,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test:assistant-queue": "vitest run src/features/assistant/offline/assistantPromptQueue.test.ts src/features/assistant/offline/assistantPromptRecovery.test.ts",
+    "test:agent-queue": "vitest run src/features/agent/offline/agentPromptQueue.test.ts src/features/agent/offline/agentPromptRecovery.test.ts",
     "test:sync-recovery": "vitest run src/features/transactions/offline/reviewMutationRecovery.test.ts",
     "test:review-projection": "vitest run src/features/transactions/offline/reviewProjectionWorkflow.integration.test.ts"
   },
