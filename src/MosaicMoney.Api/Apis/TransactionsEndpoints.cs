@@ -87,7 +87,16 @@ public static class TransactionsEndpoints
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
 
-            return Results.Ok(transactions.Select(ApiEndpointHelpers.MapTransaction).ToList());
+            var latestClassificationByTransactionId = await QueryLatestClassificationByTransactionIdAsync(
+                dbContext,
+                transactions.Select(x => x.Id),
+                cancellationToken);
+
+            return Results.Ok(transactions
+                .Select(transaction => ApiEndpointHelpers.MapTransaction(
+                    transaction,
+                    latestClassificationByTransactionId.GetValueOrDefault(transaction.Id)))
+                .ToList());
         });
 
         group.MapGet("/transactions/projection-metadata", async (
@@ -174,7 +183,14 @@ public static class TransactionsEndpoints
                 return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
             }
 
-            return Results.Ok(ApiEndpointHelpers.MapTransaction(transaction));
+            var latestClassificationByTransactionId = await QueryLatestClassificationByTransactionIdAsync(
+                dbContext,
+                [transaction.Id],
+                cancellationToken);
+
+            return Results.Ok(ApiEndpointHelpers.MapTransaction(
+                transaction,
+                latestClassificationByTransactionId.GetValueOrDefault(transaction.Id)));
         });
 
         group.MapPost("/transactions", async (
@@ -387,6 +403,35 @@ public static class TransactionsEndpoints
                 && x.AccessRole != AccountAccessRole.None
                 && x.HouseholdUser.MembershipStatus == HouseholdMembershipStatus.Active)
             .Select(x => x.AccountId);
+    }
+
+    private static async Task<IReadOnlyDictionary<Guid, ApiEndpointHelpers.TransactionClassificationProvenance>> QueryLatestClassificationByTransactionIdAsync(
+        MosaicMoneyDbContext dbContext,
+        IEnumerable<Guid> transactionIds,
+        CancellationToken cancellationToken)
+    {
+        var transactionIdList = transactionIds
+            .Distinct()
+            .ToList();
+
+        if (transactionIdList.Count == 0)
+        {
+            return new Dictionary<Guid, ApiEndpointHelpers.TransactionClassificationProvenance>();
+        }
+
+        // Query classification outcomes once for the current transaction page and reduce in memory.
+        var orderedOutcomes = await dbContext.TransactionClassificationOutcomes
+            .AsNoTracking()
+            .Where(x => transactionIdList.Contains(x.TransactionId))
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ThenByDescending(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        return orderedOutcomes
+            .GroupBy(x => x.TransactionId)
+            .ToDictionary(
+                group => group.Key,
+                group => ApiEndpointHelpers.MapClassificationProvenance(group.First()));
     }
 
 }

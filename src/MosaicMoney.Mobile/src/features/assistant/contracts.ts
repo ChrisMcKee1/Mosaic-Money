@@ -33,6 +33,10 @@ export interface AssistantConversationRunStatusDto {
   createdAtUtc: string;
   lastModifiedAtUtc: string;
   completedAtUtc?: string | null;
+  agentName?: string | null;
+  agentSource?: string | null;
+  latestStageOutcomeSummary?: string | null;
+  assignmentHint?: string | null;
 }
 
 export interface AssistantConversationStreamDto {

@@ -4,7 +4,7 @@ import { replayQueuedAssistantPrompts } from "./assistantPromptRecovery";
 
 const DEFAULT_RECOVERY_INTERVAL_MS = 45_000;
 
-export function useAssistantPromptRecovery(options?: {
+export function useAgentPromptRecovery(options?: {
   intervalMs?: number;
 }): void {
   const intervalMs = options?.intervalMs ?? DEFAULT_RECOVERY_INTERVAL_MS;

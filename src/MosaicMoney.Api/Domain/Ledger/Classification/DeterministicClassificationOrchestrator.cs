@@ -27,7 +27,8 @@ public sealed class DeterministicClassificationOrchestrator(
     IPostgresSemanticRetrievalService semanticRetrievalService,
     ITaxonomyReadinessGate taxonomyReadinessGate,
     IMafFallbackEligibilityGate mafFallbackEligibilityGate,
-    IMafFallbackGraphService mafFallbackGraphService) : IDeterministicClassificationOrchestrator
+    IMafFallbackGraphService mafFallbackGraphService,
+    IClassificationInsightWriter insightWriter) : IDeterministicClassificationOrchestrator
 {
     private sealed record ClassificationWorkflowFinalDecision(
         ClassificationDecision Decision,
@@ -178,6 +179,9 @@ public sealed class DeterministicClassificationOrchestrator(
             DecisionReasonCode = Truncate(finalDecision.DecisionReasonCode.Trim(), 120),
             DecisionRationale = Truncate(finalDecision.DecisionRationale.Trim(), 500),
             AgentNoteSummary = AgentNoteSummaryPolicy.Sanitize(finalDecision.AgentNoteSummary),
+            IsAiAssigned = true,
+            AssignmentSource = "deterministic_pipeline",
+            AssignedByAgent = "deterministic-orchestrator",
             CreatedAtUtc = now,
         };
 
@@ -187,6 +191,7 @@ public sealed class DeterministicClassificationOrchestrator(
         }
 
         ApplyDecisionToTransaction(transaction, finalDecision, now, needsReviewByUserId);
+        insightWriter.RecordOutcomeInsight(transaction, outcome);
 
         dbContext.TransactionClassificationOutcomes.Add(outcome);
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -222,6 +227,9 @@ public sealed class DeterministicClassificationOrchestrator(
             DecisionRationale = decisionRationale,
             AgentNoteSummary = AgentNoteSummaryPolicy.Sanitize(
                 $"Taxonomy readiness gate routed to NeedsReview ({readinessEvaluation.ReasonCode})."),
+            IsAiAssigned = true,
+            AssignmentSource = "taxonomy_gate",
+            AssignedByAgent = "deterministic-orchestrator",
             CreatedAtUtc = now,
         };
 
@@ -248,6 +256,7 @@ public sealed class DeterministicClassificationOrchestrator(
             AgentNoteSummary: $"Taxonomy readiness gate routed to NeedsReview ({readinessEvaluation.ReasonCode}).");
 
         ApplyDecisionToTransaction(transaction, finalDecision, now, needsReviewByUserId);
+        insightWriter.RecordOutcomeInsight(transaction, outcome, decisionRationale);
 
         dbContext.TransactionClassificationOutcomes.Add(outcome);
         await dbContext.SaveChangesAsync(cancellationToken);

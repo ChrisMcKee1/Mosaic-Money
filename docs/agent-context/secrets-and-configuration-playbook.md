@@ -313,14 +313,24 @@ Notes:
 
 Mosaic Money keeps AI model routing keys in AppHost user-secrets and injects them into API/worker through `WithEnvironment(...)`.
 
-Required keys:
+Required AppHost parameter keys:
 
 1. `Parameters:azure-openai-endpoint` (private endpoint URI; can be a Foundry/OpenAI endpoint)
 2. `Parameters:azure-openai-api-key` (secret)
 3. `Parameters:azure-openai-embedding-deployment` (non-secret deployment/model name)
 4. `Parameters:azure-openai-chat-deployment` (non-secret deployment/model name)
+5. `Parameters:foundry-classification-enabled` (`true`/`false`, non-secret)
+6. `Parameters:foundry-project-endpoint` (private Foundry classification endpoint URI)
+7. `Parameters:foundry-project-api-key` (secret)
+8. `Parameters:foundry-classification-deployment` (non-secret deployment/model name)
+9. `Parameters:foundry-agent-enabled` (`true`/`false`, non-secret)
+10. `Parameters:foundry-agent-endpoint` (private Foundry agent endpoint URI)
+11. `Parameters:foundry-agent-api-key` (secret)
+12. `Parameters:foundry-agent-deployment` (non-secret deployment/model name)
 
-API contract placeholders:
+Project-specific Foundry agent prompt/tool/knowledge settings stay in API and Worker configuration (`AiWorkflow:Agent:Foundry:*`) and should be supplied through per-project user-secrets.
+
+API contract placeholders (`src/MosaicMoney.Api/appsettings.json`):
 
 1. `AiWorkflow:Embeddings:Provider` (`deterministic` or `azure-openai`)
 2. `AiWorkflow:Embeddings:AzureOpenAI:Endpoint`
@@ -330,15 +340,88 @@ API contract placeholders:
 6. `AiWorkflow:Chat:AzureOpenAI:Endpoint`
 7. `AiWorkflow:Chat:AzureOpenAI:ApiKey`
 8. `AiWorkflow:Chat:AzureOpenAI:Deployment`
+9. `AiWorkflow:Classification:Foundry:Enabled`
+10. `AiWorkflow:Classification:Foundry:Endpoint`
+11. `AiWorkflow:Classification:Foundry:ApiKey`
+12. `AiWorkflow:Classification:Foundry:Deployment`
+13. `AiWorkflow:Classification:Foundry:AgentName`
+14. `AiWorkflow:Classification:Foundry:MinimumConfidenceForAutoAssign`
+15. `AiWorkflow:Agent:Foundry:Enabled`
+16. `AiWorkflow:Agent:Foundry:Endpoint`
+17. `AiWorkflow:Agent:Foundry:ApiKey`
+18. `AiWorkflow:Agent:Foundry:Deployment`
+19. `AiWorkflow:Agent:Foundry:AgentName`
+20. `AiWorkflow:Agent:Foundry:SystemPrompt`
+21. `AiWorkflow:Agent:Foundry:McpDatabaseToolName`
+22. `AiWorkflow:Agent:Foundry:McpDatabaseToolEndpoint`
+23. `AiWorkflow:Agent:Foundry:KnowledgeSourceUrl`
+24. `AiWorkflow:Agent:Foundry:ApiVersion`
 
-File-based AppHost commands:
+Worker contract placeholders (`src/MosaicMoney.Worker/appsettings.json`):
+
+1. `AiWorkflow:Agent:Foundry:Enabled`
+2. `AiWorkflow:Agent:Foundry:Endpoint`
+3. `AiWorkflow:Agent:Foundry:ApiKey`
+4. `AiWorkflow:Agent:Foundry:Deployment`
+5. `AiWorkflow:Agent:Foundry:AgentName`
+6. `AiWorkflow:Agent:Foundry:SystemPrompt`
+7. `AiWorkflow:Agent:Foundry:McpDatabaseToolName`
+8. `AiWorkflow:Agent:Foundry:McpDatabaseToolEndpoint`
+9. `AiWorkflow:Agent:Foundry:KnowledgeSourceUrl`
+10. `AiWorkflow:Agent:Foundry:ApiVersion`
+
+Project-based AppHost commands:
+
+```bash
+dotnet user-secrets init --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:azure-openai-endpoint" "https://<resource>.openai.azure.com/" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:azure-openai-api-key" "<azure-openai-api-key>" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:azure-openai-embedding-deployment" "text-embedding-3-small" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:azure-openai-chat-deployment" "gpt-5.3-codex" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-classification-enabled" "false" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-project-endpoint" "https://<foundry-resource>.services.ai.azure.com/api/projects/<classification-project>" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-project-api-key" "<foundry-classification-api-key>" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-classification-deployment" "gpt-5.3-codex" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-agent-enabled" "false" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-agent-endpoint" "https://<foundry-resource>.services.ai.azure.com/api/projects/<agent-project>" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-agent-api-key" "<foundry-agent-api-key>" --project <path-to-apphost-csproj>
+dotnet user-secrets set "Parameters:foundry-agent-deployment" "gpt-5.3-codex" --project <path-to-apphost-csproj>
+dotnet user-secrets list --project <path-to-apphost-csproj>
+
+# Project-level Foundry agent settings (API/Worker)
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:AgentName" "Mosaic" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:SystemPrompt" "<foundry-agent-system-prompt>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:McpDatabaseToolName" "mosaic-postgres" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:McpDatabaseToolEndpoint" "https://<mcp-host>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:KnowledgeSourceUrl" "https://<knowledge-source>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:ApiVersion" "2025-05-01" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets list --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+```
+
+File-based AppHost commands (this repository):
 
 ```bash
 dotnet user-secrets set "Parameters:azure-openai-endpoint" "https://<resource>.openai.azure.com/" --file src/apphost.cs
 dotnet user-secrets set "Parameters:azure-openai-api-key" "<azure-openai-api-key>" --file src/apphost.cs
 dotnet user-secrets set "Parameters:azure-openai-embedding-deployment" "text-embedding-3-small" --file src/apphost.cs
-dotnet user-secrets set "Parameters:azure-openai-chat-deployment" "gpt-5.2" --file src/apphost.cs
+dotnet user-secrets set "Parameters:azure-openai-chat-deployment" "gpt-5.3-codex" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-classification-enabled" "false" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-project-endpoint" "https://<foundry-resource>.services.ai.azure.com/api/projects/<classification-project>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-project-api-key" "<foundry-classification-api-key>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-classification-deployment" "gpt-5.3-codex" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-agent-enabled" "false" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-agent-endpoint" "https://<foundry-resource>.services.ai.azure.com/api/projects/<agent-project>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-agent-api-key" "<foundry-agent-api-key>" --file src/apphost.cs
+dotnet user-secrets set "Parameters:foundry-agent-deployment" "gpt-5.3-codex" --file src/apphost.cs
 dotnet user-secrets list --file src/apphost.cs
+
+# Project-level Foundry agent settings (API/Worker)
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:AgentName" "Mosaic" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:SystemPrompt" "<foundry-agent-system-prompt>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:McpDatabaseToolName" "mosaic-postgres" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:McpDatabaseToolEndpoint" "https://<mcp-host>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:KnowledgeSourceUrl" "https://<knowledge-source>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:Agent:Foundry:ApiVersion" "2025-05-01" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
 
 # Enable Azure embeddings in API runtime (project-based user-secrets)
 dotnet user-secrets set "AiWorkflow:Embeddings:Provider" "azure-openai" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
@@ -348,7 +431,35 @@ dotnet user-secrets list --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
 Notes:
 
 - Keep `AiWorkflow:Embeddings:Provider=deterministic` until endpoint/key/deployment values are set.
+- Store AI endpoint and key values in AppHost user-secrets/local development stores only; never commit credentials to source-controlled files.
 - Do not commit endpoint keys, API keys, or project-specific identifiers in `appsettings*.json`.
+- Legacy keys `Parameters:foundry-project-url` and `Parameters:foundry-api-key` are superseded by `Parameters:foundry-project-endpoint` and `Parameters:foundry-project-api-key`.
+- Legacy Foundry conversational keys under `Parameters:foundry-assistant-*` and `AiWorkflow:Assistant:Foundry:*` remain backward-compatible but `foundry-agent-*` and `AiWorkflow:Agent:Foundry:*` are the canonical names.
+
+## EF migration targeting contract (Azure PostgreSQL)
+
+When applying EF migrations outside Aspire runtime, explicitly provide the target connection string through `MOSAIC_MONEY_EF_DESIGNTIME_CONNECTION` so design-time tooling does not fall back to local placeholder values.
+
+Project-based AppHost flow:
+
+```bash
+dotnet user-secrets list --project src/apphost.csproj
+$env:MOSAIC_MONEY_EF_DESIGNTIME_CONNECTION="Host=<azure-postgres-host>;Database=mosaicmoneydb;Username=<user>;Password=<password>;SSL Mode=Require;Trust Server Certificate=false;"
+dotnet ef database update --project src/MosaicMoney.Api/MosaicMoney.Api.csproj --startup-project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+```
+
+File-based AppHost flow (this repository):
+
+```bash
+dotnet user-secrets list --file src/apphost.cs
+$env:MOSAIC_MONEY_EF_DESIGNTIME_CONNECTION="Host=<azure-postgres-host>;Database=mosaicmoneydb;Username=<user>;Password=<password>;SSL Mode=Require;Trust Server Certificate=false;"
+dotnet ef database update --project src/MosaicMoney.Api/MosaicMoney.Api.csproj --startup-project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+```
+
+Safety checks:
+
+- Verify the target host is non-local before running migrations.
+- Redact password values from logs and command transcripts.
 
 ## Runtime messaging backbone local setup contract (M10 MM-ASP-12)
 

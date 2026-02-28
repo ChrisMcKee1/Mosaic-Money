@@ -8,13 +8,13 @@ using MosaicMoney.Api.Domain.Ledger;
 
 namespace MosaicMoney.Api.Apis;
 
-public static class AssistantOrchestrationEndpoints
+public static class AgentOrchestrationEndpoints
 {
     private const string AssistantCommandQueue = "runtime-assistant-message-posted";
     private const string AssistantCommandType = "assistant_message_posted";
     private const string AssistantApprovalCommandType = "assistant_approval_submitted";
 
-    public static RouteGroupBuilder MapAssistantOrchestrationEndpoints(this RouteGroupBuilder group)
+    public static RouteGroupBuilder MapAgentOrchestrationEndpoints(this RouteGroupBuilder group)
     {
         var assistantGroup = group.MapGroup("/assistant/conversations");
 
@@ -239,19 +239,55 @@ public static class AssistantOrchestrationEndpoints
             var runs = await query
                 .OrderByDescending(x => x.CreatedAtUtc)
                 .Take(50)
-                .Select(x => new AssistantConversationRunStatusDto(
+                .Select(x => new
+                {
                     x.Id,
                     x.CorrelationId,
-                    x.Status.ToString(),
+                    Status = x.Status.ToString(),
                     x.TriggerSource,
                     x.FailureCode,
                     x.FailureRationale,
                     x.CreatedAtUtc,
                     x.LastModifiedAtUtc,
-                    x.CompletedAtUtc))
+                    x.CompletedAtUtc,
+                    x.WorkflowName,
+                    LatestStageExecutor = x.Stages
+                        .OrderByDescending(stage => stage.StageOrder)
+                        .ThenByDescending(stage => stage.CreatedAtUtc)
+                        .Select(stage => stage.Executor)
+                        .FirstOrDefault(),
+                    LatestStageOutcomeRationale = x.Stages
+                        .OrderByDescending(stage => stage.StageOrder)
+                        .ThenByDescending(stage => stage.CreatedAtUtc)
+                        .Select(stage => stage.OutcomeRationale)
+                        .FirstOrDefault(),
+                })
                 .ToListAsync(cancellationToken);
 
-            return Results.Ok(new AssistantConversationStreamDto(conversationId, runs));
+            var mappedRuns = runs
+                .Select(static run =>
+                {
+                    var (latestStageOutcomeSummary, assignmentHint) = ParseStageOutcomeRationale(run.LatestStageOutcomeRationale);
+                    var (agentSource, agentName) = ResolveAgentProvenance(run.WorkflowName, run.LatestStageExecutor);
+
+                    return new AssistantConversationRunStatusDto(
+                        run.Id,
+                        run.CorrelationId,
+                        run.Status,
+                        run.TriggerSource,
+                        run.FailureCode,
+                        run.FailureRationale,
+                        run.CreatedAtUtc,
+                        run.LastModifiedAtUtc,
+                        run.CompletedAtUtc,
+                        AgentName: agentName,
+                        AgentSource: agentSource,
+                        LatestStageOutcomeSummary: latestStageOutcomeSummary,
+                        AssignmentHint: assignmentHint);
+                })
+                .ToList();
+
+            return Results.Ok(new AssistantConversationStreamDto(conversationId, mappedRuns));
         });
 
         return group;
@@ -268,6 +304,69 @@ public static class AssistantOrchestrationEndpoints
         }
 
         return "advisory_only";
+    }
+
+    private static (string? Summary, string? AssignmentHint) ParseStageOutcomeRationale(string? outcomeRationale)
+    {
+        if (string.IsNullOrWhiteSpace(outcomeRationale))
+        {
+            return (null, null);
+        }
+
+        const string assignmentHintPrefix = "assignment_hint=";
+        if (outcomeRationale.StartsWith(assignmentHintPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var delimiterIndex = outcomeRationale.IndexOf(';');
+            if (delimiterIndex > assignmentHintPrefix.Length)
+            {
+                var assignmentHint = outcomeRationale[assignmentHintPrefix.Length..delimiterIndex].Trim();
+                var summary = outcomeRationale[(delimiterIndex + 1)..].Trim();
+
+                return (
+                    string.IsNullOrWhiteSpace(summary) ? null : summary,
+                    string.IsNullOrWhiteSpace(assignmentHint) ? null : assignmentHint);
+            }
+        }
+
+        return (outcomeRationale, null);
+    }
+
+    private static (string? AgentSource, string? AgentName) ResolveAgentProvenance(string workflowName, string? latestStageExecutor)
+    {
+        var parsed = ParseAssistantExecutor(latestStageExecutor);
+        if (!string.IsNullOrWhiteSpace(parsed.AgentSource) && !string.IsNullOrWhiteSpace(parsed.AgentName))
+        {
+            return parsed;
+        }
+
+        if (string.Equals(workflowName, AssistantCommandType, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(workflowName, AssistantApprovalCommandType, StringComparison.OrdinalIgnoreCase))
+        {
+            return ("foundry", "Mosaic");
+        }
+
+        return (null, null);
+    }
+
+    private static (string? AgentSource, string? AgentName) ParseAssistantExecutor(string? latestStageExecutor)
+    {
+        if (string.IsNullOrWhiteSpace(latestStageExecutor))
+        {
+            return (null, null);
+        }
+
+        var separatorIndex = latestStageExecutor.IndexOf(':');
+        if (separatorIndex <= 0 || separatorIndex >= latestStageExecutor.Length - 1)
+        {
+            return (null, null);
+        }
+
+        var agentSource = latestStageExecutor[..separatorIndex].Trim();
+        var agentName = latestStageExecutor[(separatorIndex + 1)..].Trim();
+
+        return string.IsNullOrWhiteSpace(agentSource) || string.IsNullOrWhiteSpace(agentName)
+            ? (null, null)
+            : (agentSource, agentName);
     }
 
     private static async Task<Guid?> ResolveHouseholdIdAsync(

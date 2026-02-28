@@ -16,6 +16,7 @@ Detailed architecture docs:
 ## Core Stack
 - Backend: C# 14 with .NET 10 Minimal APIs.
 - API host pattern: one ASP.NET Core service can expose both Minimal API and MCP endpoints, both wrapping shared core services.
+- Current API endpoint surfaces include MCP HTTP transport at `/api/mcp` with explicit tool wrappers over shared business services.
 - Orchestration: Aspire 13.3 preview AppHost with API, worker, and frontend composition.
 - Orchestration database mode: use `AddAzurePostgresFlexibleServer` as the canonical Postgres resource; local full-stack can run via `.RunAsContainer()` and DB-only Azure rollout uses `src/apphost.database/apphost.cs`.
 - Web: Next.js 16 with React 19 and Tailwind CSS.
@@ -32,14 +33,14 @@ Detailed architecture docs:
 - Do not treat Minimal API route mappings as MCP tools; use explicit MCP tool wrappers that call shared business services.
 - Keep deterministic and in-database AI paths primary for cost and latency control.
 - Treat API as resource server: validate Clerk JWTs, map `sub` to Mosaic identity, and enforce protected endpoints via authorization policy.
-- Escalation order is deterministic -> semantic retrieval -> MAF fallback.
+- Escalation order is deterministic -> semantic retrieval -> MAF fallback, with an explicit operator-invoked Foundry classification endpoint for reviewed reclassification flows.
 - For Azure rollout requiring only database provisioning, deploy `src/apphost.database/apphost.cs` with Aspire CLI because `aspire deploy` does not currently provide per-resource filtering.
 - DB-only rollout recommendation: run `aspire do provision-mosaic-postgres-kv` first, tag the vault (`mosaic=true`, `workload=mosaic-money`), then continue database provisioning.
 - Route low-confidence cases into `NeedsReview` instead of forced auto-resolution.
 - Preserve source-of-truth ledger integrity. Projection logic stays in presentation layers.
 - Aggregate/shape time-series buckets (day/week/month) before chart render boundaries to keep chart components presentation-only.
 
-Runtime gap note (2026-02-27): staged classification policy is implemented, but full runtime multi-agent orchestration and conversational assistant surfaces are not yet complete. See `docs/agent-context/runtime-agentic-gap-analysis-2026-02-27.md` for required schema, worker/eventing, and UI expansion roadmap.
+Runtime implementation note (2026-02-28): staged classification policy remains primary, and the API now persists classification assignment provenance (`IsAiAssigned`, `AssignmentSource`, `AssignedByAgent`) plus `ClassificationInsights` records for explainability/audit. Full runtime multi-agent orchestration and conversational assistant surfaces are still in progress. See `docs/agent-context/runtime-agentic-gap-analysis-2026-02-27.md` for remaining schema, worker/eventing, and UI expansion roadmap.
 
 ## Team Routing Map
 - `mosaic-money-backend`: API, entities, migrations, ingestion.

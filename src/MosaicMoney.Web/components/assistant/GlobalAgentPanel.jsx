@@ -64,7 +64,7 @@ function statusClassName(status) {
   return "bg-[var(--color-surface-hover)] text-[var(--color-text-muted)] border-[var(--color-border)]";
 }
 
-export function GlobalAssistantPanel() {
+export function GlobalAgentPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("conversation");
   const [conversationId, setConversationId] = useState("");
@@ -463,7 +463,14 @@ export function GlobalAssistantPanel() {
                 <article key={run.runId} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-3">
                   <div className="mb-2 flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-xs font-semibold text-[var(--color-text-main)]">{run.triggerSource}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="text-xs font-semibold text-[var(--color-text-main)]">{run.triggerSource}</p>
+                        {run.agentName ? (
+                          <span className="rounded bg-[var(--color-primary)]/10 px-1.5 py-0.5 text-[9px] font-medium text-[var(--color-primary)]">
+                            {run.agentName}{run.agentSource ? ` (${run.agentSource})` : ""}
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="mt-0.5 text-[10px] text-[var(--color-text-subtle)] font-mono break-all">{run.correlationId}</p>
                     </div>
                     <span className={cn("rounded-full border px-2 py-0.5 text-[10px] font-semibold", statusClassName(run.status))}>
@@ -480,6 +487,17 @@ export function GlobalAssistantPanel() {
                       <Sparkles className="h-3 w-3" />
                       Last update {formatTime(run.lastModifiedAtUtc)}
                     </p>
+                    {run.latestStageOutcomeSummary ? (
+                      <div className="mt-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                        <p className="text-[10px] text-[var(--color-text-main)] break-words">{run.latestStageOutcomeSummary}</p>
+                        {run.assignmentHint ? (
+                          <p className="mt-1 border-t border-[var(--color-border)]/50 pt-1 text-[9px] text-[var(--color-text-subtle)] break-words">
+                            <span className="font-semibold text-[var(--color-text-muted)]">Hint: </span>
+                            {run.assignmentHint}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {run.failureCode ? (
                       <p className="flex items-start gap-1 text-[var(--color-warning)]">
                         <ShieldAlert className="mt-0.5 h-3 w-3" />

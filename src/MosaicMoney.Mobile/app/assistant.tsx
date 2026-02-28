@@ -1,5 +1,5 @@
-import { AssistantScreen } from "../src/features/assistant/components/AssistantScreen";
+import { AgentScreen } from "../src/features/assistant/components/AgentScreen";
 
 export default function AssistantRoute() {
-  return <AssistantScreen />;
+  return <AgentScreen />;
 }

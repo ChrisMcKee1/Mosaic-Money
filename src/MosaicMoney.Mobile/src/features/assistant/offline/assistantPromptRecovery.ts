@@ -1,5 +1,5 @@
 import { MobileApiError } from "../../../shared/services/mobileApiClient";
-import { postAssistantMessage } from "../services/mobileAssistantApi";
+import { postAssistantMessage } from "../services/mobileAgentApi";
 import {
   getAssistantQueuedPromptReplayRequest,
   isAssistantPromptReadyForReplay,

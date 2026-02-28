@@ -3,7 +3,7 @@ import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { useEffect } from "react";
 import { useReviewMutationRecovery } from "../src/features/transactions/hooks/useReviewMutationRecovery";
 import { useCategoryMutationRecovery } from "../src/features/settings/offline/useCategoryMutationRecovery";
-import { useAssistantPromptRecovery } from "../src/features/assistant/offline/useAssistantPromptRecovery";
+import { useAgentPromptRecovery } from "../src/features/assistant/offline/useAgentPromptRecovery";
 import { theme } from "../src/theme/tokens";
 import { tokenCache } from "../src/auth/tokenCache";
 import { setAuthTokenProvider } from "../src/shared/services/mobileApiClient";
@@ -21,7 +21,7 @@ function CategoryMutationRecoveryHost() {
 }
 
 function AssistantPromptRecoveryHost() {
-  useAssistantPromptRecovery();
+  useAgentPromptRecovery();
   return null;
 }
 

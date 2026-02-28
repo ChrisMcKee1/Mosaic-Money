@@ -52,7 +52,11 @@ public sealed record AssistantConversationRunStatusDto(
     string? FailureRationale,
     DateTime CreatedAtUtc,
     DateTime LastModifiedAtUtc,
-    DateTime? CompletedAtUtc);
+    DateTime? CompletedAtUtc,
+    string? AgentName = null,
+    string? AgentSource = null,
+    string? LatestStageOutcomeSummary = null,
+    string? AssignmentHint = null);
 
 public sealed record AssistantConversationStreamDto(
     Guid ConversationId,

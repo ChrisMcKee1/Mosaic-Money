@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MosaicMoney.Api.Apis;
 using MosaicMoney.Api.Authentication;
 using MosaicMoney.Api.Data;
+using MosaicMoney.Api.Domain.Assistant;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.AccessPolicy;
 using MosaicMoney.Api.Domain.Ledger.Classification;
@@ -32,6 +33,7 @@ builder.Services.Configure<TaxonomyReadinessOptions>(builder.Configuration.GetSe
 builder.Services.AddScoped<TaxonomyBootstrapBackfillService>();
 builder.Services.AddScoped<ITaxonomyReadinessGate, TaxonomyReadinessGateService>();
 builder.Services.AddScoped<ICategoryLifecycleAuditTrail, CategoryLifecycleAuditTrail>();
+builder.Services.AddScoped<IMcpTaxonomyBusinessService, McpTaxonomyBusinessService>();
 builder.Services.Configure<PlaidOptions>(builder.Configuration.GetSection(PlaidOptions.SectionName));
 builder.Services.AddHttpClient<PlaidHttpTokenProvider>();
 builder.Services.AddScoped<PlaidDeltaIngestionService>();
@@ -52,6 +54,13 @@ builder.Services.AddScoped<TransactionProjectionMetadataQueryService>();
 builder.Services.AddScoped<IDeterministicClassificationEngine, DeterministicClassificationEngine>();
 builder.Services.AddScoped<IClassificationAmbiguityPolicyGate, ClassificationAmbiguityPolicyGate>();
 builder.Services.AddScoped<IClassificationConfidenceFusionPolicy, ClassificationConfidenceFusionPolicy>();
+builder.Services.Configure<FoundryClassificationOptions>(
+    builder.Configuration.GetSection(FoundryClassificationOptions.SectionName));
+var foundryAgentSection = builder.Configuration.GetSection(FoundryAgentOptions.SectionName);
+builder.Services.Configure<FoundryAgentOptions>(
+    foundryAgentSection.Exists()
+        ? foundryAgentSection
+        : builder.Configuration.GetSection(FoundryAgentOptions.LegacySectionName));
 builder.Services.Configure<ClassificationSpecialistRegistryOptions>(
     builder.Configuration.GetSection(ClassificationSpecialistRegistryOptions.SectionName));
 builder.Services.AddSingleton<IClassificationSpecialistRegistry, ClassificationSpecialistRegistry>();
@@ -62,6 +71,12 @@ builder.Services.Configure<MafFallbackGraphOptions>(builder.Configuration.GetSec
 builder.Services.AddScoped<IMafFallbackEligibilityGate, MafFallbackEligibilityGate>();
 builder.Services.AddSingleton<IMafFallbackGraphExecutor, NoOpMafFallbackGraphExecutor>();
 builder.Services.AddScoped<IMafFallbackGraphService, MafFallbackGraphService>();
+builder.Services.AddScoped<IFoundryClassificationService, FoundryClassificationService>();
+builder.Services.AddScoped<IFoundryClassificationOrchestrator, FoundryClassificationOrchestrator>();
+builder.Services.AddHttpClient<IFoundryAgentLifecycleClient, FoundryAgentLifecycleClient>();
+builder.Services.AddHttpClient<IFoundryAgentRuntimeService, FoundryAgentRuntimeService>();
+builder.Services.AddHostedService<FoundryAgentBootstrapHostedService>();
+builder.Services.AddScoped<IClassificationInsightWriter, ClassificationInsightWriter>();
 builder.Services.AddScoped<IDeterministicClassificationOrchestrator, DeterministicClassificationOrchestrator>();
 builder.Services.Configure<TransactionEmbeddingProviderOptions>(
     builder.Configuration.GetSection(TransactionEmbeddingProviderOptions.SectionName));
@@ -81,6 +96,9 @@ builder.Services.AddScoped<ITransactionEmbeddingQueueService, TransactionEmbeddi
 builder.Services.AddScoped<ITransactionEmbeddingQueueProcessor, TransactionEmbeddingQueueProcessor>();
 builder.Services.AddHostedService<TransactionEmbeddingQueueBackgroundService>();
 builder.Services.AddHostedService<PlaidTransactionsSyncBackgroundService>();
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithToolsFromAssembly();
 
 var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 if (allowedCorsOrigins.Length > 0)
@@ -111,6 +129,7 @@ app.UseAuthorization();
 
 app.MapDefaultEndpoints();
 app.MapMosaicMoneyApi();
+app.MapMcp("/api/mcp");
 
 app.Run();
 

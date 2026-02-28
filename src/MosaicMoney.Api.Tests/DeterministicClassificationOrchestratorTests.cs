@@ -484,9 +484,10 @@ public sealed class DeterministicClassificationOrchestratorTests
             new ClassificationConfidenceFusionPolicy(),
             specialistRoutingPolicy ?? CreateSpecialistRoutingPolicy(new ClassificationSpecialistRegistryOptions()),
             semanticRetrievalService,
-                taxonomyReadinessGate ?? new StubTaxonomyReadinessGate(),
+            taxonomyReadinessGate ?? new StubTaxonomyReadinessGate(),
             mafEligibilityGate ?? new StubMafFallbackEligibilityGate(),
-            mafFallbackGraphService ?? new StubMafFallbackGraphService());
+            mafFallbackGraphService ?? new StubMafFallbackGraphService(),
+            new ClassificationInsightWriter());
     }
 
     private static IClassificationSpecialistRoutingPolicy CreateSpecialistRoutingPolicy(

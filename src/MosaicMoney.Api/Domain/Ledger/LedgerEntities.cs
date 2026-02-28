@@ -496,6 +496,8 @@ public sealed class EnrichedTransaction
     public ICollection<ReimbursementProposal> ReimbursementProposals { get; set; } = new List<ReimbursementProposal>();
 
     public ICollection<TransactionEmbeddingQueueItem> EmbeddingQueueItems { get; set; } = new List<TransactionEmbeddingQueueItem>();
+
+    public ICollection<ClassificationInsight> ClassificationInsights { get; set; } = new List<ClassificationInsight>();
 }
 
 public sealed class TransactionEmbeddingQueueItem
@@ -1070,6 +1072,14 @@ public sealed class TransactionClassificationOutcome
     [MaxLength(600)]
     public string? AgentNoteSummary { get; set; }
 
+    public bool IsAiAssigned { get; set; }
+
+    [MaxLength(40)]
+    public string AssignmentSource { get; set; } = "human";
+
+    [MaxLength(120)]
+    public string? AssignedByAgent { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public EnrichedTransaction Transaction { get; set; } = null!;
@@ -1077,6 +1087,8 @@ public sealed class TransactionClassificationOutcome
     public Subcategory? ProposedSubcategory { get; set; }
 
     public ICollection<ClassificationStageOutput> StageOutputs { get; set; } = new List<ClassificationStageOutput>();
+
+    public ICollection<ClassificationInsight> Insights { get; set; } = new List<ClassificationInsight>();
 }
 
 public sealed class ClassificationStageOutput
@@ -1108,4 +1120,34 @@ public sealed class ClassificationStageOutput
     public TransactionClassificationOutcome Outcome { get; set; } = null!;
 
     public Subcategory? ProposedSubcategory { get; set; }
+}
+
+public sealed class ClassificationInsight
+{
+    public Guid Id { get; set; }
+
+    public Guid HouseholdId { get; set; }
+
+    public Guid TransactionId { get; set; }
+
+    public Guid OutcomeId { get; set; }
+
+    [MaxLength(80)]
+    public string InsightType { get; set; } = string.Empty;
+
+    [MaxLength(500)]
+    public string Summary { get; set; } = string.Empty;
+
+    [Precision(5, 4)]
+    public decimal Confidence { get; set; }
+
+    public bool RequiresHumanReview { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public Household Household { get; set; } = null!;
+
+    public EnrichedTransaction Transaction { get; set; } = null!;
+
+    public TransactionClassificationOutcome Outcome { get; set; } = null!;
 }

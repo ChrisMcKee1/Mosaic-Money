@@ -21,7 +21,7 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
   },
 }));
 
-vi.mock("../services/mobileAssistantApi", () => ({
+vi.mock("../services/mobileAgentApi", () => ({
   postAssistantMessage: (...args: unknown[]) => postAssistantMessageMock(...args),
 }));
 

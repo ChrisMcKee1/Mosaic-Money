@@ -17,4 +17,9 @@
   <ItemGroup>
     <ProjectReference Include="..\MosaicMoney.ServiceDefaults\MosaicMoney.ServiceDefaults.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\MosaicMoney.Api\Domain\Assistant\FoundryAgentOptions.cs" Link="Domain\Assistant\FoundryAgentOptions.cs" />
+    <Compile Include="..\MosaicMoney.Api\Domain\Assistant\FoundryAgentRuntimeService.cs" Link="Domain\Assistant\FoundryAgentRuntimeService.cs" />
+  </ItemGroup>
 </Project>

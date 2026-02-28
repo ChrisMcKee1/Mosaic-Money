@@ -13,6 +13,8 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.0.0" />
+    <PackageReference Include="OpenAI" Version="2.9.0" />
     <PackageReference Include="Pgvector.EntityFrameworkCore" Version="0.3.0" />
   </ItemGroup>
 

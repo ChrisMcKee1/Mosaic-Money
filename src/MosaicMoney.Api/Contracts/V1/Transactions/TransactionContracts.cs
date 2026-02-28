@@ -28,7 +28,13 @@ public sealed record TransactionDto(
     string? AgentNote,
     IReadOnlyList<TransactionSplitDto> Splits,
     DateTime CreatedAtUtc,
-    DateTime LastModifiedAtUtc);
+    DateTime LastModifiedAtUtc,
+    bool? IsAiAssigned,
+    string? AssignmentSource,
+    string? AssignedByAgent,
+    string? LatestClassificationReasonCode,
+    string? LatestClassificationRationale,
+    decimal? LatestClassificationConfidence);
 
 public sealed record TransactionSplitProjectionMetadataDto(
     Guid Id,

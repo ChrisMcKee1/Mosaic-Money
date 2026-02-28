@@ -23,6 +23,9 @@ public sealed record ClassificationOutcomeDto(
     string DecisionReasonCode,
     string DecisionRationale,
     string? AgentNoteSummary,
+    bool IsAiAssigned,
+    string AssignmentSource,
+    string? AssignedByAgent,
     DateTime CreatedAtUtc,
     IReadOnlyList<ClassificationStageOutputDto> StageOutputs);
 

@@ -66,6 +66,8 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<ClassificationStageOutput> ClassificationStageOutputs => Set<ClassificationStageOutput>();
 
+    public DbSet<ClassificationInsight> ClassificationInsights => Set<ClassificationInsight>();
+
     public DbSet<AgentRun> AgentRuns => Set<AgentRun>();
 
     public DbSet<AgentRunStage> AgentRunStages => Set<AgentRunStage>();
@@ -756,7 +758,15 @@ public sealed class MosaicMoneyDbContext : DbContext
                 t.HasCheckConstraint(
                     "CK_TransactionClassificationOutcome_DecisionReviewRouting",
                     "(\"Decision\" = 2 AND \"ReviewStatus\" = 1) OR (\"Decision\" = 1 AND \"ReviewStatus\" <> 1)");
+
+                t.HasCheckConstraint(
+                    "CK_TransactionClassificationOutcome_AssignmentSourceRequired",
+                    "LENGTH(TRIM(\"AssignmentSource\")) > 0");
             });
+
+        modelBuilder.Entity<TransactionClassificationOutcome>()
+            .Property(x => x.AssignmentSource)
+            .HasDefaultValue("human");
 
         modelBuilder.Entity<TransactionClassificationOutcome>()
             .HasIndex(x => new { x.TransactionId, x.CreatedAtUtc });
@@ -803,6 +813,46 @@ public sealed class MosaicMoneyDbContext : DbContext
             .WithMany(x => x.ClassificationStageProposals)
             .HasForeignKey(x => x.ProposedSubcategoryId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ClassificationInsight>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_ClassificationInsight_InsightTypeRequired",
+                    "LENGTH(TRIM(\"InsightType\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_ClassificationInsight_SummaryRequired",
+                    "LENGTH(TRIM(\"Summary\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_ClassificationInsight_ConfidenceRange",
+                    "\"Confidence\" >= 0 AND \"Confidence\" <= 1");
+            });
+
+        modelBuilder.Entity<ClassificationInsight>()
+            .HasIndex(x => new { x.HouseholdId, x.CreatedAtUtc });
+
+        modelBuilder.Entity<ClassificationInsight>()
+            .HasIndex(x => new { x.OutcomeId, x.CreatedAtUtc });
+
+        modelBuilder.Entity<ClassificationInsight>()
+            .HasOne(x => x.Household)
+            .WithMany()
+            .HasForeignKey(x => x.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClassificationInsight>()
+            .HasOne(x => x.Transaction)
+            .WithMany(x => x.ClassificationInsights)
+            .HasForeignKey(x => x.TransactionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClassificationInsight>()
+            .HasOne(x => x.Outcome)
+            .WithMany(x => x.Insights)
+            .HasForeignKey(x => x.OutcomeId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<AgentRun>()
             .ToTable(t =>

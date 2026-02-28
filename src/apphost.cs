@@ -46,6 +46,14 @@ var azureOpenAiEndpoint = builder.AddParameter("azure-openai-endpoint");
 var azureOpenAiApiKey = builder.AddParameter("azure-openai-api-key", secret: true);
 var azureOpenAiEmbeddingDeployment = builder.AddParameter("azure-openai-embedding-deployment");
 var azureOpenAiChatDeployment = builder.AddParameter("azure-openai-chat-deployment");
+var foundryClassificationEnabled = builder.AddParameter("foundry-classification-enabled");
+var foundryProjectEndpoint = builder.AddParameter("foundry-project-endpoint");
+var foundryProjectApiKey = builder.AddParameter("foundry-project-api-key", secret: true);
+var foundryClassificationDeployment = builder.AddParameter("foundry-classification-deployment");
+var foundryAgentEnabled = builder.AddParameter("foundry-agent-enabled");
+var foundryAgentEndpoint = builder.AddParameter("foundry-agent-endpoint");
+var foundryAgentApiKey = builder.AddParameter("foundry-agent-api-key", secret: true);
+var foundryAgentDeployment = builder.AddParameter("foundry-agent-deployment");
 
 // M10 MM-ASP-12 runtime messaging backbone (Aspire-native resources and references).
 var runtimeServiceBus = builder
@@ -82,6 +90,14 @@ var api = builder
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Enabled", foundryClassificationEnabled)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Endpoint", foundryProjectEndpoint)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__ApiKey", foundryProjectApiKey)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Deployment", foundryClassificationDeployment)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Enabled", foundryAgentEnabled)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment)
 	.WithEnvironment("RuntimeMessaging__Enabled", "false")
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)
@@ -106,6 +122,14 @@ var worker = builder
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Enabled", foundryClassificationEnabled)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Endpoint", foundryProjectEndpoint)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__ApiKey", foundryProjectApiKey)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Deployment", foundryClassificationDeployment)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Enabled", foundryAgentEnabled)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment)
 	.WithEnvironment("RuntimeMessaging__Enabled", "false")
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)

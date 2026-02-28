@@ -76,6 +76,48 @@ public static class ClassificationOutcomeEndpoints
                 ApiEndpointHelpers.MapClassificationOutcome(persistedOutcome));
         });
 
+        group.MapPost("/transactions/{transactionId:guid}/classification-outcomes/foundry", async (
+            HttpContext httpContext,
+            MosaicMoneyDbContext dbContext,
+            IFoundryClassificationOrchestrator foundryClassificationOrchestrator,
+            Guid transactionId,
+            Guid? needsReviewByUserId,
+            CancellationToken cancellationToken) =>
+        {
+            if (needsReviewByUserId.HasValue)
+            {
+                var reviewerExists = await dbContext.HouseholdUsers
+                    .AsNoTracking()
+                    .AnyAsync(x => x.Id == needsReviewByUserId.Value, cancellationToken);
+
+                if (!reviewerExists)
+                {
+                    return ApiValidation.ToValidationResult(
+                        httpContext,
+                        [new ApiValidationError(nameof(needsReviewByUserId), "NeedsReviewByUserId does not exist.")]);
+                }
+            }
+
+            var executionResult = await foundryClassificationOrchestrator.ClassifyAndPersistAsync(
+                transactionId,
+                needsReviewByUserId,
+                cancellationToken);
+
+            if (executionResult is null)
+            {
+                return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
+            }
+
+            var persistedOutcome = await dbContext.TransactionClassificationOutcomes
+                .AsNoTracking()
+                .Include(x => x.StageOutputs)
+                .FirstAsync(x => x.Id == executionResult.Outcome.Id, cancellationToken);
+
+            return Results.Created(
+                $"/api/v1/transactions/{transactionId}/classification-outcomes/{persistedOutcome.Id}",
+                ApiEndpointHelpers.MapClassificationOutcome(persistedOutcome));
+        });
+
         group.MapPost("/transactions/{transactionId:guid}/classification-outcomes", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
@@ -207,6 +249,9 @@ public static class ClassificationOutcomeEndpoints
                 DecisionReasonCode = request.DecisionReasonCode.Trim(),
                 DecisionRationale = request.DecisionRationale.Trim(),
                 AgentNoteSummary = AgentNoteSummaryPolicy.Sanitize(request.AgentNoteSummary),
+                IsAiAssigned = false,
+                AssignmentSource = "human_manual",
+                AssignedByAgent = null,
                 CreatedAtUtc = now,
             };
 

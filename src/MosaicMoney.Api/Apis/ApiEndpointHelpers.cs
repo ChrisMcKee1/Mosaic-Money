@@ -6,6 +6,14 @@ namespace MosaicMoney.Api.Apis;
 
 internal static class ApiEndpointHelpers
 {
+    internal sealed record TransactionClassificationProvenance(
+        bool? IsAiAssigned,
+        string? AssignmentSource,
+        string? AssignedByAgent,
+        string? LatestClassificationReasonCode,
+        string? LatestClassificationRationale,
+        decimal? LatestClassificationConfidence);
+
     internal static bool TryParseEnum<TEnum>(string value, out TEnum parsed)
         where TEnum : struct, Enum
     {
@@ -28,7 +36,9 @@ internal static class ApiEndpointHelpers
         };
     }
 
-    internal static TransactionDto MapTransaction(EnrichedTransaction transaction)
+    internal static TransactionDto MapTransaction(
+        EnrichedTransaction transaction,
+        TransactionClassificationProvenance? latestClassification = null)
     {
         return new TransactionDto(
             transaction.Id,
@@ -57,7 +67,24 @@ internal static class ApiEndpointHelpers
                     x.AgentNote))
                 .ToList(),
             transaction.CreatedAtUtc,
-            transaction.LastModifiedAtUtc);
+            transaction.LastModifiedAtUtc,
+            latestClassification?.IsAiAssigned,
+            latestClassification?.AssignmentSource,
+            latestClassification?.AssignedByAgent,
+            latestClassification?.LatestClassificationReasonCode,
+            latestClassification?.LatestClassificationRationale,
+            latestClassification?.LatestClassificationConfidence);
+    }
+
+    internal static TransactionClassificationProvenance MapClassificationProvenance(TransactionClassificationOutcome outcome)
+    {
+        return new TransactionClassificationProvenance(
+            outcome.IsAiAssigned,
+            outcome.AssignmentSource,
+            outcome.AssignedByAgent,
+            outcome.DecisionReasonCode,
+            outcome.DecisionRationale,
+            outcome.FinalConfidence);
     }
 
     internal static RecurringItemDto MapRecurringItem(RecurringItem recurringItem)
@@ -126,6 +153,9 @@ internal static class ApiEndpointHelpers
             outcome.DecisionReasonCode,
             outcome.DecisionRationale,
             outcome.AgentNoteSummary,
+            outcome.IsAiAssigned,
+            outcome.AssignmentSource,
+            outcome.AssignedByAgent,
             outcome.CreatedAtUtc,
             outcome.StageOutputs
                 .OrderBy(x => x.StageOrder)

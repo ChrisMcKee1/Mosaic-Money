@@ -59,7 +59,7 @@ public static class SearchEndpoints
 
             var rankedCandidates = RankHybridTransactionCandidates(semanticCandidates, lexicalCandidates, boundedLimit);
 
-            return Results.Ok(rankedCandidates.Select(ApiEndpointHelpers.MapTransaction).ToList());
+            return Results.Ok(rankedCandidates.Select(transaction => ApiEndpointHelpers.MapTransaction(transaction)).ToList());
         });
 
         group.MapGet("/search/categories", async (

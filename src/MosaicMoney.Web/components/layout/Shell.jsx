@@ -17,7 +17,7 @@ import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { ThemeSwitcher } from "../theme/ThemeSwitcher";
 import { SignedIn, SignedOut, SignInButton, UserButton, useClerk } from "@clerk/nextjs";
-import { GlobalAssistantPanel } from "../assistant/GlobalAssistantPanel";
+import { GlobalAgentPanel } from "../assistant/GlobalAgentPanel";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -146,7 +146,7 @@ export function Shell({ children, isClerkConfigured }) {
         {children}
       </main>
 
-      {showAssistantPanel ? <GlobalAssistantPanel /> : null}
+      {showAssistantPanel ? <GlobalAgentPanel /> : null}
     </div>
   );
 }

@@ -22,7 +22,7 @@ import {
   postAssistantMessage,
   submitAssistantApproval,
   toReadableError,
-} from "../services/mobileAssistantApi";
+} from "../services/mobileAgentApi";
 import {
   enqueueAssistantPrompt,
   listAssistantPromptQueueEntries,
@@ -147,7 +147,7 @@ function buildAssistantQueueReplaySummary(result: {
   return `Replay summary: ${parts.join(", ")}.`;
 }
 
-export function AssistantScreen() {
+export function AgentScreen() {
   const [conversationId, setConversationId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<AssistantTab>("conversation");
   const [inputValue, setInputValue] = useState<string>("");
@@ -700,6 +700,24 @@ export function AssistantScreen() {
                         {run.failureRationale ? `: ${run.failureRationale}` : ""}
                       </Text>
                     ) : null}
+
+                    {run.agentName || run.agentSource ? (
+                      <Text style={styles.timelineAgentMetadata}>
+                        Agent: {run.agentName ?? "Unknown"} ({run.agentSource ?? "Unknown Source"})
+                      </Text>
+                    ) : null}
+                    
+                    {run.latestStageOutcomeSummary ? (
+                      <Text style={styles.timelineStageSummary}>
+                        Outcome: {run.latestStageOutcomeSummary}
+                      </Text>
+                    ) : null}
+
+                    {run.assignmentHint ? (
+                      <Text style={styles.timelineAssignmentHint}>
+                        Hint: {run.assignmentHint}
+                      </Text>
+                    ) : null}
                   </View>
                 );
               })
@@ -1153,5 +1171,24 @@ const styles = StyleSheet.create({
     color: theme.colors.warning,
     fontSize: 11,
     marginTop: 6,
+  },
+  timelineAgentMetadata: {
+    color: theme.colors.textSubtle,
+    fontSize: 11,
+    marginTop: 8,
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  timelineStageSummary: {
+    color: theme.colors.textMain,
+    fontSize: 12,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  timelineAssignmentHint: {
+    color: theme.colors.textMuted,
+    fontSize: 11,
+    fontStyle: "italic",
+    marginTop: 4,
   },
 });

@@ -4,6 +4,7 @@ using System.Text.Json;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Messaging.ServiceBus;
+using MosaicMoney.Api.Domain.Assistant;
 using Npgsql;
 
 namespace MosaicMoney.Worker;
@@ -12,9 +13,14 @@ public sealed class Worker(
     ILogger<Worker> logger,
     ServiceBusClient serviceBusClient,
     EventHubProducerClient eventHubProducerClient,
-    NpgsqlDataSource npgsqlDataSource) : BackgroundService
+    NpgsqlDataSource npgsqlDataSource,
+    IFoundryAgentRuntimeService foundryAgentRuntimeService) : BackgroundService
 {
     private const string PolicyVersion = "m10-worker-orchestration-v1";
+    private static readonly JsonSerializerOptions PayloadJsonSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -142,17 +148,37 @@ public sealed class Worker(
 
         try
         {
-            await ExecuteCommandAsync(runId, envelope, queueName, cancellationToken);
-            await MarkRunCompletedAsync(runId, cancellationToken);
-            await FinalizeIdempotencyKeyAsync(runId, queueName, idempotencyKeyValue, requestHash, status: 2, "completed", "Command processed successfully.", cancellationToken);
-            await EmitTelemetryAsync(envelope, queueName, "completed", cancellationToken);
+            var executionResult = await ExecuteCommandAsync(runId, envelope, queueName, cancellationToken);
+
+            if (executionResult.NeedsReview)
+            {
+                await MarkRunNeedsReviewAsync(runId, executionResult.OutcomeCode, executionResult.OutcomeRationale, cancellationToken);
+                await AddNeedsReviewSignalAsync(runId, executionResult, cancellationToken);
+                await FinalizeIdempotencyKeyAsync(
+                    runId,
+                    queueName,
+                    idempotencyKeyValue,
+                    requestHash,
+                    status: 3,
+                    "needs_review",
+                    executionResult.OutcomeRationale,
+                    cancellationToken);
+                await EmitTelemetryAsync(envelope, queueName, "needs_review", cancellationToken);
+            }
+            else
+            {
+                await MarkRunCompletedAsync(runId, cancellationToken);
+                await FinalizeIdempotencyKeyAsync(runId, queueName, idempotencyKeyValue, requestHash, status: 2, "completed", "Command processed successfully.", cancellationToken);
+                await EmitTelemetryAsync(envelope, queueName, "completed", cancellationToken);
+            }
+
             await args.CompleteMessageAsync(args.Message, cancellationToken);
         }
         catch (Exception exception)
         {
             logger.LogError(exception, "Runtime command {CommandId} failed on queue {QueueName} (delivery {DeliveryCount}).", envelope.CommandId, queueName, args.Message.DeliveryCount);
 
-            await MarkRunNeedsReviewAsync(runId, exception, cancellationToken);
+            await MarkRunNeedsReviewAsync(runId, "worker_command_failed", exception.Message, cancellationToken);
             await AddFailureSignalAsync(runId, exception, cancellationToken);
             await EmitTelemetryAsync(envelope, queueName, "needs_review", cancellationToken);
 
@@ -180,18 +206,48 @@ public sealed class Worker(
         return Task.CompletedTask;
     }
 
-    private async Task ExecuteCommandAsync(Guid runId, RuntimeCommandEnvelope envelope, string queueName, CancellationToken cancellationToken)
+    private async Task<StageExecutionResult> ExecuteCommandAsync(Guid runId, RuntimeCommandEnvelope envelope, string queueName, CancellationToken cancellationToken)
     {
-        var stageOutcome = envelope.CommandType switch
+        var executionResult = envelope.CommandType switch
         {
-            RuntimeCommandTypes.IngestionCompleted => "ingestion_trigger_processed",
-            RuntimeCommandTypes.AssistantMessagePosted => "assistant_message_enqueued",
-            RuntimeCommandTypes.AssistantApprovalSubmitted => "assistant_approval_enqueued",
-            RuntimeCommandTypes.NightlyAnomalySweep => "nightly_sweep_trigger_processed",
+            RuntimeCommandTypes.IngestionCompleted => new StageExecutionResult(
+                NeedsReview: false,
+                Executor: "MosaicMoney.Worker",
+                StageStatus: 3,
+                Confidence: 1.0000m,
+                OutcomeCode: "ingestion_trigger_processed",
+                OutcomeRationale: "Worker processed ingestion trigger and preserved fail-closed routing requirements.",
+                AgentNoteSummary: "Ingestion command acknowledged."),
+            RuntimeCommandTypes.AssistantMessagePosted => await ExecuteAssistantMessageCommandAsync(envelope.Payload, cancellationToken),
+            RuntimeCommandTypes.AssistantApprovalSubmitted => await ExecuteAssistantApprovalCommandAsync(envelope.Payload, cancellationToken),
+            RuntimeCommandTypes.NightlyAnomalySweep => new StageExecutionResult(
+                NeedsReview: false,
+                Executor: "MosaicMoney.Worker",
+                StageStatus: 3,
+                Confidence: 1.0000m,
+                OutcomeCode: "nightly_sweep_trigger_processed",
+                OutcomeRationale: "Worker processed nightly anomaly sweep trigger and preserved fail-closed routing requirements.",
+                AgentNoteSummary: "Nightly sweep command acknowledged."),
             _ => throw new InvalidOperationException($"Unsupported runtime command type '{envelope.CommandType}'."),
         };
 
-        var stageSummary = $"Worker processed command '{envelope.CommandType}' from queue '{queueName}' and preserved fail-closed routing requirements.";
+        await PersistStageResultAsync(runId, envelope.CommandType, executionResult, cancellationToken);
+        logger.LogInformation(
+            "Runtime command {CommandType} on queue {QueueName} persisted with outcome {OutcomeCode} and needsReview={NeedsReview}.",
+            envelope.CommandType,
+            queueName,
+            executionResult.OutcomeCode,
+            executionResult.NeedsReview);
+
+        return executionResult;
+    }
+
+    private async Task PersistStageResultAsync(
+        Guid runId,
+        string stageName,
+        StageExecutionResult executionResult,
+        CancellationToken cancellationToken)
+    {
 
         const string sql =
             """
@@ -231,19 +287,130 @@ public sealed class Worker(
         var now = DateTime.UtcNow;
         command.Parameters.AddWithValue("id", Guid.NewGuid());
         command.Parameters.AddWithValue("agentRunId", runId);
-        command.Parameters.AddWithValue("stageName", envelope.CommandType);
+        command.Parameters.AddWithValue("stageName", stageName);
         command.Parameters.AddWithValue("stageOrder", 1);
-        command.Parameters.AddWithValue("executor", "MosaicMoney.Worker");
-        command.Parameters.AddWithValue("status", 3);
-        command.Parameters.AddWithValue("confidence", 1.0000m);
-        command.Parameters.AddWithValue("outcomeCode", stageOutcome);
-        command.Parameters.AddWithValue("outcomeRationale", stageSummary);
-        command.Parameters.AddWithValue("agentNoteSummary", Truncate(stageSummary, 600));
+        command.Parameters.AddWithValue("executor", executionResult.Executor);
+        command.Parameters.AddWithValue("status", executionResult.StageStatus);
+        command.Parameters.AddWithValue("confidence", executionResult.Confidence);
+        command.Parameters.AddWithValue("outcomeCode", executionResult.OutcomeCode);
+        command.Parameters.AddWithValue("outcomeRationale", Truncate(executionResult.OutcomeRationale, 500));
+        command.Parameters.AddWithValue("agentNoteSummary", Truncate(executionResult.AgentNoteSummary, 600));
         command.Parameters.AddWithValue("createdAtUtc", now);
         command.Parameters.AddWithValue("lastModifiedAtUtc", now);
         command.Parameters.AddWithValue("completedAtUtc", now);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private async Task<StageExecutionResult> ExecuteAssistantMessageCommandAsync(JsonElement payload, CancellationToken cancellationToken)
+    {
+        var command = DeserializeAssistantMessageCommand(payload);
+        var invocationRequest = new FoundryAgentInvocationRequest(
+            command.HouseholdId,
+            command.ConversationId,
+            command.HouseholdUserId,
+            RuntimeCommandTypes.AssistantMessagePosted,
+            command.Message,
+            command.UserNote,
+            command.PolicyDisposition,
+            ApprovalId: null,
+            ApprovalDecision: null,
+            ApprovalRationale: null);
+
+        var invocation = await foundryAgentRuntimeService.InvokeAsync(invocationRequest, cancellationToken);
+        return CreateAssistantStageResult(invocation);
+    }
+
+    private async Task<StageExecutionResult> ExecuteAssistantApprovalCommandAsync(JsonElement payload, CancellationToken cancellationToken)
+    {
+        var command = DeserializeAssistantApprovalCommand(payload);
+        var syntheticMessage = $"Approval decision '{command.Decision}' submitted for approval '{command.ApprovalId:D}'.";
+
+        var invocationRequest = new FoundryAgentInvocationRequest(
+            command.HouseholdId,
+            command.ConversationId,
+            command.HouseholdUserId,
+            RuntimeCommandTypes.AssistantApprovalSubmitted,
+            syntheticMessage,
+            command.Rationale,
+            command.PolicyDisposition,
+            command.ApprovalId,
+            command.Decision,
+            command.Rationale);
+
+        var invocation = await foundryAgentRuntimeService.InvokeAsync(invocationRequest, cancellationToken);
+        return CreateAssistantStageResult(invocation);
+    }
+
+    private static StageExecutionResult CreateAssistantStageResult(FoundryAgentInvocationResult invocation)
+    {
+        var assignmentHint = string.IsNullOrWhiteSpace(invocation.AssignmentHint)
+            ? "needs_review"
+            : invocation.AssignmentHint.Trim();
+        var rationale = BuildRationaleWithAssignmentHint(assignmentHint, invocation.Summary);
+        var executor = BuildAssistantExecutor(invocation.AgentSource, invocation.AgentName);
+        var noteSummary = string.IsNullOrWhiteSpace(invocation.ResponseSummary)
+            ? invocation.Summary
+            : invocation.ResponseSummary;
+
+        return new StageExecutionResult(
+            NeedsReview: invocation.NeedsReview,
+            Executor: executor,
+            StageStatus: invocation.NeedsReview
+                ? 5
+                : 3,
+            Confidence: invocation.NeedsReview ? 0.0000m : 1.0000m,
+            OutcomeCode: invocation.OutcomeCode,
+            OutcomeRationale: rationale,
+            AgentNoteSummary: noteSummary);
+    }
+
+    private static string BuildAssistantExecutor(string? agentSource, string? agentName)
+    {
+        if (string.IsNullOrWhiteSpace(agentSource) || string.IsNullOrWhiteSpace(agentName))
+        {
+            return "MosaicMoney.Worker";
+        }
+
+        return $"{agentSource.Trim()}:{agentName.Trim()}";
+    }
+
+    private static string BuildRationaleWithAssignmentHint(string assignmentHint, string summary)
+    {
+        return $"assignment_hint={assignmentHint}; {summary}";
+    }
+
+    private static AssistantMessagePostedCommand DeserializeAssistantMessageCommand(JsonElement payload)
+    {
+        var command = payload.Deserialize<AssistantMessagePostedCommand>(PayloadJsonSerializerOptions);
+        if (command is null
+            || command.HouseholdId == Guid.Empty
+            || command.ConversationId == Guid.Empty
+            || command.HouseholdUserId == Guid.Empty
+            || string.IsNullOrWhiteSpace(command.Message)
+            || string.IsNullOrWhiteSpace(command.PolicyDisposition))
+        {
+            throw new InvalidOperationException("Assistant message payload is missing required fields.");
+        }
+
+        return command;
+    }
+
+    private static AssistantApprovalSubmittedCommand DeserializeAssistantApprovalCommand(JsonElement payload)
+    {
+        var command = payload.Deserialize<AssistantApprovalSubmittedCommand>(PayloadJsonSerializerOptions);
+        if (command is null
+            || command.HouseholdId == Guid.Empty
+            || command.ConversationId == Guid.Empty
+            || command.ApprovalId == Guid.Empty
+            || command.HouseholdUserId == Guid.Empty
+            || string.IsNullOrWhiteSpace(command.Decision)
+            || string.IsNullOrWhiteSpace(command.PolicyDisposition))
+        {
+            throw new InvalidOperationException("Assistant approval payload is missing required fields.");
+        }
+
+        return command;
     }
 
     private async Task<Guid> CreateAgentRunAsync(
@@ -325,7 +492,11 @@ public sealed class Worker(
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    private async Task MarkRunNeedsReviewAsync(Guid runId, Exception exception, CancellationToken cancellationToken)
+    private async Task MarkRunNeedsReviewAsync(
+        Guid runId,
+        string failureCode,
+        string failureRationale,
+        CancellationToken cancellationToken)
     {
         const string sql =
             """
@@ -345,8 +516,56 @@ public sealed class Worker(
 
         command.Parameters.AddWithValue("id", runId);
         command.Parameters.AddWithValue("now", now);
-        command.Parameters.AddWithValue("failureCode", "worker_command_failed");
-        command.Parameters.AddWithValue("failureRationale", Truncate(exception.Message, 500));
+        command.Parameters.AddWithValue("failureCode", Truncate(failureCode, 120));
+        command.Parameters.AddWithValue("failureRationale", Truncate(failureRationale, 500));
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private async Task AddNeedsReviewSignalAsync(Guid runId, StageExecutionResult executionResult, CancellationToken cancellationToken)
+    {
+        const string sql =
+            """
+            INSERT INTO "AgentSignals" (
+                "Id",
+                "AgentRunId",
+                "AgentRunStageId",
+                "SignalCode",
+                "Summary",
+                "Severity",
+                "RequiresHumanReview",
+                "IsResolved",
+                "RaisedAtUtc",
+                "ResolvedAtUtc",
+                "PayloadJson")
+            VALUES (
+                @id,
+                @agentRunId,
+                NULL,
+                @signalCode,
+                @summary,
+                @severity,
+                TRUE,
+                FALSE,
+                @raisedAtUtc,
+                NULL,
+                @payloadJson);
+            """;
+
+        await using var connection = await npgsqlDataSource.OpenConnectionAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(sql, connection);
+
+        command.Parameters.AddWithValue("id", Guid.NewGuid());
+        command.Parameters.AddWithValue("agentRunId", runId);
+        command.Parameters.AddWithValue("signalCode", Truncate(executionResult.OutcomeCode, 120));
+        command.Parameters.AddWithValue("summary", Truncate(executionResult.OutcomeRationale, 200));
+        command.Parameters.AddWithValue("severity", 2);
+        command.Parameters.AddWithValue("raisedAtUtc", DateTime.UtcNow);
+        command.Parameters.AddWithValue("payloadJson", JsonSerializer.Serialize(new
+        {
+            source = "assistant_fail_closed",
+            executionResult.NeedsReview,
+        }));
+
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
@@ -615,4 +834,30 @@ public sealed class Worker(
         DateTime CreatedAtUtc,
         string? ClientReferenceId,
         JsonElement Payload);
+
+    private sealed record AssistantMessagePostedCommand(
+        Guid HouseholdId,
+        Guid ConversationId,
+        Guid HouseholdUserId,
+        string Message,
+        string? UserNote,
+        string PolicyDisposition);
+
+    private sealed record AssistantApprovalSubmittedCommand(
+        Guid HouseholdId,
+        Guid ConversationId,
+        Guid ApprovalId,
+        Guid HouseholdUserId,
+        string Decision,
+        string? Rationale,
+        string PolicyDisposition);
+
+    private sealed record StageExecutionResult(
+        bool NeedsReview,
+        string Executor,
+        int StageStatus,
+        decimal Confidence,
+        string OutcomeCode,
+        string OutcomeRationale,
+        string AgentNoteSummary);
 }

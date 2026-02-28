@@ -23,7 +23,7 @@ public static class ApiRouteGroups
         v1.MapPlaidInvestmentsEndpoints();
         v1.MapNetWorthHistoryEndpoints();
         v1.MapSearchEndpoints();
-        v1.MapAssistantOrchestrationEndpoints();
+        v1.MapAgentOrchestrationEndpoints();
 
         return app;
     }

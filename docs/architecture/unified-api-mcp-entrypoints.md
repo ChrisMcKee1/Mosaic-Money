@@ -1,6 +1,6 @@
 # Unified API and MCP Entrypoints
 
-Last updated: 2026-02-27
+Last updated: 2026-02-28
 
 ## Purpose
 Define the Mosaic Money pattern for hosting standard REST endpoints (Minimal APIs) and MCP tools in the same ASP.NET Core service while reusing one shared business logic layer.
@@ -52,14 +52,14 @@ Target structure for unified API + MCP delivery:
 
 1. `src/MosaicMoney.Api/Core/`
 2. `src/MosaicMoney.Api/Apis/`
-3. `src/MosaicMoney.Api/McpTools/`
+3. `src/MosaicMoney.Api/Mcp/`
 4. `src/MosaicMoney.Api/Program.cs`
 
 Mapping to current repository conventions:
 
 - `Core/`: use-case services and orchestration-safe business logic (can reference `Domain/` and `Data/` abstractions).
 - `Apis/`: Minimal API route groups as thin wrappers.
-- `McpTools/`: MCP tool entrypoints as thin wrappers using `[McpServerToolType]` and `[McpServerTool]`.
+- `Mcp/`: MCP tool entrypoints as thin wrappers using `[McpServerToolType]` and `[McpServerTool]`.
 - `Program.cs`: composition root only (DI, endpoint registration, transport mapping).
 
 ## Composition Rules
@@ -83,14 +83,18 @@ High-level pseudo-flow:
 builder.Services.AddScoped<ISharedUseCaseService, SharedUseCaseService>();
 
 builder.Services.AddMcpServer()
-    .WithHttpServerTransport()
+    .WithHttpTransport()
     .WithToolsFromAssembly();
 
 var app = builder.Build();
 
 app.MapGroup("/api").MapSharedEndpoints();
-app.MapMcp();
+app.MapMcp("/api/mcp");
 ```
+
+Current implementation note:
+
+- `MosaicMoney.Api` exposes taxonomy-focused MCP tools via `MosaicMoneyTaxonomyMcpTools` and routes all mutations through shared business services with explicit human approver context.
 
 ## Guardrails and Constraints
 - Do not expose secrets or raw connection details through MCP tools.
