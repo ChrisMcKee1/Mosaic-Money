@@ -42,7 +42,9 @@ export function ClientUserProfile() {
           fontFamily: 'var(--font-body)',
         },
         elements: {
-          cardBox: 'border border-[var(--color-border)] shadow-none',
+          rootBox: 'w-full',
+          cardBox: 'w-full max-w-none border border-[var(--color-border)] shadow-none rounded-2xl bg-[var(--color-surface)]',
+          card: 'w-full max-w-none shadow-none',
           navbarButton: 'text-[var(--color-text-muted)] hover:text-[var(--color-text-main)]',
           buttonPrimary: 'bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-[var(--color-button-ink)]',
         }

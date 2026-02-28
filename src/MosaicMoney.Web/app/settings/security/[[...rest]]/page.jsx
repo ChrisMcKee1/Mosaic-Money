@@ -11,7 +11,7 @@ export default function SecuritySettingsPage() {
 
   if (!isClerkConfigured) {
     return (
-      <div className="p-6 md:p-10 max-w-3xl w-full mx-auto overflow-y-auto">
+      <div className="p-4 md:p-8 lg:p-10 max-w-6xl w-full mx-auto overflow-y-auto">
         <Link 
           href="/settings"
           className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] mb-6 transition-colors"
@@ -19,20 +19,22 @@ export default function SecuritySettingsPage() {
           <ArrowLeft className="w-4 h-4" />
           Back to Settings
         </Link>
-        <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:p-8">
-          <h1 className="text-2xl md:text-3xl font-display font-bold text-[var(--color-text-main)]">
+        <div className="flex flex-col gap-6">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-[var(--color-text-main)] px-1">
             Security & Authentication
           </h1>
-          <p className="mt-4 text-sm text-[var(--color-text-muted)]">
-            Authentication is currently disabled in this environment.
-          </p>
+          <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:p-8">
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Authentication is currently disabled in this environment.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-4xl w-full mx-auto overflow-y-auto">
+    <div className="p-4 md:p-8 lg:p-10 max-w-6xl w-full mx-auto overflow-y-auto">
       <Link 
         href="/settings"
         className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-text-muted)] hover:text-[var(--color-text-main)] mb-6 transition-colors"
@@ -40,11 +42,11 @@ export default function SecuritySettingsPage() {
         <ArrowLeft className="w-4 h-4" />
         Back to Settings
       </Link>
-      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-display font-bold text-[var(--color-text-main)] mb-6">
+      <div className="flex flex-col gap-6">
+        <h1 className="text-2xl md:text-3xl font-display font-bold text-[var(--color-text-main)] px-1">
           Security & Authentication
         </h1>
-        <div className="clerk-profile-container">
+        <div className="w-full min-w-0 clerk-profile-container">
           <ClientUserProfile />
         </div>
       </div>
