@@ -171,7 +171,7 @@ $issues = @(
     @{ num=149; nid="I_kwDORVI-G87unDw8"; status="Not Started" } # AP0-OPS-01
     @{ num=150; nid="I_kwDORVI-G87unDx4"; status="Not Started" } # AP0-AI-01
     @{ num=151; nid="I_kwDORVI-G87unDy1"; status="Not Started" } # AP0-QA-01
-    @{ num=152; nid="I_kwDORVI-G87unEX6"; status="Not Started" } # AP0-BE-03
+    @{ num=152; nid="I_kwDORVI-G87unEX6"; status="Done" } # AP0-BE-03
 )
 
 Write-Host "=== Phase 1: Ensure all $($issues.Count) issues are on the project board ==="

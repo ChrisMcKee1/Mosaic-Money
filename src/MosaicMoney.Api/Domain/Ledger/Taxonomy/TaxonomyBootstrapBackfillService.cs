@@ -84,7 +84,10 @@ public sealed class TaxonomyBootstrapBackfillService(
 
         var availableSubcategories = await dbContext.Subcategories
             .AsNoTracking()
-            .Where(x => x.Category.OwnerType == CategoryOwnerType.Platform)
+            .Where(x =>
+                !x.IsArchived
+                && !x.Category.IsArchived
+                && x.Category.OwnerType == CategoryOwnerType.Platform)
             .Select(x => new DeterministicClassificationSubcategory(x.Id, x.Name))
             .ToListAsync(cancellationToken);
 
@@ -196,7 +199,15 @@ public sealed class TaxonomyBootstrapBackfillService(
             .Where(x => x.OwnerType == CategoryOwnerType.Platform)
             .ToListAsync(cancellationToken);
 
-        var categoriesByName = categories.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
+        var categoriesByName = categories
+            .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                x => x.Key,
+                x => x
+                    .OrderBy(candidate => candidate.IsArchived)
+                    .ThenBy(candidate => candidate.CreatedAtUtc)
+                    .First(),
+                StringComparer.OrdinalIgnoreCase);
 
         var categoriesInserted = 0;
         var categoriesUpdated = 0;
@@ -213,9 +224,13 @@ public sealed class TaxonomyBootstrapBackfillService(
                     Name = seedCategory.Name,
                     DisplayOrder = seedCategory.DisplayOrder,
                     IsSystem = true,
+                    IsArchived = false,
+                    ArchivedAtUtc = null,
                     OwnerType = CategoryOwnerType.Platform,
                     HouseholdId = null,
                     OwnerUserId = null,
+                    CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime,
+                    LastModifiedAtUtc = timeProvider.GetUtcNow().UtcDateTime,
                 };
 
                 dbContext.Categories.Add(category);
@@ -262,17 +277,33 @@ public sealed class TaxonomyBootstrapBackfillService(
                     changed = true;
                 }
 
+                if (category.IsArchived)
+                {
+                    category.IsArchived = false;
+                    category.ArchivedAtUtc = null;
+                    changed = true;
+                }
+
                 if (changed)
                 {
+                    category.LastModifiedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
                     categoriesUpdated++;
                 }
             }
 
             var subcategoriesByName = category.Subcategories
-                .ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
+                .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    x => x.Key,
+                    x => x
+                        .OrderBy(candidate => candidate.IsArchived)
+                        .ThenBy(candidate => candidate.CreatedAtUtc)
+                        .First(),
+                    StringComparer.OrdinalIgnoreCase);
 
-            foreach (var seedSubcategory in seedCategory.Subcategories)
+            for (var seedIndex = 0; seedIndex < seedCategory.Subcategories.Count; seedIndex++)
             {
+                var seedSubcategory = seedCategory.Subcategories[seedIndex];
                 if (!subcategoriesByName.TryGetValue(seedSubcategory.Name, out var subcategory))
                 {
                     subcategory = new Subcategory
@@ -280,7 +311,12 @@ public sealed class TaxonomyBootstrapBackfillService(
                         Id = Guid.NewGuid(),
                         CategoryId = category.Id,
                         Name = seedSubcategory.Name,
+                        DisplayOrder = seedIndex,
                         IsBusinessExpense = seedSubcategory.IsBusinessExpense,
+                        IsArchived = false,
+                        ArchivedAtUtc = null,
+                        CreatedAtUtc = timeProvider.GetUtcNow().UtcDateTime,
+                        LastModifiedAtUtc = timeProvider.GetUtcNow().UtcDateTime,
                     };
 
                     dbContext.Subcategories.Add(subcategory);
@@ -309,8 +345,22 @@ public sealed class TaxonomyBootstrapBackfillService(
                         changed = true;
                     }
 
+                    if (subcategory.DisplayOrder != seedIndex)
+                    {
+                        subcategory.DisplayOrder = seedIndex;
+                        changed = true;
+                    }
+
+                    if (subcategory.IsArchived)
+                    {
+                        subcategory.IsArchived = false;
+                        subcategory.ArchivedAtUtc = null;
+                        changed = true;
+                    }
+
                     if (changed)
                     {
+                        subcategory.LastModifiedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
                         subcategoriesUpdated++;
                     }
                 }

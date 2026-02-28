@@ -15,6 +15,7 @@ public static class ApiRouteGroups
         v1.MapPlaidLinkLifecycleEndpoints();
         v1.MapPlaidLiabilitiesEndpoints();
         v1.MapHouseholdEndpoints();
+        v1.MapCategoryLifecycleEndpoints();
         v1.MapClassificationOutcomeEndpoints();
         v1.MapRecurringEndpoints();
         v1.MapReviewActionEndpoints();

@@ -53,9 +53,12 @@ public sealed class DeterministicClassificationOrchestrator(
         var subcategoryQuery = dbContext.Subcategories
             .AsNoTracking()
             .Where(x =>
-                x.Category.OwnerType == CategoryOwnerType.Platform
-                || (x.Category.OwnerType == CategoryOwnerType.HouseholdShared
-                    && x.Category.HouseholdId == transaction.Account.HouseholdId));
+                !x.IsArchived
+                && !x.Category.IsArchived
+                && (
+                    x.Category.OwnerType == CategoryOwnerType.Platform
+                    || (x.Category.OwnerType == CategoryOwnerType.HouseholdShared
+                        && x.Category.HouseholdId == transaction.Account.HouseholdId)));
 
         if (needsReviewByUserId.HasValue)
         {

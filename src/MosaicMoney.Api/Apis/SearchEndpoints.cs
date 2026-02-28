@@ -130,18 +130,19 @@ public static class SearchEndpoints
         Guid? ownerUserId)
     {
         var resolvedOwnerType = ownerType ?? CategoryOwnerType.Platform;
+        var activeQuery = query.Where(x => !x.IsArchived && !x.Category.IsArchived);
 
         return resolvedOwnerType switch
         {
-            CategoryOwnerType.Platform => query.Where(x => x.Category.OwnerType == CategoryOwnerType.Platform),
-            CategoryOwnerType.HouseholdShared when householdId.HasValue => query.Where(x =>
+            CategoryOwnerType.Platform => activeQuery.Where(x => x.Category.OwnerType == CategoryOwnerType.Platform),
+            CategoryOwnerType.HouseholdShared when householdId.HasValue => activeQuery.Where(x =>
                 x.Category.OwnerType == CategoryOwnerType.HouseholdShared
                 && x.Category.HouseholdId == householdId.Value),
-            CategoryOwnerType.User when householdId.HasValue && ownerUserId.HasValue => query.Where(x =>
+            CategoryOwnerType.User when householdId.HasValue && ownerUserId.HasValue => activeQuery.Where(x =>
                 x.Category.OwnerType == CategoryOwnerType.User
                 && x.Category.HouseholdId == householdId.Value
                 && x.Category.OwnerUserId == ownerUserId.Value),
-            _ => query.Where(_ => false),
+            _ => activeQuery.Where(_ => false),
         };
     }
 }

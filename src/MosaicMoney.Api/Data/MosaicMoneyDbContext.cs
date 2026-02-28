@@ -28,6 +28,8 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<Subcategory> Subcategories => Set<Subcategory>();
 
+    public DbSet<TaxonomyLifecycleAuditEntry> TaxonomyLifecycleAuditEntries => Set<TaxonomyLifecycleAuditEntry>();
+
     public DbSet<RecurringItem> RecurringItems => Set<RecurringItem>();
 
     public DbSet<EnrichedTransaction> EnrichedTransactions => Set<EnrichedTransaction>();
@@ -95,6 +97,10 @@ public sealed class MosaicMoneyDbContext : DbContext
                 t.HasCheckConstraint(
                     "CK_Category_OwnerScopeConsistency",
                     "(\"OwnerType\" = 0 AND \"HouseholdId\" IS NULL AND \"OwnerUserId\" IS NULL) OR (\"OwnerType\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NULL) OR (\"OwnerType\" = 2 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_Category_ArchiveAuditConsistency",
+                    "(\"IsArchived\" = FALSE AND \"ArchivedAtUtc\" IS NULL) OR (\"IsArchived\" = TRUE AND \"ArchivedAtUtc\" IS NOT NULL)");
             });
 
         modelBuilder.Entity<Category>()
@@ -102,22 +108,26 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasDefaultValue(CategoryOwnerType.Platform);
 
         modelBuilder.Entity<Category>()
+            .Property(x => x.IsArchived)
+            .HasDefaultValue(false);
+
+        modelBuilder.Entity<Category>()
             .HasIndex(x => x.Name)
             .IsUnique()
-            .HasFilter("\"OwnerType\" = 0 AND \"HouseholdId\" IS NULL AND \"OwnerUserId\" IS NULL");
+            .HasFilter("\"OwnerType\" = 0 AND \"HouseholdId\" IS NULL AND \"OwnerUserId\" IS NULL AND \"IsArchived\" = FALSE");
 
         modelBuilder.Entity<Category>()
             .HasIndex(x => new { x.HouseholdId, x.Name })
             .IsUnique()
-            .HasFilter("\"OwnerType\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NULL");
+            .HasFilter("\"OwnerType\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NULL AND \"IsArchived\" = FALSE");
 
         modelBuilder.Entity<Category>()
             .HasIndex(x => new { x.HouseholdId, x.OwnerUserId, x.Name })
             .IsUnique()
-            .HasFilter("\"OwnerType\" = 2 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NOT NULL");
+            .HasFilter("\"OwnerType\" = 2 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NOT NULL AND \"IsArchived\" = FALSE");
 
         modelBuilder.Entity<Category>()
-            .HasIndex(x => new { x.HouseholdId, x.OwnerType, x.DisplayOrder, x.Name });
+            .HasIndex(x => new { x.HouseholdId, x.OwnerType, x.IsArchived, x.DisplayOrder, x.Name });
 
         modelBuilder.Entity<MosaicUser>()
             .ToTable(t =>
@@ -139,8 +149,46 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasIndex(x => new { x.IsActive, x.LastSeenAtUtc });
 
         modelBuilder.Entity<Subcategory>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_Subcategory_ArchiveAuditConsistency",
+                    "(\"IsArchived\" = FALSE AND \"ArchivedAtUtc\" IS NULL) OR (\"IsArchived\" = TRUE AND \"ArchivedAtUtc\" IS NOT NULL)");
+            });
+
+        modelBuilder.Entity<Subcategory>()
+            .Property(x => x.IsArchived)
+            .HasDefaultValue(false);
+
+        modelBuilder.Entity<Subcategory>()
             .HasIndex(x => new { x.CategoryId, x.Name })
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsArchived\" = FALSE");
+
+        modelBuilder.Entity<Subcategory>()
+            .HasIndex(x => new { x.CategoryId, x.IsArchived, x.DisplayOrder, x.Name });
+
+        modelBuilder.Entity<TaxonomyLifecycleAuditEntry>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_TaxonomyLifecycleAuditEntry_EntityTypeRequired",
+                    "LENGTH(TRIM(\"EntityType\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_TaxonomyLifecycleAuditEntry_OperationRequired",
+                    "LENGTH(TRIM(\"Operation\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_TaxonomyLifecycleAuditEntry_ScopeOwnerTypeRange",
+                    "\"ScopeOwnerType\" IN (0, 1, 2)");
+            });
+
+        modelBuilder.Entity<TaxonomyLifecycleAuditEntry>()
+            .HasIndex(x => new { x.EntityType, x.EntityId, x.PerformedAtUtc });
+
+        modelBuilder.Entity<TaxonomyLifecycleAuditEntry>()
+            .HasIndex(x => new { x.PerformedByHouseholdUserId, x.PerformedAtUtc });
 
         modelBuilder.Entity<HouseholdUser>()
             .ToTable(t =>
@@ -1036,6 +1084,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .HasMany(x => x.OwnedCategories)
             .WithOne(x => x.OwnerUser)
             .HasForeignKey(x => x.OwnerUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TaxonomyLifecycleAuditEntry>()
+            .HasOne(x => x.PerformedByHouseholdUser)
+            .WithMany()
+            .HasForeignKey(x => x.PerformedByHouseholdUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Account>()

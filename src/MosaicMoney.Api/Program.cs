@@ -28,6 +28,7 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AccountAccessPolicyBackfillService>();
 builder.Services.Configure<TaxonomyBackfillOptions>(builder.Configuration.GetSection(TaxonomyBackfillOptions.SectionName));
 builder.Services.AddScoped<TaxonomyBootstrapBackfillService>();
+builder.Services.AddScoped<ICategoryLifecycleAuditTrail, CategoryLifecycleAuditTrail>();
 builder.Services.Configure<PlaidOptions>(builder.Configuration.GetSection(PlaidOptions.SectionName));
 builder.Services.AddHttpClient<PlaidHttpTokenProvider>();
 builder.Services.AddScoped<PlaidDeltaIngestionService>();

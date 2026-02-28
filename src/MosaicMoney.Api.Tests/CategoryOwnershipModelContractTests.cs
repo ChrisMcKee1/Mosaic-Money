@@ -17,6 +17,8 @@ public sealed class CategoryOwnershipModelContractTests
         Assert.Equal(CategoryOwnerType.Platform, category.OwnerType);
         Assert.Null(category.HouseholdId);
         Assert.Null(category.OwnerUserId);
+        Assert.False(category.IsArchived);
+        Assert.Null(category.ArchivedAtUtc);
     }
 
     [Fact]
@@ -36,6 +38,7 @@ public sealed class CategoryOwnershipModelContractTests
 
         Assert.Contains("CK_Category_OwnerTypeRange", constraintNames);
         Assert.Contains("CK_Category_OwnerScopeConsistency", constraintNames);
+        Assert.Contains("CK_Category_ArchiveAuditConsistency", constraintNames);
 
         var platformUniqueIndex = categoryEntity
             .GetIndexes()
@@ -45,7 +48,7 @@ public sealed class CategoryOwnershipModelContractTests
                 && x.Properties[0].Name == nameof(Category.Name));
 
         Assert.NotNull(platformUniqueIndex);
-        Assert.Equal("\"OwnerType\" = 0 AND \"HouseholdId\" IS NULL AND \"OwnerUserId\" IS NULL", platformUniqueIndex!.GetFilter());
+        Assert.Equal("\"OwnerType\" = 0 AND \"HouseholdId\" IS NULL AND \"OwnerUserId\" IS NULL AND \"IsArchived\" = FALSE", platformUniqueIndex!.GetFilter());
 
         var householdSharedUniqueIndex = categoryEntity
             .GetIndexes()
@@ -56,7 +59,7 @@ public sealed class CategoryOwnershipModelContractTests
                 && x.Properties[1].Name == nameof(Category.Name));
 
         Assert.NotNull(householdSharedUniqueIndex);
-        Assert.Equal("\"OwnerType\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NULL", householdSharedUniqueIndex!.GetFilter());
+        Assert.Equal("\"OwnerType\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NULL AND \"IsArchived\" = FALSE", householdSharedUniqueIndex!.GetFilter());
 
         var userOwnedUniqueIndex = categoryEntity
             .GetIndexes()
@@ -68,7 +71,7 @@ public sealed class CategoryOwnershipModelContractTests
                 && x.Properties[2].Name == nameof(Category.Name));
 
         Assert.NotNull(userOwnedUniqueIndex);
-        Assert.Equal("\"OwnerType\" = 2 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NOT NULL", userOwnedUniqueIndex!.GetFilter());
+        Assert.Equal("\"OwnerType\" = 2 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NOT NULL AND \"IsArchived\" = FALSE", userOwnedUniqueIndex!.GetFilter());
     }
 
     [Fact]

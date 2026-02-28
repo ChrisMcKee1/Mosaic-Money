@@ -27,7 +27,7 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 | AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Coordinated execution plan and status governance across AP0 backend/AI/web/mobile/ops/QA tracks. | In Progress |
 | AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Idempotent baseline taxonomy seed + deterministic backfill + before/after discrepancy metrics output. | Done |
 | AP0-BE-02 | Backend | Scoped ownership model for user and shared categories | AP0-EPIC | Schema and migration path for `User`, `HouseholdShared`, and `Platform` ownership without breaking existing links. | Done |
-| AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Not Started |
+| AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Done |
 | AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | Not Started |
 | AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile parity for taxonomy management with offline-safe mutation queue and sync reconciliation. | Not Started |
 | AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform-managed taxonomy tables | AP0-BE-03 | Operator-only admin lane with protected access, change provenance, and rollback-safe workflows. | Not Started |
@@ -70,3 +70,12 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 - Validation evidence:
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~CategoryOwnershipModelContractTests|FullyQualifiedName~TaxonomyBootstrapBackfillServiceTests|FullyQualifiedName~IdentityMembershipModelContractTests"` (8 passed, 0 failed).
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~DeterministicClassificationOrchestratorTests|FullyQualifiedName~DeterministicClassificationEngineTests|FullyQualifiedName~TaxonomyBootstrapBackfillServiceTests"` (15 passed, 0 failed).
+
+## Update Note (2026-02-28, AP0-BE-03 Closeout)
+- Planner promoted `AP0-BE-03` (`#152`) to `Done` after implementing scope-aware category/subcategory lifecycle endpoints (`CRUD`, reorder, reparent, archive) plus taxonomy lifecycle audit persistence.
+- Backend changes include archive-safe uniqueness/index filtering, audit entity + service wiring, and dedicated lifecycle endpoint coverage under `CategoryLifecycleEndpoints`.
+- Validation evidence:
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~CategoryLifecycleEndpointsTests|FullyQualifiedName~CategoryOwnershipModelContractTests"` (10 passed, 0 failed).
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~DeterministicClassificationOrchestratorTests|FullyQualifiedName~DeterministicClassificationEngineTests|FullyQualifiedName~TaxonomyBootstrapBackfillServiceTests"` (15 passed, 0 failed).
+- Azure schema application evidence:
+- `dotnet ef database update --project src/MosaicMoney.Api/MosaicMoney.Api.csproj --startup-project src/MosaicMoney.Api/MosaicMoney.Api.csproj --connection <azure-mosaicmoneydb-connection>` applied migrations `20260228013646_AddScopedCategoryOwnershipModel` and `20260228015637_AddCategoryLifecycleArchiveAndAudit` to Azure PostgreSQL Flexible Server (`mosaicpostgres-t4s4nroixqd7c`).

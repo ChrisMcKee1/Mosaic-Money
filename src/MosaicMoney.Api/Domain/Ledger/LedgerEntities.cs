@@ -281,6 +281,14 @@ public sealed class Category
 
     public bool IsSystem { get; set; }
 
+    public bool IsArchived { get; set; }
+
+    public DateTime? ArchivedAtUtc { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastModifiedAtUtc { get; set; } = DateTime.UtcNow;
+
     public CategoryOwnerType OwnerType { get; set; } = CategoryOwnerType.Platform;
 
     public Guid? OwnerUserId { get; set; }
@@ -303,7 +311,17 @@ public sealed class Subcategory
     [MaxLength(120)]
     public string Name { get; set; } = string.Empty;
 
+    public int DisplayOrder { get; set; }
+
     public bool IsBusinessExpense { get; set; }
+
+    public bool IsArchived { get; set; }
+
+    public DateTime? ArchivedAtUtc { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastModifiedAtUtc { get; set; } = DateTime.UtcNow;
 
     public Category Category { get; set; } = null!;
 
@@ -314,6 +332,34 @@ public sealed class Subcategory
     public ICollection<TransactionClassificationOutcome> ClassificationOutcomeProposals { get; set; } = new List<TransactionClassificationOutcome>();
 
     public ICollection<ClassificationStageOutput> ClassificationStageProposals { get; set; } = new List<ClassificationStageOutput>();
+}
+
+public sealed class TaxonomyLifecycleAuditEntry
+{
+    public Guid Id { get; set; }
+
+    [MaxLength(40)]
+    public string EntityType { get; set; } = string.Empty;
+
+    public Guid EntityId { get; set; }
+
+    [MaxLength(40)]
+    public string Operation { get; set; } = string.Empty;
+
+    public CategoryOwnerType ScopeOwnerType { get; set; }
+
+    public Guid? HouseholdId { get; set; }
+
+    public Guid? OwnerUserId { get; set; }
+
+    public Guid PerformedByHouseholdUserId { get; set; }
+
+    public DateTime PerformedAtUtc { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(1000)]
+    public string? MetadataJson { get; set; }
+
+    public HouseholdUser PerformedByHouseholdUser { get; set; } = null!;
 }
 
 public sealed class RecurringItem
