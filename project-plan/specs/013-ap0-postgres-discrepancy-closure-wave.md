@@ -26,7 +26,7 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 |---|---|---|---|---|---|
 | AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Coordinated execution plan and status governance across AP0 backend/AI/web/mobile/ops/QA tracks. | In Progress |
 | AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Idempotent baseline taxonomy seed + deterministic backfill + before/after discrepancy metrics output. | Done |
-| AP0-BE-02 | Backend | Scoped ownership model for user and shared categories | AP0-EPIC | Schema and migration path for `User`, `HouseholdShared`, and `Platform` ownership without breaking existing links. | Not Started |
+| AP0-BE-02 | Backend | Scoped ownership model for user and shared categories | AP0-EPIC | Schema and migration path for `User`, `HouseholdShared`, and `Platform` ownership without breaking existing links. | Done |
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Not Started |
 | AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | Not Started |
 | AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile parity for taxonomy management with offline-safe mutation queue and sync reconciliation. | Not Started |
@@ -58,3 +58,15 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 - Validation evidence:
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "TaxonomyBootstrapBackfillServiceTests|AccountAccessPolicyBackfillServiceTests"` (5 passed, 0 failed).
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "DeterministicClassificationOrchestratorTests|DeterministicClassificationEngineTests"` (13 passed, 0 failed).
+
+## Update Note (2026-02-28, AP0-BE-02 Closeout)
+- Planner promoted `AP0-BE-02` (`#146`) to `Done` after implementing scoped taxonomy ownership across backend model and schema:
+- `CategoryOwnerType` with `Platform`, `HouseholdShared`, and `User` ownership lanes.
+- new category ownership columns (`OwnerType`, `HouseholdId`, `OwnerUserId`) with check constraints enforcing scope consistency.
+- filtered unique indexes by lane to prevent collisions while preserving platform taxonomy compatibility.
+- ownership foreign keys to `Households` and `HouseholdUsers` plus navigation wiring.
+- EF migration `20260228013646_AddScopedCategoryOwnershipModel` with model snapshot update.
+- deterministic read-path updates for category discovery and classification scope filtering (`/search/categories`, deterministic orchestrator, taxonomy backfill platform seed lane).
+- Validation evidence:
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~CategoryOwnershipModelContractTests|FullyQualifiedName~TaxonomyBootstrapBackfillServiceTests|FullyQualifiedName~IdentityMembershipModelContractTests"` (8 passed, 0 failed).
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~DeterministicClassificationOrchestratorTests|FullyQualifiedName~DeterministicClassificationEngineTests|FullyQualifiedName~TaxonomyBootstrapBackfillServiceTests"` (15 passed, 0 failed).

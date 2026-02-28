@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
+using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
@@ -43,6 +44,9 @@ public static class SearchEndpoints
             MosaicMoneyDbContext dbContext,
             ITransactionEmbeddingGenerator embeddingGenerator,
             string query,
+            CategoryOwnerType? ownerType,
+            Guid? householdId,
+            Guid? ownerUserId,
             int limit = 10,
             CancellationToken cancellationToken = default) =>
         {
@@ -56,28 +60,46 @@ public static class SearchEndpoints
 
             var boundedLimit = Math.Clamp(limit, 1, 50);
 
+            var scopedSubcategoryIdsQuery = ApplyCategoryOwnershipScope(
+                    dbContext.Subcategories.AsNoTracking(),
+                    ownerType,
+                    householdId,
+                    ownerUserId)
+                .Select(x => x.Id);
+
             // Find subcategories from similar transactions
             var semanticSubcategoryIds = await dbContext.EnrichedTransactions
                 .AsNoTracking()
-                .Where(x => x.DescriptionEmbedding != null && x.SubcategoryId != null)
+                .Where(x =>
+                    x.DescriptionEmbedding != null
+                    && x.SubcategoryId != null
+                    && scopedSubcategoryIdsQuery.Contains(x.SubcategoryId.Value))
                 .OrderBy(x => x.DescriptionEmbedding!.CosineDistance(queryEmbedding))
                 .Select(x => x.SubcategoryId!.Value)
                 .Take(boundedLimit * 2)
                 .ToListAsync(cancellationToken);
 
             // Also find subcategories by name
-            var textMatchSubcategories = await dbContext.Subcategories
-                .AsNoTracking()
-                .Include(x => x.Category)
+            var textMatchSubcategories = await ApplyCategoryOwnershipScope(
+                    dbContext.Subcategories
+                        .AsNoTracking()
+                        .Include(x => x.Category),
+                    ownerType,
+                    householdId,
+                    ownerUserId)
                 .Where(x => EF.Functions.ILike(x.Name, $"%{query}%") || EF.Functions.ILike(x.Category.Name, $"%{query}%"))
                 .Take(boundedLimit)
                 .ToListAsync(cancellationToken);
 
             var combinedIds = semanticSubcategoryIds.Concat(textMatchSubcategories.Select(x => x.Id)).Distinct().Take(boundedLimit).ToList();
 
-            var finalSubcategories = await dbContext.Subcategories
-                .AsNoTracking()
-                .Include(x => x.Category)
+            var finalSubcategories = await ApplyCategoryOwnershipScope(
+                    dbContext.Subcategories
+                        .AsNoTracking()
+                        .Include(x => x.Category),
+                    ownerType,
+                    householdId,
+                    ownerUserId)
                 .Where(x => combinedIds.Contains(x.Id))
                 .ToListAsync(cancellationToken);
 
@@ -99,5 +121,27 @@ public static class SearchEndpoints
         });
 
         return group;
+    }
+
+    private static IQueryable<Subcategory> ApplyCategoryOwnershipScope(
+        IQueryable<Subcategory> query,
+        CategoryOwnerType? ownerType,
+        Guid? householdId,
+        Guid? ownerUserId)
+    {
+        var resolvedOwnerType = ownerType ?? CategoryOwnerType.Platform;
+
+        return resolvedOwnerType switch
+        {
+            CategoryOwnerType.Platform => query.Where(x => x.Category.OwnerType == CategoryOwnerType.Platform),
+            CategoryOwnerType.HouseholdShared when householdId.HasValue => query.Where(x =>
+                x.Category.OwnerType == CategoryOwnerType.HouseholdShared
+                && x.Category.HouseholdId == householdId.Value),
+            CategoryOwnerType.User when householdId.HasValue && ownerUserId.HasValue => query.Where(x =>
+                x.Category.OwnerType == CategoryOwnerType.User
+                && x.Category.HouseholdId == householdId.Value
+                && x.Category.OwnerUserId == ownerUserId.Value),
+            _ => query.Where(_ => false),
+        };
     }
 }

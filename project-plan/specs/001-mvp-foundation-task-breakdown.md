@@ -253,7 +253,7 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 |---|---|---|---|---|---|
 | AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Taxonomy/data-discrepancy closure plan and execution are coordinated across backend, AI, web, mobile, ops, and QA with evidence artifacts. | In Progress |
 | AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Baseline categories/subcategories are seeded idempotently; deterministic backfill reduces null-heavy category assignment rates while ambiguous rows route to `NeedsReview`. | Done |
-| AP0-BE-02 | Backend | Scoped ownership model for user/shared categories | AP0-EPIC | Schema supports `User`, `HouseholdShared`, and `Platform` taxonomy ownership without breaking existing transaction links. | Not Started |
+| AP0-BE-02 | Backend | Scoped ownership model for user/shared categories | AP0-EPIC | Schema supports `User`, `HouseholdShared`, and `Platform` taxonomy ownership without breaking existing transaction links. | Done |
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD/reorder/reparent/audit) | AP0-BE-02 | Scope-aware endpoints exist for category/subcategory lifecycle operations with auditability, idempotent ordering, and fail-closed authorization. | Not Started |
 | AP0-FE-01 | Web | Settings categories management experience | AP0-BE-03 | Web settings supports category/subcategory create/edit/delete/reorder/reparent with scope-aware UX and error handling. | Not Started |
 | AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile supports parity category management flows with offline-safe mutation queue and sync recovery behavior. | Not Started |

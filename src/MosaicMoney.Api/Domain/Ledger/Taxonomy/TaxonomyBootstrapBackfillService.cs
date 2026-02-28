@@ -84,6 +84,7 @@ public sealed class TaxonomyBootstrapBackfillService(
 
         var availableSubcategories = await dbContext.Subcategories
             .AsNoTracking()
+            .Where(x => x.Category.OwnerType == CategoryOwnerType.Platform)
             .Select(x => new DeterministicClassificationSubcategory(x.Id, x.Name))
             .ToListAsync(cancellationToken);
 
@@ -192,6 +193,7 @@ public sealed class TaxonomyBootstrapBackfillService(
     {
         var categories = await dbContext.Categories
             .Include(x => x.Subcategories)
+            .Where(x => x.OwnerType == CategoryOwnerType.Platform)
             .ToListAsync(cancellationToken);
 
         var categoriesByName = categories.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
@@ -211,6 +213,9 @@ public sealed class TaxonomyBootstrapBackfillService(
                     Name = seedCategory.Name,
                     DisplayOrder = seedCategory.DisplayOrder,
                     IsSystem = true,
+                    OwnerType = CategoryOwnerType.Platform,
+                    HouseholdId = null,
+                    OwnerUserId = null,
                 };
 
                 dbContext.Categories.Add(category);
@@ -236,6 +241,24 @@ public sealed class TaxonomyBootstrapBackfillService(
                 if (!category.IsSystem)
                 {
                     category.IsSystem = true;
+                    changed = true;
+                }
+
+                if (category.OwnerType != CategoryOwnerType.Platform)
+                {
+                    category.OwnerType = CategoryOwnerType.Platform;
+                    changed = true;
+                }
+
+                if (category.HouseholdId.HasValue)
+                {
+                    category.HouseholdId = null;
+                    changed = true;
+                }
+
+                if (category.OwnerUserId.HasValue)
+                {
+                    category.OwnerUserId = null;
                     changed = true;
                 }
 

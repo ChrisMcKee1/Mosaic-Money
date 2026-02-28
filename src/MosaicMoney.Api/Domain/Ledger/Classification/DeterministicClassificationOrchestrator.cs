@@ -42,6 +42,7 @@ public sealed class DeterministicClassificationOrchestrator(
         CancellationToken cancellationToken = default)
     {
         var transaction = await dbContext.EnrichedTransactions
+            .Include(x => x.Account)
             .FirstOrDefaultAsync(x => x.Id == transactionId, cancellationToken);
 
         if (transaction is null)
@@ -49,8 +50,27 @@ public sealed class DeterministicClassificationOrchestrator(
             return null;
         }
 
-        var subcategories = await dbContext.Subcategories
+        var subcategoryQuery = dbContext.Subcategories
             .AsNoTracking()
+            .Where(x =>
+                x.Category.OwnerType == CategoryOwnerType.Platform
+                || (x.Category.OwnerType == CategoryOwnerType.HouseholdShared
+                    && x.Category.HouseholdId == transaction.Account.HouseholdId));
+
+        if (needsReviewByUserId.HasValue)
+        {
+            var ownerUserId = needsReviewByUserId.Value;
+            subcategoryQuery = subcategoryQuery.Where(x =>
+                x.Category.OwnerType != CategoryOwnerType.User
+                || (x.Category.HouseholdId == transaction.Account.HouseholdId
+                    && x.Category.OwnerUserId == ownerUserId));
+        }
+        else
+        {
+            subcategoryQuery = subcategoryQuery.Where(x => x.Category.OwnerType != CategoryOwnerType.User);
+        }
+
+        var subcategories = await subcategoryQuery
             .Select(x => new DeterministicClassificationSubcategory(x.Id, x.Name))
             .ToListAsync(cancellationToken);
 

@@ -86,8 +86,38 @@ public sealed class MosaicMoneyDbContext : DbContext
         }
 
         modelBuilder.Entity<Category>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_Category_OwnerTypeRange",
+                    "\"OwnerType\" IN (0, 1, 2)");
+
+                t.HasCheckConstraint(
+                    "CK_Category_OwnerScopeConsistency",
+                    "(\"OwnerType\" = 0 AND \"HouseholdId\" IS NULL AND \"OwnerUserId\" IS NULL) OR (\"OwnerType\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NULL) OR (\"OwnerType\" = 2 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NOT NULL)");
+            });
+
+        modelBuilder.Entity<Category>()
+            .Property(x => x.OwnerType)
+            .HasDefaultValue(CategoryOwnerType.Platform);
+
+        modelBuilder.Entity<Category>()
             .HasIndex(x => x.Name)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"OwnerType\" = 0 AND \"HouseholdId\" IS NULL AND \"OwnerUserId\" IS NULL");
+
+        modelBuilder.Entity<Category>()
+            .HasIndex(x => new { x.HouseholdId, x.Name })
+            .IsUnique()
+            .HasFilter("\"OwnerType\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NULL");
+
+        modelBuilder.Entity<Category>()
+            .HasIndex(x => new { x.HouseholdId, x.OwnerUserId, x.Name })
+            .IsUnique()
+            .HasFilter("\"OwnerType\" = 2 AND \"HouseholdId\" IS NOT NULL AND \"OwnerUserId\" IS NOT NULL");
+
+        modelBuilder.Entity<Category>()
+            .HasIndex(x => new { x.HouseholdId, x.OwnerType, x.DisplayOrder, x.Name });
 
         modelBuilder.Entity<MosaicUser>()
             .ToTable(t =>
@@ -985,6 +1015,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Household>()
+            .HasMany(x => x.Categories)
+            .WithOne(x => x.Household)
+            .HasForeignKey(x => x.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Household>()
             .HasMany<AgentRun>()
             .WithOne(x => x.Household)
             .HasForeignKey(x => x.HouseholdId)
@@ -995,6 +1031,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .WithOne(x => x.Category)
             .HasForeignKey(x => x.CategoryId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<HouseholdUser>()
+            .HasMany(x => x.OwnedCategories)
+            .WithOne(x => x.OwnerUser)
+            .HasForeignKey(x => x.OwnerUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Account>()
             .HasMany(x => x.Transactions)

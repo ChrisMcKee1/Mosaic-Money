@@ -113,6 +113,13 @@ public enum AccountAccessVisibility
     Visible = 1,
 }
 
+public enum CategoryOwnerType
+{
+    Platform = 0,
+    HouseholdShared = 1,
+    User = 2,
+}
+
 public sealed class Household
 {
     public Guid Id { get; set; }
@@ -129,6 +136,8 @@ public sealed class Household
     public ICollection<AccountAccessPolicyReviewQueueEntry> AccountAccessPolicyReviewQueueEntries { get; set; } = new List<AccountAccessPolicyReviewQueueEntry>();
 
     public ICollection<RecurringItem> RecurringItems { get; set; } = new List<RecurringItem>();
+
+    public ICollection<Category> Categories { get; set; } = new List<Category>();
 }
 
 public sealed class MosaicUser
@@ -185,6 +194,8 @@ public sealed class HouseholdUser
     public ICollection<EnrichedTransaction> NeedsReviewTransactions { get; set; } = new List<EnrichedTransaction>();
 
     public ICollection<AccountMemberAccess> AccountAccessGrants { get; set; } = new List<AccountMemberAccess>();
+
+    public ICollection<Category> OwnedCategories { get; set; } = new List<Category>();
 }
 
 public sealed class Account
@@ -269,6 +280,16 @@ public sealed class Category
     public int DisplayOrder { get; set; }
 
     public bool IsSystem { get; set; }
+
+    public CategoryOwnerType OwnerType { get; set; } = CategoryOwnerType.Platform;
+
+    public Guid? OwnerUserId { get; set; }
+
+    public Guid? HouseholdId { get; set; }
+
+    public HouseholdUser? OwnerUser { get; set; }
+
+    public Household? Household { get; set; }
 
     public ICollection<Subcategory> Subcategories { get; set; } = new List<Subcategory>();
 }
