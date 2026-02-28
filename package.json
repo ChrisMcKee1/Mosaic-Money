@@ -1,12 +1,6 @@
 {
+  "private": true,
   "scripts": {
     "policy:orchestration": "pwsh -File .github/scripts/test-orchestration-policy-gates.ps1"
-  },
-  "dependencies": {
-    "@fontsource/jetbrains-mono": "^5.2.8",
-    "@fontsource/outfit": "^5.2.8",
-    "@fontsource/plus-jakarta-sans": "^5.2.8",
-    "apexcharts": "^5.6.0",
-    "react-apexcharts": "^2.0.1"
   }
 }
