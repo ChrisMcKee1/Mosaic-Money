@@ -28,7 +28,9 @@ builder.Services.Configure<TaxonomyOperatorOptions>(builder.Configuration.GetSec
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AccountAccessPolicyBackfillService>();
 builder.Services.Configure<TaxonomyBackfillOptions>(builder.Configuration.GetSection(TaxonomyBackfillOptions.SectionName));
+builder.Services.Configure<TaxonomyReadinessOptions>(builder.Configuration.GetSection(TaxonomyReadinessOptions.SectionName));
 builder.Services.AddScoped<TaxonomyBootstrapBackfillService>();
+builder.Services.AddScoped<ITaxonomyReadinessGate, TaxonomyReadinessGateService>();
 builder.Services.AddScoped<ICategoryLifecycleAuditTrail, CategoryLifecycleAuditTrail>();
 builder.Services.Configure<PlaidOptions>(builder.Configuration.GetSection(PlaidOptions.SectionName));
 builder.Services.AddHttpClient<PlaidHttpTokenProvider>();

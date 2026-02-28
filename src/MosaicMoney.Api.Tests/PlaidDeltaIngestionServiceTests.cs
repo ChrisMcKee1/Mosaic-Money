@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
+using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 using Xunit;
 
 namespace MosaicMoney.Api.Tests;
@@ -166,6 +167,52 @@ public sealed class PlaidDeltaIngestionServiceTests
         Assert.Equal(TransactionReviewStatus.NeedsReview, transaction.ReviewStatus);
         Assert.Equal("ambiguous_source_payload", transaction.ReviewReason);
         Assert.Equal(TransactionReviewStatus.NeedsReview, secondResult.Items[0].ReviewStatus);
+    }
+
+    [Fact]
+    public async Task IngestAsync_TaxonomyReadinessNotReady_RoutesTransactionToNeedsReview()
+    {
+        await using var dbContext = CreateDbContext();
+        var accountId = await SeedAccountAsync(dbContext);
+        var readinessGateStub = new StubTaxonomyReadinessGate
+        {
+            ResultToReturn = new TaxonomyReadinessEvaluation(
+                IsReady: false,
+                ReasonCode: TaxonomyReadinessReasonCodes.MissingSubcategoryCoverage,
+                Rationale: "Subcategory inventory does not meet ingestion readiness threshold.",
+                Snapshot: new TaxonomyReadinessSnapshot(
+                    HouseholdId: Guid.NewGuid(),
+                    PlatformSubcategoryCount: 0,
+                    HouseholdSharedSubcategoryCount: 0,
+                    UserScopedSubcategoryCount: 0,
+                    TotalEligibleSubcategoryCount: 0,
+                    ExpenseTransactionCount: 0,
+                    CategorizedExpenseTransactionCount: 0,
+                    ExpenseFillRate: 1m))
+        };
+
+        var service = new PlaidDeltaIngestionService(dbContext, readinessGateStub);
+
+        var request = BuildRequest(
+            accountId,
+            "cursor-readiness-1",
+            "plaid-tx-readiness-1",
+            "Coffee",
+            -4.25m,
+            new DateOnly(2026, 2, 21),
+            "{\"transaction_id\":\"plaid-tx-readiness-1\",\"name\":\"Coffee\",\"amount\":-4.25}",
+            isAmbiguous: false,
+            reviewReason: null);
+
+        var result = await service.IngestAsync(request);
+
+        Assert.Equal(1, readinessGateStub.CallCount);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, result.Items[0].ReviewStatus);
+        Assert.Equal(TaxonomyReadinessReasonCodes.MissingSubcategoryCoverage, result.Items[0].ReviewReason);
+
+        var transaction = await dbContext.EnrichedTransactions.SingleAsync(x => x.PlaidTransactionId == "plaid-tx-readiness-1");
+        Assert.Equal(TransactionReviewStatus.NeedsReview, transaction.ReviewStatus);
+        Assert.Equal(TaxonomyReadinessReasonCodes.MissingSubcategoryCoverage, transaction.ReviewReason);
     }
 
     [Fact]
@@ -372,4 +419,33 @@ public sealed class PlaidDeltaIngestionServiceTests
                 isAmbiguous,
                 reviewReason)]);
     }
+
+        private sealed class StubTaxonomyReadinessGate : ITaxonomyReadinessGate
+        {
+            public int CallCount { get; private set; }
+
+            public TaxonomyReadinessEvaluation ResultToReturn { get; set; } = new(
+                IsReady: true,
+                ReasonCode: TaxonomyReadinessReasonCodes.Ready,
+                Rationale: "Ready for test execution.",
+                Snapshot: new TaxonomyReadinessSnapshot(
+                    HouseholdId: Guid.Empty,
+                    PlatformSubcategoryCount: 3,
+                    HouseholdSharedSubcategoryCount: 0,
+                    UserScopedSubcategoryCount: 0,
+                    TotalEligibleSubcategoryCount: 3,
+                    ExpenseTransactionCount: 10,
+                    CategorizedExpenseTransactionCount: 8,
+                    ExpenseFillRate: 0.8000m));
+
+            public Task<TaxonomyReadinessEvaluation> EvaluateAsync(
+                Guid householdId,
+                TaxonomyReadinessLane lane,
+                Guid? ownerUserId = null,
+                CancellationToken cancellationToken = default)
+            {
+                CallCount++;
+                return Task.FromResult(ResultToReturn);
+            }
+        }
 }

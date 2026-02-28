@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Data;
+using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 
 namespace MosaicMoney.Api.Domain.Ledger.Classification;
 
@@ -24,6 +25,7 @@ public sealed class DeterministicClassificationOrchestrator(
     IClassificationConfidenceFusionPolicy confidenceFusionPolicy,
     IClassificationSpecialistRoutingPolicy specialistRoutingPolicy,
     IPostgresSemanticRetrievalService semanticRetrievalService,
+    ITaxonomyReadinessGate taxonomyReadinessGate,
     IMafFallbackEligibilityGate mafFallbackEligibilityGate,
     IMafFallbackGraphService mafFallbackGraphService) : IDeterministicClassificationOrchestrator
 {
@@ -48,6 +50,21 @@ public sealed class DeterministicClassificationOrchestrator(
         if (transaction is null)
         {
             return null;
+        }
+
+        var readinessEvaluation = await taxonomyReadinessGate.EvaluateAsync(
+            transaction.Account.HouseholdId,
+            TaxonomyReadinessLane.Classification,
+            needsReviewByUserId,
+            cancellationToken);
+
+        if (!readinessEvaluation.IsReady)
+        {
+            return await PersistTaxonomyReadinessGateBlockAsync(
+                transaction,
+                readinessEvaluation,
+                needsReviewByUserId,
+                cancellationToken);
         }
 
         var subcategoryQuery = dbContext.Subcategories
@@ -168,6 +185,67 @@ public sealed class DeterministicClassificationOrchestrator(
         {
             outcome.StageOutputs.Add(stageOutput);
         }
+
+        ApplyDecisionToTransaction(transaction, finalDecision, now, needsReviewByUserId);
+
+        dbContext.TransactionClassificationOutcomes.Add(outcome);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return new DeterministicClassificationExecutionResult(
+            outcome,
+            transaction.ReviewStatus,
+            transaction.ReviewReason,
+            transaction.SubcategoryId);
+    }
+
+    private async Task<DeterministicClassificationExecutionResult> PersistTaxonomyReadinessGateBlockAsync(
+        EnrichedTransaction transaction,
+        TaxonomyReadinessEvaluation readinessEvaluation,
+        Guid? needsReviewByUserId,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+        var reviewStatus = ResolveNeedsReviewStatus(transaction.ReviewStatus);
+        var decisionRationale = Truncate(
+            $"Taxonomy readiness gate blocked classification lane: {readinessEvaluation.Rationale}",
+            500);
+
+        var outcome = new TransactionClassificationOutcome
+        {
+            Id = Guid.NewGuid(),
+            TransactionId = transaction.Id,
+            ProposedSubcategoryId = null,
+            FinalConfidence = 0m,
+            Decision = ClassificationDecision.NeedsReview,
+            ReviewStatus = reviewStatus,
+            DecisionReasonCode = Truncate(readinessEvaluation.ReasonCode.Trim(), 120),
+            DecisionRationale = decisionRationale,
+            AgentNoteSummary = AgentNoteSummaryPolicy.Sanitize(
+                $"Taxonomy readiness gate routed to NeedsReview ({readinessEvaluation.ReasonCode})."),
+            CreatedAtUtc = now,
+        };
+
+        outcome.StageOutputs.Add(new ClassificationStageOutput
+        {
+            Id = Guid.NewGuid(),
+            Stage = ClassificationStage.Deterministic,
+            StageOrder = 1,
+            ProposedSubcategoryId = null,
+            Confidence = 0m,
+            RationaleCode = Truncate(readinessEvaluation.ReasonCode.Trim(), 120),
+            Rationale = decisionRationale,
+            EscalatedToNextStage = false,
+            ProducedAtUtc = now,
+        });
+
+        var finalDecision = new ClassificationWorkflowFinalDecision(
+            Decision: ClassificationDecision.NeedsReview,
+            ReviewStatus: reviewStatus,
+            ProposedSubcategoryId: null,
+            FinalConfidence: 0m,
+            DecisionReasonCode: readinessEvaluation.ReasonCode,
+            DecisionRationale: decisionRationale,
+            AgentNoteSummary: $"Taxonomy readiness gate routed to NeedsReview ({readinessEvaluation.ReasonCode}).");
 
         ApplyDecisionToTransaction(transaction, finalDecision, now, needsReviewByUserId);
 

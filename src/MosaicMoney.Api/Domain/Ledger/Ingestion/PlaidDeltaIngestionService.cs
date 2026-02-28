@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MosaicMoney.Api.Data;
+using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 
 namespace MosaicMoney.Api.Domain.Ledger.Ingestion;
 
@@ -35,13 +36,16 @@ public sealed record PlaidDeltaIngestionResult(
     int UnchangedCount,
     IReadOnlyList<PlaidDeltaIngestionItemResult> Items);
 
-public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
+public sealed class PlaidDeltaIngestionService(
+    MosaicMoneyDbContext dbContext,
+    ITaxonomyReadinessGate? readinessGate = null)
 {
     private const string Source = "plaid";
     private const string DefaultCursor = "no-cursor";
     private const string SupportedDeterministicScoreVersion = "mm-be-07a-v1";
     private const string SupportedTieBreakPolicy = "due_date_distance_then_amount_delta_then_latest_observed";
     private const string RecurringAmbiguityReasonCode = "recurring_competing_candidates";
+    private readonly ITaxonomyReadinessGate taxonomyReadinessGate = readinessGate ?? AllowAllTaxonomyReadinessGate.Instance;
 
     public async Task<PlaidDeltaIngestionResult> IngestAsync(
         PlaidDeltaIngestionRequest request,
@@ -49,6 +53,7 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
     {
         var normalizedCursor = NormalizeCursor(request.DeltaCursor);
         var now = DateTime.UtcNow;
+        var readinessReviewReason = await ResolveReadinessReviewReasonAsync(request.AccountId, cancellationToken);
         var recurringMatchContext = await BuildRecurringMatchContextAsync(request.AccountId, cancellationToken);
 
         var seenRawKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -131,7 +136,7 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
 
             if (transaction is null)
             {
-                transaction = CreateTransaction(request.AccountId, normalizedItem, now);
+                transaction = CreateTransaction(request.AccountId, normalizedItem, now, readinessReviewReason);
                 dbContext.EnrichedTransactions.Add(transaction);
                 trackedTransactions[normalizedItem.PlaidTransactionId] = transaction;
 
@@ -140,7 +145,7 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
             }
             else
             {
-                var changed = ApplySourceUpdate(transaction, request.AccountId, normalizedItem, now);
+                var changed = ApplySourceUpdate(transaction, request.AccountId, normalizedItem, now, readinessReviewReason);
                 if (changed)
                 {
                     updatedCount++;
@@ -190,7 +195,8 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
     private static EnrichedTransaction CreateTransaction(
         Guid accountId,
         PlaidDeltaIngestionItemInput item,
-        DateTime now)
+        DateTime now,
+        string? readinessReviewReason)
     {
         var transaction = new EnrichedTransaction
         {
@@ -206,10 +212,10 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
             LastModifiedAtUtc = now,
         };
 
-        if (ShouldRouteToNeedsReview(item))
+        if (ShouldRouteToNeedsReview(item, readinessReviewReason))
         {
             transaction.ReviewStatus = TransactionReviewStatus.NeedsReview;
-            transaction.ReviewReason = ResolveReviewReason(item);
+            transaction.ReviewReason = ResolveReviewReason(item, readinessReviewReason);
         }
         else
         {
@@ -224,7 +230,8 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
         EnrichedTransaction transaction,
         Guid accountId,
         PlaidDeltaIngestionItemInput item,
-        DateTime now)
+        DateTime now,
+        string? readinessReviewReason)
     {
         var changed = false;
 
@@ -253,16 +260,16 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
             changed = true;
         }
 
-        if (ShouldRouteToNeedsReview(item))
+        if (ShouldRouteToNeedsReview(item, readinessReviewReason))
         {
-            var reason = ResolveReviewReason(item);
+            var reason = ResolveReviewReason(item, readinessReviewReason);
             if (transaction.ReviewStatus != TransactionReviewStatus.NeedsReview)
             {
                 transaction.ReviewStatus = TransactionReviewStatus.NeedsReview;
                 transaction.ReviewReason = reason;
                 changed = true;
             }
-            else if (string.IsNullOrWhiteSpace(transaction.ReviewReason))
+            else if (!string.Equals(transaction.ReviewReason, reason, StringComparison.Ordinal))
             {
                 transaction.ReviewReason = reason;
                 changed = true;
@@ -277,16 +284,22 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
         return changed;
     }
 
-    private static bool ShouldRouteToNeedsReview(PlaidDeltaIngestionItemInput item)
+    private static bool ShouldRouteToNeedsReview(PlaidDeltaIngestionItemInput item, string? readinessReviewReason)
     {
-        return item.IsAmbiguous
+        return !string.IsNullOrWhiteSpace(readinessReviewReason)
+            || item.IsAmbiguous
             || string.IsNullOrWhiteSpace(item.Description)
             || item.Amount == 0
             || item.TransactionDate == default;
     }
 
-    private static string ResolveReviewReason(PlaidDeltaIngestionItemInput item)
+    private static string ResolveReviewReason(PlaidDeltaIngestionItemInput item, string? readinessReviewReason)
     {
+        if (!string.IsNullOrWhiteSpace(readinessReviewReason))
+        {
+            return readinessReviewReason.Trim();
+        }
+
         if (!string.IsNullOrWhiteSpace(item.ReviewReason))
         {
             return item.ReviewReason.Trim();
@@ -308,6 +321,29 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
         }
 
         return "ambiguous_source_payload";
+    }
+
+    private async Task<string?> ResolveReadinessReviewReasonAsync(Guid accountId, CancellationToken cancellationToken)
+    {
+        var householdId = await dbContext.Accounts
+            .AsNoTracking()
+            .Where(x => x.Id == accountId)
+            .Select(x => (Guid?)x.HouseholdId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (!householdId.HasValue)
+        {
+            return null;
+        }
+
+        var readinessEvaluation = await taxonomyReadinessGate.EvaluateAsync(
+            householdId.Value,
+            TaxonomyReadinessLane.Ingestion,
+            cancellationToken: cancellationToken);
+
+        return readinessEvaluation.IsReady
+            ? null
+            : readinessEvaluation.ReasonCode;
     }
 
     private static string NormalizeCursor(string value)
@@ -391,7 +427,7 @@ public sealed class PlaidDeltaIngestionService(MosaicMoneyDbContext dbContext)
         if (transaction.RecurringItemId.HasValue
             || recurringMatchContext.RecurringItems.Count == 0
             || transaction.ReviewStatus == TransactionReviewStatus.NeedsReview
-            || ShouldRouteToNeedsReview(item))
+            || ShouldRouteToNeedsReview(item, readinessReviewReason: null))
         {
             return false;
         }

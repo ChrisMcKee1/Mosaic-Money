@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Classification;
+using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 using Xunit;
 
 namespace MosaicMoney.Api.Tests;
@@ -40,6 +41,56 @@ public sealed class DeterministicClassificationOrchestratorTests
             StringComparison.Ordinal);
         Assert.Equal(0, semanticStub.CallCount);
         Assert.Equal(0, mafStub.CallCount);
+    }
+
+    [Fact]
+    public async Task ClassifyAndPersistAsync_TaxonomyReadinessNotReady_FailsClosedWithoutSemanticOrMaf()
+    {
+        await using var dbContext = CreateDbContext();
+        var seeded = await SeedLedgerDataAsync(dbContext, "Austin Energy bill payment", -120.00m);
+        var semanticStub = new StubSemanticRetrievalService();
+        var mafStub = new StubMafFallbackGraphService();
+        var readinessGateStub = new StubTaxonomyReadinessGate
+        {
+            ResultToReturn = new TaxonomyReadinessEvaluation(
+                IsReady: false,
+                ReasonCode: TaxonomyReadinessReasonCodes.FillRateBelowThreshold,
+                Rationale: "Taxonomy fill-rate is below configured threshold for classification lane.",
+                Snapshot: new TaxonomyReadinessSnapshot(
+                    HouseholdId: Guid.NewGuid(),
+                    PlatformSubcategoryCount: 2,
+                    HouseholdSharedSubcategoryCount: 0,
+                    UserScopedSubcategoryCount: 0,
+                    TotalEligibleSubcategoryCount: 2,
+                    ExpenseTransactionCount: 25,
+                    CategorizedExpenseTransactionCount: 10,
+                    ExpenseFillRate: 0.4000m))
+        };
+
+        var orchestrator = CreateOrchestrator(
+            dbContext,
+            semanticStub,
+            mafFallbackGraphService: mafStub,
+            taxonomyReadinessGate: readinessGateStub);
+
+        var result = await orchestrator.ClassifyAndPersistAsync(seeded.TransactionId, seeded.ReviewerId);
+
+        Assert.NotNull(result);
+        Assert.Equal(ClassificationDecision.NeedsReview, result!.Outcome.Decision);
+        Assert.Equal(TaxonomyReadinessReasonCodes.FillRateBelowThreshold, result.Outcome.DecisionReasonCode);
+        Assert.Equal(TransactionReviewStatus.NeedsReview, result.TransactionReviewStatus);
+        Assert.Equal(TaxonomyReadinessReasonCodes.FillRateBelowThreshold, result.TransactionReviewReason);
+        Assert.Equal(1, readinessGateStub.CallCount);
+        Assert.Equal(0, semanticStub.CallCount);
+        Assert.Equal(0, mafStub.CallCount);
+
+        var persistedOutcome = await dbContext.TransactionClassificationOutcomes
+            .Include(x => x.StageOutputs)
+            .SingleAsync(x => x.Id == result.Outcome.Id);
+
+        var deterministicOutput = Assert.Single(persistedOutcome.StageOutputs);
+        Assert.Equal(ClassificationStage.Deterministic, deterministicOutput.Stage);
+        Assert.Equal(TaxonomyReadinessReasonCodes.FillRateBelowThreshold, deterministicOutput.RationaleCode);
     }
 
     [Fact]
@@ -421,6 +472,7 @@ public sealed class DeterministicClassificationOrchestratorTests
     private static DeterministicClassificationOrchestrator CreateOrchestrator(
         MosaicMoneyDbContext dbContext,
         IPostgresSemanticRetrievalService semanticRetrievalService,
+        ITaxonomyReadinessGate? taxonomyReadinessGate = null,
         IMafFallbackEligibilityGate? mafEligibilityGate = null,
         IMafFallbackGraphService? mafFallbackGraphService = null,
         IClassificationSpecialistRoutingPolicy? specialistRoutingPolicy = null)
@@ -432,6 +484,7 @@ public sealed class DeterministicClassificationOrchestratorTests
             new ClassificationConfidenceFusionPolicy(),
             specialistRoutingPolicy ?? CreateSpecialistRoutingPolicy(new ClassificationSpecialistRegistryOptions()),
             semanticRetrievalService,
+                taxonomyReadinessGate ?? new StubTaxonomyReadinessGate(),
             mafEligibilityGate ?? new StubMafFallbackEligibilityGate(),
             mafFallbackGraphService ?? new StubMafFallbackGraphService());
     }
@@ -602,6 +655,35 @@ public sealed class DeterministicClassificationOrchestratorTests
 
         public Task<MafFallbackGraphResult> ExecuteAsync(
             MafFallbackGraphRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            return Task.FromResult(ResultToReturn);
+        }
+    }
+
+    private sealed class StubTaxonomyReadinessGate : ITaxonomyReadinessGate
+    {
+        public int CallCount { get; private set; }
+
+        public TaxonomyReadinessEvaluation ResultToReturn { get; set; } = new(
+            IsReady: true,
+            ReasonCode: TaxonomyReadinessReasonCodes.Ready,
+            Rationale: "Ready for test execution.",
+            Snapshot: new TaxonomyReadinessSnapshot(
+                HouseholdId: Guid.Empty,
+                PlatformSubcategoryCount: 3,
+                HouseholdSharedSubcategoryCount: 0,
+                UserScopedSubcategoryCount: 0,
+                TotalEligibleSubcategoryCount: 3,
+                ExpenseTransactionCount: 10,
+                CategorizedExpenseTransactionCount: 8,
+                ExpenseFillRate: 0.8000m));
+
+        public Task<TaxonomyReadinessEvaluation> EvaluateAsync(
+            Guid householdId,
+            TaxonomyReadinessLane lane,
+            Guid? ownerUserId = null,
             CancellationToken cancellationToken = default)
         {
             CallCount++;

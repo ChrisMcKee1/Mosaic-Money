@@ -258,7 +258,7 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | AP0-FE-01 | Web | Settings categories management experience | AP0-BE-03 | Web settings supports category/subcategory create/edit/delete/reorder/reparent with scope-aware UX and error handling. | In Review |
 | AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile supports parity category management flows with offline-safe mutation queue and sync recovery behavior. | Not Started |
 | AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform taxonomy tables | AP0-BE-03 | Operator-only admin lane manages platform taxonomy with auditable provenance, role protection, and rollback-safe workflows. | In Review |
-| AP0-AI-01 | AI | Taxonomy readiness gates for ingestion/classification | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks gate routing behavior and improve fill-rates without violating fail-closed policy constraints. | Not Started |
+| AP0-AI-01 | AI | Taxonomy readiness gates for ingestion/classification | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks gate routing behavior and improve fill-rates without violating fail-closed policy constraints. | In Review |
 | AP0-QA-01 | QA | AP0 discrepancy closure release gate and evidence pack | AP0-BE-01, AP0-BE-02, AP0-BE-03, AP0-FE-01, AP0-MOB-01, AP0-OPS-01, AP0-AI-01 | End-to-end SQL/API/web/mobile/AI evidence confirms discrepancy closure and ownership/security boundaries. | Not Started |
 
 Update note (2026-02-25): Planner kickoff for M8 is created from Clerk authentication requirements. Initial implementation slice tasks (`MM-ASP-10`, `MM-ASP-11`, `MM-BE-25`, `MM-FE-22`, `MM-FE-23`, `MM-MOB-13`) are set to `In Progress` prior to specialist delegation.

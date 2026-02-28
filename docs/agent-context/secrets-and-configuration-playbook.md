@@ -291,6 +291,24 @@ Notes:
 - The operator key must only be supplied by trusted internal tooling/server actions, never exposed via `NEXT_PUBLIC_*` variables.
 - Keep platform taxonomy actions archive-first for rollback-safe workflows.
 
+## Taxonomy readiness gate contract (AP0-AI-01)
+
+Taxonomy readiness checks gate ingestion and deterministic classification when taxonomy coverage or fill-rate conditions are below thresholds.
+
+API placeholder contract keys (`src/MosaicMoney.Api/appsettings.json`):
+
+1. `TaxonomyReadiness:EnableClassificationGate`
+2. `TaxonomyReadiness:EnableIngestionGate`
+3. `TaxonomyReadiness:MinimumPlatformSubcategoryCount`
+4. `TaxonomyReadiness:MinimumTotalSubcategoryCount`
+5. `TaxonomyReadiness:MinimumExpenseSampleCount`
+6. `TaxonomyReadiness:MinimumExpenseFillRate`
+
+Notes:
+
+- These are non-secret thresholds and should remain placeholder-safe in committed configuration.
+- Keep readiness gates fail-closed in production (`EnableClassificationGate=true`, `EnableIngestionGate=true`) unless a human-approved incident response requires temporary bypass.
+
 ## Azure AI Foundry and Azure OpenAI local setup contract
 
 Mosaic Money keeps AI model routing keys in AppHost user-secrets and injects them into API/worker through `WithEnvironment(...)`.
