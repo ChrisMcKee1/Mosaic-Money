@@ -24,15 +24,15 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 ## Task Breakdown
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
-| AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Coordinated execution plan and status governance across AP0 backend/AI/web/mobile/ops/QA tracks. | In Progress |
+| AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Coordinated execution plan and status governance across AP0 backend/AI/web/mobile/ops/QA tracks. | Done |
 | AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Idempotent baseline taxonomy seed + deterministic backfill + before/after discrepancy metrics output. | Done |
 | AP0-BE-02 | Backend | Scoped ownership model for user and shared categories | AP0-EPIC | Schema and migration path for `User`, `HouseholdShared`, and `Platform` ownership without breaking existing links. | Done |
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Done |
 | AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | Done |
-| AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile parity for taxonomy management with offline-safe mutation queue and sync reconciliation. | Not Started |
+| AP0-MOB-01 | Mobile | Mobile settings category management parity | AP0-BE-03, AP0-FE-01 | Mobile parity for taxonomy management with offline-safe mutation queue and sync reconciliation. | Done |
 | AP0-OPS-01 | DevOps/Ops | Internal admin CRUD for platform-managed taxonomy tables | AP0-BE-03 | Operator-only admin lane with protected access, change provenance, and rollback-safe workflows. | Done |
 | AP0-AI-01 | AI | Taxonomy readiness gates for ingestion and AI classification fill-rate | AP0-BE-01, AP0-BE-03 | Taxonomy readiness checks and evaluator scenarios improving fill-rates without policy regressions. | Done |
-| AP0-QA-01 | QA | AP0 discrepancy closure release gate and evidence pack | AP0-BE-01, AP0-BE-02, AP0-BE-03, AP0-FE-01, AP0-MOB-01, AP0-OPS-01, AP0-AI-01 | SQL/API/web/mobile/AI evidence pack proving discrepancy closure and ownership/auth boundary compliance. | Not Started |
+| AP0-QA-01 | QA | AP0 discrepancy closure release gate and evidence pack | AP0-BE-01, AP0-BE-02, AP0-BE-03, AP0-FE-01, AP0-MOB-01, AP0-OPS-01, AP0-AI-01 | SQL/API/web/mobile/AI evidence pack proving discrepancy closure and ownership/auth boundary compliance. | Done |
 
 ## Acceptance Criteria
 - `Categories` and `Subcategories` are populated and remain idempotent under reruns.
@@ -118,3 +118,18 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~PlaidTransactionsSyncProcessorTests` (3 passed, 0 failed).
 - `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter FullyQualifiedName~TransactionEmbeddingQueuePipelineTests` (4 passed, 0 failed).
 - `npm run build` and `npx playwright test tests/e2e/settings-categories.spec.js` in `src/MosaicMoney.Web` (pass).
+
+## Update Note (2026-02-28, AP0-MOB-01 Done Promotion)
+- Planner promoted `AP0-MOB-01` (`#148`) to `Done` after replacing placeholder mobile category settings behavior with backend-parity taxonomy lifecycle flows and offline replay safety.
+- Mobile now supports category/subcategory create, rename, archive, reorder, business-expense flag edit, and reparent actions in `User` and `HouseholdShared` scopes with explicit `Platform` read-only enforcement.
+- Category mutation queue/recovery now stores backend-ready HTTP request envelopes, applies backoff retries for transient failures, records reconciliation notices for stale/non-retriable conflicts, and replays in app-state recovery loops.
+- Validation evidence:
+- `npm run typecheck` in `src/MosaicMoney.Mobile` (pass).
+- `npx vitest run src/features/settings/offline/categoryMutationQueue.test.ts src/features/settings/offline/categoryMutationRecovery.test.ts` in `src/MosaicMoney.Mobile` (8 passed, 0 failed).
+
+## Update Note (2026-02-28, AP0-QA-01 and AP0-EPIC Done Promotion)
+- Planner promoted `AP0-QA-01` (`#151`) and `AP0-EPIC` (`#144`) to `Done` after producing the AP0 evidence pack at `artifacts/release-gates/ap0-qa-01/ap0-qa-01-evidence.md` and verifying all AP0 child tracks are complete.
+- Cross-surface validation evidence recorded for backend/AI, web, and mobile lanes:
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~CategoryLifecycleEndpointsTests|FullyQualifiedName~TaxonomyReadinessGateServiceTests|FullyQualifiedName~PlaidDeltaIngestionServiceTests|FullyQualifiedName~PlaidTransactionsSyncProcessorTests|FullyQualifiedName~TransactionEmbeddingQueuePipelineTests"` (32 passed, 0 failed).
+- `npm run build` and `npx playwright test tests/e2e/settings-categories.spec.js` in `src/MosaicMoney.Web` (6 passed, 0 failed; expected non-fatal API base URL warning during static build data collection).
+- `npm run typecheck` and `npx vitest run src/features/settings/offline/categoryMutationQueue.test.ts src/features/settings/offline/categoryMutationRecovery.test.ts` in `src/MosaicMoney.Mobile` (8 passed, 0 failed).

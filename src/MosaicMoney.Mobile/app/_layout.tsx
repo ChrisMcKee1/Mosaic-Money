@@ -2,6 +2,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { ClerkProvider, ClerkLoaded, useAuth } from "@clerk/clerk-expo";
 import { useEffect } from "react";
 import { useReviewMutationRecovery } from "../src/features/transactions/hooks/useReviewMutationRecovery";
+import { useCategoryMutationRecovery } from "../src/features/settings/offline/useCategoryMutationRecovery";
 import { theme } from "../src/theme/tokens";
 import { tokenCache } from "../src/auth/tokenCache";
 import { setAuthTokenProvider } from "../src/shared/services/mobileApiClient";
@@ -10,6 +11,11 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 function ReviewMutationRecoveryHost() {
   useReviewMutationRecovery();
+  return null;
+}
+
+function CategoryMutationRecoveryHost() {
+  useCategoryMutationRecovery();
   return null;
 }
 
@@ -60,6 +66,7 @@ export default function RootLayout() {
     return (
       <>
         <ReviewMutationRecoveryHost />
+        <CategoryMutationRecoveryHost />
         <RootStack />
       </>
     );
@@ -69,6 +76,7 @@ export default function RootLayout() {
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <ClerkLoaded>
         <ReviewMutationRecoveryHost />
+        <CategoryMutationRecoveryHost />
         <AuthGuard>
           <RootStack />
         </AuthGuard>
@@ -155,6 +163,13 @@ function RootStack() {
         options={{
           title: "Settings",
           headerLargeTitle: true,
+        }}
+      />
+      <Stack.Screen
+        name="settings/categories"
+        options={{
+          title: "Category Management",
+          headerLargeTitle: false,
         }}
       />
       <Stack.Screen

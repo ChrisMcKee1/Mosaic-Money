@@ -58,6 +58,16 @@ export function SettingsScreen() {
             Manage members, invites, and access to your household accounts.
           </Text>
         </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push("/settings/categories")}
+        >
+          <Text style={styles.cardTitle}>Categories</Text>
+          <Text style={styles.cardDescription}>
+            Manage categories, subcategories, and their taxonomy.
+          </Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
