@@ -164,7 +164,7 @@ $issues = @(
 
     # --- AP0: PostgreSQL Discrepancy Closure Wave ---
     @{ num=144; nid="I_kwDORVI-G87um9mp"; status="In Progress" } # AP0-EPIC
-    @{ num=145; nid="I_kwDORVI-G87unDr_"; status="Not Started" } # AP0-BE-01
+    @{ num=145; nid="I_kwDORVI-G87unDr_"; status="Done" } # AP0-BE-01
     @{ num=146; nid="I_kwDORVI-G87unDtL"; status="Not Started" } # AP0-BE-02
     @{ num=147; nid="I_kwDORVI-G87unDuS"; status="Not Started" } # AP0-FE-01
     @{ num=148; nid="I_kwDORVI-G87unDvJ"; status="Not Started" } # AP0-MOB-01

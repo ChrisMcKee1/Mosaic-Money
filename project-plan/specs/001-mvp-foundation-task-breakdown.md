@@ -252,7 +252,7 @@ Update note (2026-02-26): `MM-QA-02` and `MM-QA-03` are now `Done` after web dep
 | ID | Domain | Task | Dependencies | Done Criteria | Status |
 |---|---|---|---|---|---|
 | AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Taxonomy/data-discrepancy closure plan and execution are coordinated across backend, AI, web, mobile, ops, and QA with evidence artifacts. | In Progress |
-| AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Baseline categories/subcategories are seeded idempotently; deterministic backfill reduces null-heavy category assignment rates while ambiguous rows route to `NeedsReview`. | Not Started |
+| AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Baseline categories/subcategories are seeded idempotently; deterministic backfill reduces null-heavy category assignment rates while ambiguous rows route to `NeedsReview`. | Done |
 | AP0-BE-02 | Backend | Scoped ownership model for user/shared categories | AP0-EPIC | Schema supports `User`, `HouseholdShared`, and `Platform` taxonomy ownership without breaking existing transaction links. | Not Started |
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD/reorder/reparent/audit) | AP0-BE-02 | Scope-aware endpoints exist for category/subcategory lifecycle operations with auditability, idempotent ordering, and fail-closed authorization. | Not Started |
 | AP0-FE-01 | Web | Settings categories management experience | AP0-BE-03 | Web settings supports category/subcategory create/edit/delete/reorder/reparent with scope-aware UX and error handling. | Not Started |
@@ -340,6 +340,12 @@ Update note (2026-02-27): Planner closeout promoted `MM-ASP-13` (`#138`), `MM-BE
 - Mobile auth exception preserved per planner direction: `MM-MOB-13` remains `Blocked` and excluded from this closeout wave.
 
 Update note (2026-02-27): Planner backfill sync added AP0 discrepancy-closure work items already tracked on Project 1 (`#144`-`#152`) into spec governance. `AP0-EPIC` (`#144`) is now `In Progress` for active planning/execution orchestration; child work items remain `Not Started` pending implementation sequencing.
+
+Update note (2026-02-27): Planner verification pass promoted `AP0-BE-01` (`#145`) to `Done` after shipping:
+- Source-controlled baseline taxonomy manifest (`SystemTaxonomySeedManifest`) and idempotent seed upsert service.
+- Deterministic backfill for eligible uncategorized expense transactions with explicit fail-closed `NeedsReview` reason codes for ambiguous/low-confidence rows.
+- Pre/post discrepancy metrics logging for transaction/outcome/stage proposed subcategory null rates.
+- Focused validation: `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "TaxonomyBootstrapBackfillServiceTests|AccountAccessPolicyBackfillServiceTests"` (5 passed, 0 failed) and `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "DeterministicClassificationOrchestratorTests|DeterministicClassificationEngineTests"` (13 passed, 0 failed).
 
 ## Suggested First Implementation Slice (Start Here)
 Implement in this exact order to unlock all other streams quickly:

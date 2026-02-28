@@ -9,6 +9,7 @@ using MosaicMoney.Api.Domain.Ledger.Classification;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
 using MosaicMoney.Api.Domain.Ledger.Plaid;
+using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 using Npgsql;
 using Pgvector.EntityFrameworkCore;
 
@@ -25,6 +26,8 @@ builder.Services.AddDataProtection();
 builder.Services.AddClerkJwtAuthentication(builder.Configuration);
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<AccountAccessPolicyBackfillService>();
+builder.Services.Configure<TaxonomyBackfillOptions>(builder.Configuration.GetSection(TaxonomyBackfillOptions.SectionName));
+builder.Services.AddScoped<TaxonomyBootstrapBackfillService>();
 builder.Services.Configure<PlaidOptions>(builder.Configuration.GetSection(PlaidOptions.SectionName));
 builder.Services.AddHttpClient<PlaidHttpTokenProvider>();
 builder.Services.AddScoped<PlaidDeltaIngestionService>();
@@ -136,6 +139,9 @@ static async Task ApplyMigrationsAsync(WebApplication app)
 
     var backfillService = scope.ServiceProvider.GetRequiredService<AccountAccessPolicyBackfillService>();
     await backfillService.ExecuteAsync();
+
+    var taxonomyBackfillService = scope.ServiceProvider.GetRequiredService<TaxonomyBootstrapBackfillService>();
+    await taxonomyBackfillService.ExecuteAsync();
 
     var appliedAfter = await dbContext.Database.GetAppliedMigrationsAsync();
     logger.LogInformation("Migration state after apply: {AppliedCount} applied.", appliedAfter.Count());

@@ -25,7 +25,7 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 | ID | Domain | Task | Dependencies | Deliverable | Status |
 |---|---|---|---|---|---|
 | AP0-EPIC | Cross-Surface | PostgreSQL discrepancy closure umbrella | MM-BE-06, MM-AI-12 | Coordinated execution plan and status governance across AP0 backend/AI/web/mobile/ops/QA tracks. | In Progress |
-| AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Idempotent baseline taxonomy seed + deterministic backfill + before/after discrepancy metrics output. | Not Started |
+| AP0-BE-01 | Backend | Taxonomy bootstrap seed and deterministic backfill | AP0-EPIC | Idempotent baseline taxonomy seed + deterministic backfill + before/after discrepancy metrics output. | Done |
 | AP0-BE-02 | Backend | Scoped ownership model for user and shared categories | AP0-EPIC | Schema and migration path for `User`, `HouseholdShared`, and `Platform` ownership without breaking existing links. | Not Started |
 | AP0-BE-03 | Backend | Category lifecycle API (CRUD, reorder, reparent, audit) | AP0-BE-02 | Scope-aware category/subcategory API contracts with authorization, ordering safety, and audit trails. | Not Started |
 | AP0-FE-01 | Web | Web Settings categories management experience | AP0-BE-03 | Web settings surface for taxonomy create/edit/delete/reorder/reparent with scope-aware UX states. | Not Started |
@@ -45,3 +45,16 @@ Close PostgreSQL taxonomy and linkage discrepancies by shipping deterministic bo
 - Planner synchronized AP0 issues already on Project 1 into spec governance.
 - `AP0-EPIC` (`#144`) is promoted to `In Progress` for active orchestration.
 - Child AP0 tasks remain `Not Started` pending implementation sequencing after current M10 closeout.
+
+## Update Note (2026-02-27, AP0-BE-01 Kickoff)
+- Planner moved `AP0-BE-01` (`#145`) to `In Progress` to begin backend execution for idempotent taxonomy seeding and deterministic backfill.
+
+## Update Note (2026-02-27, AP0-BE-01 Closeout)
+- Planner promoted `AP0-BE-01` (`#145`) to `Done` after implementing:
+- `TaxonomyBootstrapBackfillService` wired into API startup migration flow.
+- source-controlled `SystemTaxonomySeedManifest` with idempotent category/subcategory upsert behavior.
+- deterministic backfill that only touches eligible uncategorized expense transactions and routes ambiguous rows fail-closed to `NeedsReview` with explicit reason codes.
+- pre/post null-rate metrics snapshot logging for `EnrichedTransactions.SubcategoryId`, `TransactionClassificationOutcomes.ProposedSubcategoryId`, and `ClassificationStageOutputs.ProposedSubcategoryId`.
+- Validation evidence:
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "TaxonomyBootstrapBackfillServiceTests|AccountAccessPolicyBackfillServiceTests"` (5 passed, 0 failed).
+- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "DeterministicClassificationOrchestratorTests|DeterministicClassificationEngineTests"` (13 passed, 0 failed).
