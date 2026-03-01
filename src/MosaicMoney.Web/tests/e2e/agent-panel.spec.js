@@ -5,7 +5,7 @@ test.beforeEach(async ({ request }) => {
   await resetMockApi(request);
 });
 
-test("streams assistant response in global panel", async ({ page }) => {
+test("streams agent response in global panel", async ({ page }) => {
   await page.goto("/");
 
   await page.getByRole("button", { name: "Open agent" }).click();
@@ -15,7 +15,7 @@ test("streams assistant response in global panel", async ({ page }) => {
   await page.getByRole("button", { name: "Send" }).click();
 
   await expect(
-    page.getByText("Mock assistant response: I reviewed your request and captured a deterministic summary."),
+    page.getByText("Mock agent response: I reviewed your request and captured a deterministic summary."),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Provenance" }).click();
@@ -37,3 +37,4 @@ test("queues approval-required actions and supports approval", async ({ page }) 
 
   await expect(page.getByText("approved")).toBeVisible();
 });
+

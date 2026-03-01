@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
@@ -10,20 +10,20 @@ namespace MosaicMoney.Api.Apis;
 
 public static class AgentOrchestrationEndpoints
 {
-    private const string AssistantCommandQueue = "runtime-assistant-message-posted";
-    private const string AssistantCommandType = "assistant_message_posted";
-    private const string AssistantApprovalCommandType = "assistant_approval_submitted";
+    private const string AgentCommandQueue = "runtime-agent-message-posted";
+    private const string AgentCommandType = "agent_message_posted";
+    private const string AgentApprovalCommandType = "agent_approval_submitted";
 
     public static RouteGroupBuilder MapAgentOrchestrationEndpoints(this RouteGroupBuilder group)
     {
-        var assistantGroup = group.MapGroup("/assistant/conversations");
+        var agentGroup = group.MapGroup("/agent/conversations");
 
-        assistantGroup.MapPost("/{conversationId:guid}/messages", async (
+        agentGroup.MapPost("/{conversationId:guid}/messages", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            [FromKeyedServices(AssistantCommandQueue)] ServiceBusClient serviceBusClient,
+            [FromServices] ServiceBusClient serviceBusClient,
             Guid conversationId,
-            AssistantConversationMessageRequest request,
+            AgentConversationMessageRequest request,
             CancellationToken cancellationToken) =>
         {
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
@@ -41,7 +41,7 @@ public static class AgentOrchestrationEndpoints
                 httpContext,
                 dbContext,
                 householdId: null,
-                "The household member is not active and cannot post assistant messages.",
+                "The household member is not active and cannot post agent messages.",
                 cancellationToken);
 
             if (accessScope.ErrorResult is not null)
@@ -55,21 +55,21 @@ public static class AgentOrchestrationEndpoints
                 return ApiValidation.ToForbiddenResult(
                     httpContext,
                     "membership_access_denied",
-                    "The household member is not active and cannot post assistant messages.");
+                    "The household member is not active and cannot post agent messages.");
             }
 
             var now = DateTime.UtcNow;
             var commandId = Guid.NewGuid();
-            var correlationId = $"assistant:{householdId.Value:N}:{conversationId:N}:{commandId:N}";
+            var correlationId = $"agent:{householdId.Value:N}:{conversationId:N}:{commandId:N}";
             var policyDisposition = DetermineMessagePolicyDisposition(request.Message);
 
-            var commandEnvelope = new AssistantRuntimeCommandEnvelope(
+            var commandEnvelope = new AgentRuntimeCommandEnvelope(
                 commandId,
                 correlationId,
-                AssistantCommandType,
+                AgentCommandType,
                 now,
                 request.ClientMessageId,
-                new AssistantMessagePostedCommand(
+                new AgentMessagePostedCommand(
                     householdId.Value,
                     conversationId,
                     accessScope.HouseholdUserId,
@@ -77,12 +77,12 @@ public static class AgentOrchestrationEndpoints
                     request.UserNote,
                     policyDisposition));
 
-            await using var sender = serviceBusClient.CreateSender(AssistantCommandQueue);
+            await using var sender = serviceBusClient.CreateSender(AgentCommandQueue);
             var message = new ServiceBusMessage(JsonSerializer.Serialize(commandEnvelope))
             {
                 MessageId = commandId.ToString("N"),
                 CorrelationId = correlationId,
-                Subject = AssistantCommandType,
+                Subject = AgentCommandType,
                 ContentType = "application/json",
             };
 
@@ -94,29 +94,29 @@ public static class AgentOrchestrationEndpoints
             await sender.SendMessageAsync(message, cancellationToken);
 
             return Results.Accepted(
-                $"/api/v1/assistant/conversations/{conversationId}/stream",
-                new AssistantCommandAcceptedDto(
+                $"/api/v1/agent/conversations/{conversationId}/stream",
+                new AgentCommandAcceptedDto(
                     commandId,
                     correlationId,
                     conversationId,
-                    AssistantCommandType,
-                    AssistantCommandQueue,
+                    AgentCommandType,
+                    AgentCommandQueue,
                     policyDisposition,
                     now,
                     "queued"));
         });
 
-        assistantGroup.MapPost("/{conversationId:guid}/approvals/{approvalId:guid}", async (
+        agentGroup.MapPost("/{conversationId:guid}/approvals/{approvalId:guid}", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            [FromKeyedServices(AssistantCommandQueue)] ServiceBusClient serviceBusClient,
+            [FromServices] ServiceBusClient serviceBusClient,
             Guid conversationId,
             Guid approvalId,
-            AssistantApprovalRequest request,
+            AgentApprovalRequest request,
             CancellationToken cancellationToken) =>
         {
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
-            if (!ApiEndpointHelpers.TryParseEnum<AssistantApprovalDecision>(request.Decision, out var parsedDecision))
+            if (!ApiEndpointHelpers.TryParseEnum<AgentApprovalDecision>(request.Decision, out var parsedDecision))
             {
                 errors.Add(new ApiValidationError(nameof(request.Decision), "Decision must be one of: Approve, Reject."));
             }
@@ -130,7 +130,7 @@ public static class AgentOrchestrationEndpoints
                 httpContext,
                 dbContext,
                 householdId: null,
-                "The household member is not active and cannot submit assistant approvals.",
+                "The household member is not active and cannot submit agent approvals.",
                 cancellationToken);
 
             if (accessScope.ErrorResult is not null)
@@ -144,21 +144,21 @@ public static class AgentOrchestrationEndpoints
                 return ApiValidation.ToForbiddenResult(
                     httpContext,
                     "membership_access_denied",
-                    "The household member is not active and cannot submit assistant approvals.");
+                    "The household member is not active and cannot submit agent approvals.");
             }
 
             var now = DateTime.UtcNow;
             var commandId = Guid.NewGuid();
-            var correlationId = $"assistant:{householdId.Value:N}:{conversationId:N}:{commandId:N}";
-            var policyDisposition = parsedDecision == AssistantApprovalDecision.Approve ? "approved_by_human" : "rejected_by_human";
+            var correlationId = $"agent:{householdId.Value:N}:{conversationId:N}:{commandId:N}";
+            var policyDisposition = parsedDecision == AgentApprovalDecision.Approve ? "approved_by_human" : "rejected_by_human";
 
-            var commandEnvelope = new AssistantRuntimeCommandEnvelope(
+            var commandEnvelope = new AgentRuntimeCommandEnvelope(
                 commandId,
                 correlationId,
-                AssistantApprovalCommandType,
+                AgentApprovalCommandType,
                 now,
                 request.ClientApprovalId,
-                new AssistantApprovalSubmittedCommand(
+                new AgentApprovalSubmittedCommand(
                     householdId.Value,
                     conversationId,
                     approvalId,
@@ -167,12 +167,12 @@ public static class AgentOrchestrationEndpoints
                     request.Rationale,
                     policyDisposition));
 
-            await using var sender = serviceBusClient.CreateSender(AssistantCommandQueue);
+            await using var sender = serviceBusClient.CreateSender(AgentCommandQueue);
             var message = new ServiceBusMessage(JsonSerializer.Serialize(commandEnvelope))
             {
                 MessageId = commandId.ToString("N"),
                 CorrelationId = correlationId,
-                Subject = AssistantApprovalCommandType,
+                Subject = AgentApprovalCommandType,
                 ContentType = "application/json",
             };
 
@@ -185,19 +185,19 @@ public static class AgentOrchestrationEndpoints
             await sender.SendMessageAsync(message, cancellationToken);
 
             return Results.Accepted(
-                $"/api/v1/assistant/conversations/{conversationId}/stream",
-                new AssistantCommandAcceptedDto(
+                $"/api/v1/agent/conversations/{conversationId}/stream",
+                new AgentCommandAcceptedDto(
                     commandId,
                     correlationId,
                     conversationId,
-                    AssistantApprovalCommandType,
-                    AssistantCommandQueue,
+                    AgentApprovalCommandType,
+                    AgentCommandQueue,
                     policyDisposition,
                     now,
                     "queued"));
         });
 
-        assistantGroup.MapGet("/{conversationId:guid}/stream", async (
+        agentGroup.MapGet("/{conversationId:guid}/stream", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             Guid conversationId,
@@ -208,7 +208,7 @@ public static class AgentOrchestrationEndpoints
                 httpContext,
                 dbContext,
                 householdId: null,
-                "The household member is not active and cannot access assistant stream updates.",
+                "The household member is not active and cannot access agent stream updates.",
                 cancellationToken);
 
             if (accessScope.ErrorResult is not null)
@@ -222,10 +222,10 @@ public static class AgentOrchestrationEndpoints
                 return ApiValidation.ToForbiddenResult(
                     httpContext,
                     "membership_access_denied",
-                    "The household member is not active and cannot access assistant stream updates.");
+                    "The household member is not active and cannot access agent stream updates.");
             }
 
-            var correlationPrefix = $"assistant:{householdId.Value:N}:{conversationId:N}:";
+            var correlationPrefix = $"agent:{householdId.Value:N}:{conversationId:N}:";
             var query = dbContext.AgentRuns
                 .AsNoTracking()
                 .Where(x => x.HouseholdId == householdId.Value)
@@ -275,7 +275,7 @@ public static class AgentOrchestrationEndpoints
                     var (latestStageOutcomeSummary, assignmentHint) = ParseStageOutcomeRationale(run.LatestStageOutcomeRationale);
                     var (agentSource, agentName) = ResolveAgentProvenance(run.WorkflowName, run.LatestStageExecutor);
 
-                    return new AssistantConversationRunStatusDto(
+                    return new AgentConversationRunStatusDto(
                         run.Id,
                         run.CorrelationId,
                         run.Status,
@@ -293,7 +293,7 @@ public static class AgentOrchestrationEndpoints
                 })
                 .ToList();
 
-            return Results.Ok(new AssistantConversationStreamDto(conversationId, mappedRuns));
+            return Results.Ok(new AgentConversationStreamDto(conversationId, mappedRuns));
         });
 
         return group;
@@ -339,14 +339,14 @@ public static class AgentOrchestrationEndpoints
 
     private static (string? AgentSource, string? AgentName) ResolveAgentProvenance(string workflowName, string? latestStageExecutor)
     {
-        var parsed = ParseAssistantExecutor(latestStageExecutor);
+        var parsed = ParseAgentExecutor(latestStageExecutor);
         if (!string.IsNullOrWhiteSpace(parsed.AgentSource) && !string.IsNullOrWhiteSpace(parsed.AgentName))
         {
             return parsed;
         }
 
-        if (string.Equals(workflowName, AssistantCommandType, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(workflowName, AssistantApprovalCommandType, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(workflowName, AgentCommandType, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(workflowName, AgentApprovalCommandType, StringComparison.OrdinalIgnoreCase))
         {
             return ("foundry", "Mosaic");
         }
@@ -354,7 +354,7 @@ public static class AgentOrchestrationEndpoints
         return (null, null);
     }
 
-    private static (string? AgentSource, string? AgentName) ParseAssistantExecutor(string? latestStageExecutor)
+    private static (string? AgentSource, string? AgentName) ParseAgentExecutor(string? latestStageExecutor)
     {
         if (string.IsNullOrWhiteSpace(latestStageExecutor))
         {
@@ -387,7 +387,7 @@ public static class AgentOrchestrationEndpoints
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    private sealed record AssistantRuntimeCommandEnvelope(
+    private sealed record AgentRuntimeCommandEnvelope(
         Guid CommandId,
         string CorrelationId,
         string CommandType,
@@ -395,7 +395,7 @@ public static class AgentOrchestrationEndpoints
         string? ClientReferenceId,
         object Payload);
 
-    private sealed record AssistantMessagePostedCommand(
+    private sealed record AgentMessagePostedCommand(
         Guid HouseholdId,
         Guid ConversationId,
         Guid HouseholdUserId,
@@ -403,7 +403,7 @@ public static class AgentOrchestrationEndpoints
         string? UserNote,
         string PolicyDisposition);
 
-    private sealed record AssistantApprovalSubmittedCommand(
+    private sealed record AgentApprovalSubmittedCommand(
         Guid HouseholdId,
         Guid ConversationId,
         Guid ApprovalId,

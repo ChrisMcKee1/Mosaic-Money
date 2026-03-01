@@ -1,28 +1,44 @@
-# Foundry MCP and IQ Bootstrap Runbook
+# Foundry Agent Bootstrap Runbook (Minimal V1)
 
-This runbook captures the current Mosaic Money setup path for provisioning a Microsoft Foundry agent with:
-- Postgres MCP access
-- API MCP access
-- Foundry IQ knowledge-base MCP access
+Last updated: 2026-03-01
 
-It is designed for local/dev operator setup and assumes Azure-side access for project and role assignment changes.
+## Purpose
+Create or update the hosted Foundry agent (`Mosaic`) with only:
+- model deployment
+- system prompt/instructions
+
+This runbook intentionally does not attach MCP tools yet.
 
 ## Scope and guardrails
-- Keep single-entry ledger semantics in agent instructions.
-- Treat ambiguous/high-impact actions as `NeedsReview` and require human approval.
-- Never commit real keys, connection strings, or credentials.
-- Use AppHost parameters and user-secrets for local secret values.
+- Preserve single-entry ledger semantics in all instructions.
+- Keep high-impact or ambiguous actions routed to `NeedsReview`.
+- Do not commit credentials, tokens, or real secret values.
+- Use Entra bearer auth for Foundry agent routes when possible.
+
+## Active execution checklist
+- Completed: simplify bootstrap script to minimal mode (no MCP tools, no memory tools).
+- Completed: recreate `Mosaic` in Foundry using `gpt-5.3-codex` with prompt-only definition.
+- Completed: validate direct Foundry `responses` call via `agent_reference` for `Mosaic`.
+- Pending: validate app API runtime path end-to-end.
+- Pending: validate web UI path end-to-end.
+- Pending: document Service Bus necessity recommendation for current milestone.
+- Deferred after validation: investigate Streamable HTTP MCP migration and rollout plan.
 
 ## Prerequisites
-- Azure CLI logged into the target tenant/subscription.
-- Foundry project endpoint (`https://<resource>.services.ai.azure.com/api/projects/<project>`).
-- Foundry project resource ID when you need ARM connection create/update. The script can derive this from existing project connections when available.
-- Foundry model deployment name (for example `gpt-5.3-codex`).
-- Azure AI Search knowledge base already created (for Foundry IQ grounding).
-- Remote MCP endpoints available for Postgres and API tools.
+- Azure CLI logged in to the target tenant/subscription.
+- Foundry project endpoint:
+  - `https://<resource>.services.ai.azure.com/api/projects/<project>`
+- Model deployment name:
+  - for current local usage: `gpt-5.3-codex`
 
 ## Script
-Use `scripts/foundry/setup-foundry-agent.ps1` to create/update project `RemoteTool` connections and create the Foundry agent definition.
+Use `scripts/foundry/setup-foundry-agent.ps1`.
+
+Current script behavior:
+- Creates/updates one Foundry agent definition.
+- Payload contains only `name` and `definition` (`kind`, `model`, `instructions`).
+- No MCP tool configuration.
+- No memory store configuration.
 
 Example:
 
@@ -30,73 +46,58 @@ Example:
 pwsh ./scripts/foundry/setup-foundry-agent.ps1 `
   -ProjectEndpoint "https://<resource>.services.ai.azure.com/api/projects/<project>" `
   -ModelDeploymentName "gpt-5.3-codex" `
-  -AgentName "Mosaic" `
-  -ProjectResourceId "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<account>/projects/<project>" `
-  -ConnectionsApiVersion "2025-11-15-preview" `
-  -DatabaseMcpLabel "mosaic-postgres" `
-  -DatabaseMcpEndpoint "https://<postgres-mcp-endpoint>/mcp" `
-  -DatabaseConnectionName "mosaic-postgres-connection" `
-  -ApiMcpLabel "mosaic-api" `
-  -ApiMcpEndpoint "https://<api-mcp-endpoint>/api/mcp" `
-  -ApiConnectionName "mosaic-api-connection" `
-  -SearchServiceEndpoint "https://<search-service>.search.windows.net" `
-  -KnowledgeBaseName "<knowledge-base-name>" `
-  -KnowledgeConnectionName "mosaic-iq-connection"
+  -AgentName "Mosaic"
 ```
 
-## New Foundry API and auth expectations
-- Agent create/update and execution routes should use Foundry project endpoint with Entra bearer auth (`az account get-access-token --resource https://ai.azure.com`).
-- Start with `api-version=v1` for agent routes and only fallback to preview versions when tenant compatibility requires it.
-- If a request returns `Key-based authentication is not supported for this route`, switch to bearer auth immediately.
-- Project connection create/update remains ARM-based (`management.azure.com`) while list/get can use Foundry data-plane (`{project_endpoint}/connections`).
+Optional instruction overrides:
 
-## PostgreSQL MCP instruction template
-When using direct PostgreSQL MCP integration (without Search knowledge-base routing), include explicit tool-parameter guidance in agent instructions:
+```powershell
+# Inline instructions text
+-AgentInstructionsText "You are Mosaic ..."
 
-```text
-You are a helpful agent that can use MCP tools to assist users. Use the available MCP tools to answer questions and perform tasks.
-
-Use these parameters when calling PostgreSQL MCP tools:
-- database: <YOUR_DATABASE_NAME>
-- resource-group: <YOUR_RESOURCE_GROUP>
-- server: <YOUR_SERVER_NAME>
-- subscription: <YOUR_SUBSCRIPTION_ID>
-- user: <CONTAINER_APP_IDENTITY_NAME>
+# Or file-based instructions
+-AgentInstructionsPath "./docs/agent-context/mosaic-system-prompt.txt"
 ```
 
-The bootstrap script now appends this block automatically when `-PostgresDatabase`, `-PostgresResourceGroup`, `-PostgresServer`, `-PostgresSubscription`, or `-PostgresUser` values are provided.
+## Validation commands
 
-## Common pitfalls and fixes
-- Pitfall: Mixing Azure OpenAI inference patterns (`openai.azure.com`, `cognitiveservices.azure.com` scope) into Foundry Agent Service routes.
-  Fix: Use `https://ai.azure.com` token scope for Foundry Agent Service routes.
-- Pitfall: Assuming only `Microsoft.MachineLearningServices` project IDs.
-  Fix: Support `Microsoft.CognitiveServices/accounts/.../projects/...` IDs and derive from existing connection IDs when needed.
-- Pitfall: Failing bootstrap when `ProjectResourceId` is unknown.
-  Fix: Resolve from Foundry data-plane connection metadata and proceed.
-- Pitfall: Creating MCP tools with legacy fields.
-  Fix: Use `server_label`, `server_url`, `allowed_tools`, `require_approval`, and `project_connection_id`.
-- Pitfall: Search knowledge-base create fails with `Requested value 'extractedData' was not found` or `...does not support minimal retrieval reasoning effort`.
-  Fix: Use `outputMode=answerSynthesis` and set retrieval reasoning effort to `medium` for `mcpTool` knowledge sources on this tenant.
-- Pitfall: Agent create/update returns `memory_search is not supported` when combining memory + MCP on `api-version=v1`.
-  Fix: Treat memory attachment as capability-gated by model/tenant and validate support before forcing combined tool payloads.
+Direct agent fetch:
 
-## Local AppHost configuration keys
-The AppHost now supports these Foundry agent keys for injection into API/Worker:
-- `AiWorkflow__Agent__Foundry__McpDatabaseToolName`
-- `AiWorkflow__Agent__Foundry__McpDatabaseToolEndpoint`
-- `AiWorkflow__Agent__Foundry__McpDatabaseToolProjectConnectionId`
-- `AiWorkflow__Agent__Foundry__McpDatabaseAllowedToolsCsv`
-- `AiWorkflow__Agent__Foundry__McpDatabaseRequireApproval`
-- `AiWorkflow__Agent__Foundry__McpApiToolName`
-- `AiWorkflow__Agent__Foundry__McpApiToolEndpoint`
-- `AiWorkflow__Agent__Foundry__McpApiToolProjectConnectionId`
-- `AiWorkflow__Agent__Foundry__McpApiAllowedToolsCsv`
-- `AiWorkflow__Agent__Foundry__McpApiRequireApproval`
-- `AiWorkflow__Agent__Foundry__KnowledgeBaseMcpServerLabel`
-- `AiWorkflow__Agent__Foundry__KnowledgeBaseMcpEndpoint`
-- `AiWorkflow__Agent__Foundry__KnowledgeBaseProjectConnectionId`
-- `AiWorkflow__Agent__Foundry__KnowledgeBaseAllowedToolsCsv`
-- `AiWorkflow__Agent__Foundry__KnowledgeBaseRequireApproval`
+```powershell
+$endpoint = "https://<resource>.services.ai.azure.com/api/projects/<project>"
+$token = az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv
+$headers = @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Method Get -Uri "$endpoint/agents/Mosaic?api-version=v1" -Headers $headers
+```
+
+Direct responses call:
+
+```powershell
+$endpoint = "https://<resource>.services.ai.azure.com/api/projects/<project>"
+$token = az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv
+$headers = @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' }
+$body = @{
+  agent_reference = @{ type = 'agent_reference'; name = 'Mosaic' }
+  input = 'Hi Mosaic. One concise paragraph introducing your role.'
+} | ConvertTo-Json -Depth 10
+Invoke-RestMethod -Method Post -Uri "$endpoint/openai/v1/responses" -Headers $headers -Body $body
+```
+
+## Planned V2 architecture (not in this script yet)
+- Keep two entry points in `MosaicMoney.Api`:
+  - REST/Minimal API endpoints for frontend apps.
+  - MCP endpoint for agents.
+- Keep one shared business layer behind both entry points.
+- Require authenticated user context for MCP calls before exposing data tools.
+- Prefer Streamable HTTP transport for MCP after investigation and rollout validation.
+
+## OpenAPI renderer note
+`MosaicMoney.Api` should expose runtime OpenAPI docs plus a local renderer in development.
+Current target pattern:
+- `builder.Services.AddOpenApi()`
+- `app.MapOpenApi()` in development
+- Scalar UI in development
+- `launchSettings.json` `launchUrl` should point to the renderer path (`scalar`).
 
 ## Local secret commands
 Project-based AppHost flow:
@@ -122,8 +123,3 @@ dotnet user-secrets set "foundry-agent-endpoint" "<value>" --file src/apphost.cs
 
 dotnet user-secrets list --file src/apphost.cs
 ```
-
-## Required human-in-the-loop checks
-- Verify project managed identity roles on Azure AI Search (`Search Index Data Reader`; add `Contributor` only if index writes are needed).
-- Confirm project connection auth mode for each MCP endpoint.
-- Validate non-prod data boundaries for Postgres MCP access and least-privilege table grants.

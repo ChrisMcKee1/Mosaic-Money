@@ -2,6 +2,7 @@ import { Outfit, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs';
 import "./globals.css";
 import { Shell } from "../components/layout/Shell";
+import { isClerkConfiguredCorrectly } from "../lib/clerk-server-utils";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,7 +28,7 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
+  const isClerkConfigured = isClerkConfiguredCorrectly();
 
   const content = (
     <html

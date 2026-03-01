@@ -12,6 +12,10 @@ using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+// Default Foundry toggles to disabled when unset so local startup is resilient without Foundry config.
+var foundryClassificationEnabled = GetBooleanParameter(builder.Configuration, "foundry-classification-enabled");
+var foundryAgentEnabled = GetBooleanParameter(builder.Configuration, "foundry-agent-enabled");
+
 IResourceBuilder<IResourceWithConnectionString> ledgerDb;
 var externalLedgerConnection = builder.Configuration.GetConnectionString("mosaicmoneydb");
 if (!string.IsNullOrWhiteSpace(externalLedgerConnection))
@@ -46,29 +50,57 @@ var azureOpenAiEndpoint = builder.AddParameter("azure-openai-endpoint");
 var azureOpenAiApiKey = builder.AddParameter("azure-openai-api-key", secret: true);
 var azureOpenAiEmbeddingDeployment = builder.AddParameter("azure-openai-embedding-deployment");
 var azureOpenAiChatDeployment = builder.AddParameter("azure-openai-chat-deployment");
-var foundryClassificationEnabled = builder.AddParameter("foundry-classification-enabled");
-var foundryProjectEndpoint = builder.AddParameter("foundry-project-endpoint");
-var foundryProjectApiKey = builder.AddParameter("foundry-project-api-key", secret: true);
-var foundryClassificationDeployment = builder.AddParameter("foundry-classification-deployment");
-var foundryAgentEnabled = builder.AddParameter("foundry-agent-enabled");
-var foundryAgentEndpoint = builder.AddParameter("foundry-agent-endpoint");
-var foundryAgentApiKey = builder.AddParameter("foundry-agent-api-key", secret: true);
-var foundryAgentDeployment = builder.AddParameter("foundry-agent-deployment");
-var foundryAgentMcpDatabaseToolName = builder.AddParameter("foundry-agent-mcp-database-tool-name");
-var foundryAgentMcpDatabaseToolEndpoint = builder.AddParameter("foundry-agent-mcp-database-tool-endpoint");
-var foundryAgentMcpDatabaseConnectionId = builder.AddParameter("foundry-agent-mcp-database-project-connection-id");
-var foundryAgentMcpDatabaseAllowedToolsCsv = builder.AddParameter("foundry-agent-mcp-database-allowed-tools-csv");
-var foundryAgentMcpDatabaseRequireApproval = builder.AddParameter("foundry-agent-mcp-database-require-approval");
-var foundryAgentMcpApiToolName = builder.AddParameter("foundry-agent-mcp-api-tool-name");
-var foundryAgentMcpApiToolEndpoint = builder.AddParameter("foundry-agent-mcp-api-tool-endpoint");
-var foundryAgentMcpApiConnectionId = builder.AddParameter("foundry-agent-mcp-api-project-connection-id");
-var foundryAgentMcpApiAllowedToolsCsv = builder.AddParameter("foundry-agent-mcp-api-allowed-tools-csv");
-var foundryAgentMcpApiRequireApproval = builder.AddParameter("foundry-agent-mcp-api-require-approval");
-var foundryAgentKnowledgeBaseLabel = builder.AddParameter("foundry-agent-knowledge-base-label");
-var foundryAgentKnowledgeBaseEndpoint = builder.AddParameter("foundry-agent-knowledge-base-endpoint");
-var foundryAgentKnowledgeBaseConnectionId = builder.AddParameter("foundry-agent-knowledge-base-project-connection-id");
-var foundryAgentKnowledgeBaseAllowedToolsCsv = builder.AddParameter("foundry-agent-knowledge-base-allowed-tools-csv");
-var foundryAgentKnowledgeBaseRequireApproval = builder.AddParameter("foundry-agent-knowledge-base-require-approval");
+IResourceBuilder<ParameterResource>? foundryProjectEndpoint = null;
+IResourceBuilder<ParameterResource>? foundryProjectApiKey = null;
+IResourceBuilder<ParameterResource>? foundryClassificationDeployment = null;
+
+if (foundryClassificationEnabled)
+{
+	foundryProjectEndpoint = builder.AddParameter("foundry-project-endpoint");
+	foundryProjectApiKey = builder.AddParameter("foundry-project-api-key", secret: true);
+	foundryClassificationDeployment = builder.AddParameter("foundry-classification-deployment");
+}
+
+IResourceBuilder<ParameterResource>? foundryAgentEndpoint = null;
+IResourceBuilder<ParameterResource>? foundryAgentApiKey = null;
+IResourceBuilder<ParameterResource>? foundryAgentDeployment = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpDatabaseToolName = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpDatabaseToolEndpoint = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpDatabaseConnectionId = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpDatabaseAllowedToolsCsv = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpDatabaseRequireApproval = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpApiToolName = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpApiToolEndpoint = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpApiConnectionId = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpApiAllowedToolsCsv = null;
+IResourceBuilder<ParameterResource>? foundryAgentMcpApiRequireApproval = null;
+IResourceBuilder<ParameterResource>? foundryAgentKnowledgeBaseLabel = null;
+IResourceBuilder<ParameterResource>? foundryAgentKnowledgeBaseEndpoint = null;
+IResourceBuilder<ParameterResource>? foundryAgentKnowledgeBaseConnectionId = null;
+IResourceBuilder<ParameterResource>? foundryAgentKnowledgeBaseAllowedToolsCsv = null;
+IResourceBuilder<ParameterResource>? foundryAgentKnowledgeBaseRequireApproval = null;
+
+if (foundryAgentEnabled)
+{
+	foundryAgentEndpoint = builder.AddParameter("foundry-agent-endpoint");
+	foundryAgentApiKey = builder.AddParameter("foundry-agent-api-key", secret: true);
+	foundryAgentDeployment = builder.AddParameter("foundry-agent-deployment");
+	foundryAgentMcpDatabaseToolName = builder.AddParameter("foundry-agent-mcp-database-tool-name");
+	foundryAgentMcpDatabaseToolEndpoint = builder.AddParameter("foundry-agent-mcp-database-tool-endpoint");
+	foundryAgentMcpDatabaseConnectionId = builder.AddParameter("foundry-agent-mcp-database-project-connection-id");
+	foundryAgentMcpDatabaseAllowedToolsCsv = builder.AddParameter("foundry-agent-mcp-database-allowed-tools-csv");
+	foundryAgentMcpDatabaseRequireApproval = builder.AddParameter("foundry-agent-mcp-database-require-approval");
+	foundryAgentMcpApiToolName = builder.AddParameter("foundry-agent-mcp-api-tool-name");
+	foundryAgentMcpApiToolEndpoint = builder.AddParameter("foundry-agent-mcp-api-tool-endpoint");
+	foundryAgentMcpApiConnectionId = builder.AddParameter("foundry-agent-mcp-api-project-connection-id");
+	foundryAgentMcpApiAllowedToolsCsv = builder.AddParameter("foundry-agent-mcp-api-allowed-tools-csv");
+	foundryAgentMcpApiRequireApproval = builder.AddParameter("foundry-agent-mcp-api-require-approval");
+	foundryAgentKnowledgeBaseLabel = builder.AddParameter("foundry-agent-knowledge-base-label");
+	foundryAgentKnowledgeBaseEndpoint = builder.AddParameter("foundry-agent-knowledge-base-endpoint");
+	foundryAgentKnowledgeBaseConnectionId = builder.AddParameter("foundry-agent-knowledge-base-project-connection-id");
+	foundryAgentKnowledgeBaseAllowedToolsCsv = builder.AddParameter("foundry-agent-knowledge-base-allowed-tools-csv");
+	foundryAgentKnowledgeBaseRequireApproval = builder.AddParameter("foundry-agent-knowledge-base-require-approval");
+}
 
 // M10 MM-ASP-12 runtime messaging backbone (Aspire-native resources and references).
 var runtimeServiceBus = builder
@@ -76,7 +108,7 @@ var runtimeServiceBus = builder
 	.RunAsEmulator();
 
 var runtimeLaneIngestionCompleted = runtimeServiceBus.AddServiceBusQueue("runtime-ingestion-completed");
-var runtimeLaneAssistantMessagePosted = runtimeServiceBus.AddServiceBusQueue("runtime-assistant-message-posted");
+var runtimeLaneAgentMessagePosted = runtimeServiceBus.AddServiceBusQueue("runtime-agent-message-posted");
 var runtimeLaneNightlyAnomalySweep = runtimeServiceBus.AddServiceBusQueue("runtime-nightly-anomaly-sweep");
 
 var runtimeEventHubs = builder
@@ -105,42 +137,52 @@ var api = builder
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__Enabled", foundryClassificationEnabled)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__Endpoint", foundryProjectEndpoint)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__ApiKey", foundryProjectApiKey)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__Deployment", foundryClassificationDeployment)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__Enabled", foundryAgentEnabled)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolName", foundryAgentMcpDatabaseToolName)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolEndpoint", foundryAgentMcpDatabaseToolEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolProjectConnectionId", foundryAgentMcpDatabaseConnectionId)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseAllowedToolsCsv", foundryAgentMcpDatabaseAllowedToolsCsv)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseRequireApproval", foundryAgentMcpDatabaseRequireApproval)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolName", foundryAgentMcpApiToolName)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolEndpoint", foundryAgentMcpApiToolEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolProjectConnectionId", foundryAgentMcpApiConnectionId)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiAllowedToolsCsv", foundryAgentMcpApiAllowedToolsCsv)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiRequireApproval", foundryAgentMcpApiRequireApproval)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpServerLabel", foundryAgentKnowledgeBaseLabel)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpEndpoint", foundryAgentKnowledgeBaseEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseProjectConnectionId", foundryAgentKnowledgeBaseConnectionId)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseAllowedToolsCsv", foundryAgentKnowledgeBaseAllowedToolsCsv)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseRequireApproval", foundryAgentKnowledgeBaseRequireApproval)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Enabled", foundryClassificationEnabled ? "true" : "false")
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Enabled", foundryAgentEnabled ? "true" : "false")
 	.WithEnvironment("RuntimeMessaging__Enabled", "false")
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)
 	.WithEnvironment("RuntimeMessaging__EventGrid__TopicName", runtimeEventGridTopicName)
 	.WithReference(runtimeServiceBus)
 	.WithReference(runtimeLaneIngestionCompleted)
-	.WithReference(runtimeLaneAssistantMessagePosted)
+	.WithReference(runtimeLaneAgentMessagePosted)
 	.WithReference(runtimeLaneNightlyAnomalySweep)
 	.WithReference(runtimeEventHubs)
 	.WithReference(runtimeTelemetryStream)
 	.WithReference(runtimeTelemetryConsumer)
 	.WithReference(ledgerDb)
 	.WaitFor(ledgerDb);
+
+if (foundryClassificationEnabled)
+{
+	api = api
+		.WithEnvironment("AiWorkflow__Classification__Foundry__Endpoint", foundryProjectEndpoint!)
+		.WithEnvironment("AiWorkflow__Classification__Foundry__ApiKey", foundryProjectApiKey!)
+		.WithEnvironment("AiWorkflow__Classification__Foundry__Deployment", foundryClassificationDeployment!);
+}
+
+if (foundryAgentEnabled)
+{
+	api = api
+		.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolName", foundryAgentMcpDatabaseToolName!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolEndpoint", foundryAgentMcpDatabaseToolEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolProjectConnectionId", foundryAgentMcpDatabaseConnectionId!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseAllowedToolsCsv", foundryAgentMcpDatabaseAllowedToolsCsv!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseRequireApproval", foundryAgentMcpDatabaseRequireApproval!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolName", foundryAgentMcpApiToolName!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolEndpoint", foundryAgentMcpApiToolEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolProjectConnectionId", foundryAgentMcpApiConnectionId!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiAllowedToolsCsv", foundryAgentMcpApiAllowedToolsCsv!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiRequireApproval", foundryAgentMcpApiRequireApproval!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpServerLabel", foundryAgentKnowledgeBaseLabel!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpEndpoint", foundryAgentKnowledgeBaseEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseProjectConnectionId", foundryAgentKnowledgeBaseConnectionId!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseAllowedToolsCsv", foundryAgentKnowledgeBaseAllowedToolsCsv!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseRequireApproval", foundryAgentKnowledgeBaseRequireApproval!);
+}
 
 var worker = builder
 	.AddProject<Projects.MosaicMoney_Worker>("worker")
@@ -152,36 +194,15 @@ var worker = builder
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Endpoint", azureOpenAiEndpoint)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__ApiKey", azureOpenAiApiKey)
 	.WithEnvironment("AiWorkflow__Chat__AzureOpenAI__Deployment", azureOpenAiChatDeployment)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__Enabled", foundryClassificationEnabled)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__Endpoint", foundryProjectEndpoint)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__ApiKey", foundryProjectApiKey)
-	.WithEnvironment("AiWorkflow__Classification__Foundry__Deployment", foundryClassificationDeployment)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__Enabled", foundryAgentEnabled)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolName", foundryAgentMcpDatabaseToolName)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolEndpoint", foundryAgentMcpDatabaseToolEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolProjectConnectionId", foundryAgentMcpDatabaseConnectionId)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseAllowedToolsCsv", foundryAgentMcpDatabaseAllowedToolsCsv)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseRequireApproval", foundryAgentMcpDatabaseRequireApproval)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolName", foundryAgentMcpApiToolName)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolEndpoint", foundryAgentMcpApiToolEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolProjectConnectionId", foundryAgentMcpApiConnectionId)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiAllowedToolsCsv", foundryAgentMcpApiAllowedToolsCsv)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiRequireApproval", foundryAgentMcpApiRequireApproval)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpServerLabel", foundryAgentKnowledgeBaseLabel)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpEndpoint", foundryAgentKnowledgeBaseEndpoint)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseProjectConnectionId", foundryAgentKnowledgeBaseConnectionId)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseAllowedToolsCsv", foundryAgentKnowledgeBaseAllowedToolsCsv)
-	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseRequireApproval", foundryAgentKnowledgeBaseRequireApproval)
+	.WithEnvironment("AiWorkflow__Classification__Foundry__Enabled", foundryClassificationEnabled ? "true" : "false")
+	.WithEnvironment("AiWorkflow__Agent__Foundry__Enabled", foundryAgentEnabled ? "true" : "false")
 	.WithEnvironment("RuntimeMessaging__Enabled", "false")
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)
 	.WithEnvironment("RuntimeMessaging__EventGrid__TopicName", runtimeEventGridTopicName)
 	.WithReference(runtimeServiceBus)
 	.WithReference(runtimeLaneIngestionCompleted)
-	.WithReference(runtimeLaneAssistantMessagePosted)
+	.WithReference(runtimeLaneAgentMessagePosted)
 	.WithReference(runtimeLaneNightlyAnomalySweep)
 	.WithReference(runtimeEventHubs)
 	.WithReference(runtimeTelemetryStream)
@@ -190,6 +211,37 @@ var worker = builder
 	.WithReference(api)
 	.WaitFor(ledgerDb)
 	.WaitFor(api);
+
+if (foundryClassificationEnabled)
+{
+	worker = worker
+		.WithEnvironment("AiWorkflow__Classification__Foundry__Endpoint", foundryProjectEndpoint!)
+		.WithEnvironment("AiWorkflow__Classification__Foundry__ApiKey", foundryProjectApiKey!)
+		.WithEnvironment("AiWorkflow__Classification__Foundry__Deployment", foundryClassificationDeployment!);
+}
+
+if (foundryAgentEnabled)
+{
+	worker = worker
+		.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolName", foundryAgentMcpDatabaseToolName!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolEndpoint", foundryAgentMcpDatabaseToolEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolProjectConnectionId", foundryAgentMcpDatabaseConnectionId!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseAllowedToolsCsv", foundryAgentMcpDatabaseAllowedToolsCsv!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseRequireApproval", foundryAgentMcpDatabaseRequireApproval!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolName", foundryAgentMcpApiToolName!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolEndpoint", foundryAgentMcpApiToolEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolProjectConnectionId", foundryAgentMcpApiConnectionId!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiAllowedToolsCsv", foundryAgentMcpApiAllowedToolsCsv!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiRequireApproval", foundryAgentMcpApiRequireApproval!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpServerLabel", foundryAgentKnowledgeBaseLabel!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpEndpoint", foundryAgentKnowledgeBaseEndpoint!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseProjectConnectionId", foundryAgentKnowledgeBaseConnectionId!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseAllowedToolsCsv", foundryAgentKnowledgeBaseAllowedToolsCsv!)
+		.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseRequireApproval", foundryAgentKnowledgeBaseRequireApproval!);
+}
 
 builder
 	.AddJavaScriptApp("web", "./MosaicMoney.Web")
@@ -203,3 +255,9 @@ builder
 // Mobile is not launched by AppHost today; keep Clerk contract in src/MosaicMoney.Mobile/.env.example.
 
 builder.Build().Run();
+
+static bool GetBooleanParameter(IConfiguration configuration, string parameterName)
+{
+	var rawValue = configuration[$"Parameters:{parameterName}"];
+	return bool.TryParse(rawValue, out var parsedValue) && parsedValue;
+}

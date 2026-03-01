@@ -76,7 +76,7 @@ async function waitForRun(conversationId, correlationId) {
   let latestMatch = null;
 
   while (Date.now() - startedAt < RUN_POLL_TIMEOUT_MS) {
-    const stream = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/stream`);
+    const stream = await fetchApi(`/api/v1/agent/conversations/${conversationId}/stream`);
     const runs = Array.isArray(stream?.runs) ? stream.runs : [];
 
     const matchedRun = runs.find((run) => run?.correlationId === correlationId) ?? null;
@@ -93,13 +93,13 @@ async function waitForRun(conversationId, correlationId) {
   return latestMatch;
 }
 
-function buildAssistantReply(command, run) {
+function buildAgentReply(command, run) {
   if (command?.policyDisposition === "approval_required") {
-    return "This request is queued and marked high-impact. Review the approval card before execution continues.";
+    return "This request is marked high-impact. Please review the approval card before we continue.";
   }
 
   if (!run) {
-    return "I queued your request and started processing. Open the provenance tab for live run updates.";
+    return "I'm looking into that for you. Note that complex tasks may show up in the provenance tab.";
   }
 
   const status = typeof run.status === "string" ? run.status.toLowerCase() : "";
@@ -113,11 +113,11 @@ function buildAssistantReply(command, run) {
       return run.latestStageOutcomeSummary.trim();
     }
 
-    return "The run completed successfully.";
+    return "Got it. Let me know if you need anything else!";
   }
 
   if (status === "needsreview") {
-    return "I completed initial processing but this outcome needs human review before it can continue.";
+    return "I've completed my initial pass, but I need you to review the outcome before it's finalized.";
   }
 
   const failureDetails = [run.failureCode, run.failureRationale]
@@ -125,10 +125,10 @@ function buildAssistantReply(command, run) {
     .join(": ");
 
   if (failureDetails.length > 0) {
-    return `The run did not complete successfully. ${failureDetails}`;
+    return `I ran into an issue finding an answer: ${failureDetails}`;
   }
 
-  return `The run ended with status '${run.status || "unknown"}'. Check provenance for details.`;
+  return `The task ended with status '${run.status || "unknown"}'. Let me know if you want to try again.`;
 }
 
 function splitForStreaming(text) {
@@ -154,7 +154,7 @@ export async function POST(request) {
       return Response.json({ error: "A user message is required." }, { status: 400 });
     }
 
-    const accepted = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/messages`, {
+    const accepted = await fetchApi(`/api/v1/agent/conversations/${conversationId}/messages`, {
       method: "POST",
       body: JSON.stringify({
         message: userMessage,
@@ -165,7 +165,7 @@ export async function POST(request) {
     const run = accepted?.policyDisposition === "approval_required"
       ? null
       : await waitForRun(conversationId, accepted?.correlationId);
-    const responseText = buildAssistantReply(accepted, run);
+    const responseText = buildAgentReply(accepted, run);
 
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
@@ -191,8 +191,8 @@ export async function POST(request) {
         }
 
         const responseTextId = accepted?.commandId
-          ? `assistant-${accepted.commandId}`
-          : `assistant-${Date.now()}`;
+          ? `agent-${accepted.commandId}`
+          : `agent-${Date.now()}`;
 
         writer.write({ type: "text-start", id: responseTextId });
         for (const chunk of splitForStreaming(responseText)) {
@@ -201,11 +201,14 @@ export async function POST(request) {
         }
         writer.write({ type: "text-end", id: responseTextId });
       },
-      onError: () => "The assistant stream failed while preparing a response.",
+      onError: () => "The agent stream failed while preparing a response.",
     });
 
     return createUIMessageStreamResponse({ stream });
-  } catch {
-    return Response.json({ error: "The assistant request could not be completed." }, { status: 500 });
+  } catch (error) {
+    console.error("Agent chat route failed:", error);
+    const baseUrl = process.env.services__api__https__0 || process.env.services__api__http__0 || process.env.API_URL || "unknown";
+    return Response.json({ error: String(error.message), stack: String(error.stack), fetchUrlAttempted: baseUrl }, { status: 500 });
   }
 }
+

@@ -68,7 +68,7 @@ public sealed class FoundryAgentOptions
 
     public string? KnowledgeSourceUrl { get; init; }
 
-    public string ApiVersion { get; init; } = "2025-11-01-preview";
+    public string ApiVersion { get; init; } = "v1";
 
     public bool IsConfigured()
     {
@@ -342,7 +342,7 @@ public sealed class FoundryAgentRuntimeService(
         CancellationToken cancellationToken = default)
     {
         var ensured = await EnsureAgentAsync(cancellationToken);
-        if (!ensured.Succeeded || string.IsNullOrWhiteSpace(ensured.AgentId))
+        if (!ensured.Succeeded)
         {
             return BuildUnavailableResult(
                 request,
@@ -352,53 +352,26 @@ public sealed class FoundryAgentRuntimeService(
                 ensured.AgentId);
         }
 
-        var threadId = await CreateThreadAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(threadId))
+        var response = await CreateResponseAsync(
+            agentName: ensured.AgentName,
+            input: BuildUserPrompt(request),
+            cancellationToken);
+
+        if (!response.Succeeded)
         {
             return BuildUnavailableResult(
                 request,
                 ensured.AgentName,
-                "agent_thread_create_failed",
-                "Unable to create Foundry thread; human review required.",
+                "agent_response_create_failed",
+                string.IsNullOrWhiteSpace(response.ErrorDetail)
+                    ? "Unable to create Foundry response; human review required."
+                    : $"Unable to create Foundry response; human review required. Detail: {response.ErrorDetail}",
                 ensured.AgentId);
         }
 
-        var posted = await AddUserMessageAsync(threadId, BuildUserPrompt(request), cancellationToken);
-        if (!posted)
-        {
-            return BuildUnavailableResult(
-                request,
-                ensured.AgentName,
-                "agent_message_post_failed",
-                "Unable to post message to Foundry thread; human review required.",
-                ensured.AgentId);
-        }
-
-        var runId = await CreateRunAsync(threadId, ensured.AgentId, cancellationToken);
-        if (string.IsNullOrWhiteSpace(runId))
-        {
-            return BuildUnavailableResult(
-                request,
-                ensured.AgentName,
-                "agent_run_create_failed",
-                "Unable to start Foundry run; human review required.",
-                ensured.AgentId);
-        }
-
-        var runStatus = await WaitForTerminalRunStatusAsync(threadId, runId, cancellationToken);
-        if (!string.Equals(runStatus, "completed", StringComparison.OrdinalIgnoreCase))
-        {
-            return BuildUnavailableResult(
-                request,
-                ensured.AgentName,
-                "agent_run_not_completed",
-                $"Foundry run ended with status '{runStatus ?? "unknown"}'; human review required.",
-                ensured.AgentId);
-        }
-
-        var agentReply = await GetLatestAssistantMessageAsync(threadId, cancellationToken);
+        var agentReply = response.ResponseText;
         var summary = string.IsNullOrWhiteSpace(agentReply)
-            ? "Foundry agent run completed with no reply body."
+            ? "Foundry response completed with no reply body."
             : Truncate(SanitizeSingleLine(agentReply), 500);
 
         return new FoundryAgentInvocationResult(
@@ -564,7 +537,7 @@ public sealed class FoundryAgentRuntimeService(
         FoundryAgentOptions agentOptions,
         CancellationToken cancellationToken)
     {
-        var primaryPayload = BuildCreateAgentPayload(agentOptions, includeOptionalToolAndKnowledge: true);
+        var primaryPayload = BuildCreateAgentPayload(agentOptions, includeOptionalTools: true);
         var createResponse = await SendJsonAsync(
             HttpMethod.Post,
             BuildApiPath("/agents", includeApiVersion: true),
@@ -593,7 +566,7 @@ public sealed class FoundryAgentRuntimeService(
         var shouldRetryMinimal = createResponse.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity;
         if (shouldRetryMinimal)
         {
-            var minimalPayload = BuildCreateAgentPayload(agentOptions, includeOptionalToolAndKnowledge: false);
+            var minimalPayload = BuildCreateAgentPayload(agentOptions, includeOptionalTools: false);
             var retry = await SendJsonAsync(
                 HttpMethod.Post,
                 BuildApiPath("/agents", includeApiVersion: true),
@@ -638,213 +611,215 @@ public sealed class FoundryAgentRuntimeService(
             false);
     }
 
-    private JsonObject BuildCreateAgentPayload(FoundryAgentOptions agentOptions, bool includeOptionalToolAndKnowledge)
+    private JsonObject BuildCreateAgentPayload(FoundryAgentOptions agentOptions, bool includeOptionalTools)
     {
-        var payload = new JsonObject
+        var definition = new JsonObject
         {
-            ["name"] = agentOptions.AgentName,
             ["model"] = agentOptions.Deployment,
+            ["kind"] = "prompt",
             ["instructions"] = agentOptions.SystemPrompt,
         };
 
-        if (!includeOptionalToolAndKnowledge)
+        if (includeOptionalTools)
         {
-            return payload;
-        }
-
-        var tools = new JsonArray();
-        foreach (var configuredTool in agentOptions.GetConfiguredMcpTools())
-        {
-            var toolNode = new JsonObject
+            var tools = new JsonArray();
+            foreach (var configuredTool in agentOptions.GetConfiguredMcpTools())
             {
-                ["type"] = "mcp",
-                ["server_label"] = configuredTool.ServerLabel,
-                ["server_url"] = configuredTool.ServerUrl,
-                ["require_approval"] = configuredTool.RequireApproval,
-            };
-
-            if (configuredTool.AllowedTools.Count > 0)
-            {
-                var allowedTools = new JsonArray();
-                foreach (var toolName in configuredTool.AllowedTools)
+                var toolNode = new JsonObject
                 {
-                    allowedTools.Add(toolName);
+                    ["type"] = "mcp",
+                    ["server_label"] = configuredTool.ServerLabel,
+                    ["server_url"] = configuredTool.ServerUrl,
+                    ["require_approval"] = configuredTool.RequireApproval,
+                };
+
+                if (configuredTool.AllowedTools.Count > 0)
+                {
+                    var allowedTools = new JsonArray();
+                    foreach (var toolName in configuredTool.AllowedTools)
+                    {
+                        allowedTools.Add(toolName);
+                    }
+
+                    toolNode["allowed_tools"] = allowedTools;
                 }
 
-                toolNode["allowed_tools"] = allowedTools;
-            }
-
-            if (!string.IsNullOrWhiteSpace(configuredTool.ProjectConnectionId))
-            {
-                toolNode["project_connection_id"] = configuredTool.ProjectConnectionId;
-            }
-
-            tools.Add(toolNode);
-        }
-
-        if (tools.Count > 0)
-        {
-            payload["tools"] = tools;
-        }
-
-        if (!string.IsNullOrWhiteSpace(agentOptions.KnowledgeSourceUrl))
-        {
-            payload["knowledge_sources"] = new JsonArray
-            {
-                new JsonObject
+                if (!string.IsNullOrWhiteSpace(configuredTool.ProjectConnectionId))
                 {
-                    ["type"] = "url",
-                    ["url"] = agentOptions.KnowledgeSourceUrl,
-                },
-            };
+                    toolNode["project_connection_id"] = configuredTool.ProjectConnectionId;
+                }
+
+                tools.Add(toolNode);
+            }
+
+            if (tools.Count > 0)
+            {
+                definition["tools"] = tools;
+            }
         }
 
+        return new JsonObject
+        {
+            ["name"] = agentOptions.AgentName,
+            ["definition"] = definition,
+        };
+    }
+
+    private async Task<(bool Succeeded, string? ResponseText, HttpStatusCode? StatusCode, string? ErrorDetail)> CreateResponseAsync(
+        string agentName,
+        string input,
+        CancellationToken cancellationToken)
+    {
+        var primary = await SendJsonAsync(
+            HttpMethod.Post,
+            "/openai/v1/responses",
+            BuildResponsePayload(agentName, input, useAgentField: true),
+            cancellationToken);
+
+        var response = primary;
+        if (!response.Succeeded
+            && response.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity)
+        {
+            response = await SendJsonAsync(
+                HttpMethod.Post,
+                "/openai/v1/responses",
+                BuildResponsePayload(agentName, input, useAgentField: false),
+                cancellationToken);
+        }
+
+        if (!response.Succeeded)
+        {
+            return (false, null, response.StatusCode, response.ErrorDetail);
+        }
+
+        var responseText = response.Document is null
+            ? null
+            : ExtractResponseText(response.Document.RootElement);
+
+        return (true, responseText, response.StatusCode, null);
+    }
+
+    private static JsonObject BuildResponsePayload(string agentName, string input, bool useAgentField)
+    {
+        var payload = new JsonObject
+        {
+            ["input"] = input,
+        };
+
+        var agentReference = new JsonObject
+        {
+            ["type"] = "agent_reference",
+            ["name"] = agentName,
+        };
+
+        payload[useAgentField ? "agent" : "agent_reference"] = agentReference;
         return payload;
     }
 
-    private async Task<string?> CreateThreadAsync(CancellationToken cancellationToken)
+    private static string? ExtractResponseText(JsonElement responseRoot)
     {
-        var response = await SendJsonAsync(
-            HttpMethod.Post,
-            BuildApiPath("/threads", includeApiVersion: true),
-            body: new JsonObject(),
-            cancellationToken);
+        var outputText = TryReadString(responseRoot, "output_text");
+        if (!string.IsNullOrWhiteSpace(outputText))
+        {
+            return outputText;
+        }
 
-        if (!response.Succeeded || response.Document is null)
+        if (!responseRoot.TryGetProperty("output", out var outputItems)
+            || outputItems.ValueKind != JsonValueKind.Array)
         {
             return null;
         }
 
-        return TryReadString(response.Document.RootElement, "id")
-            ?? TryReadString(response.Document.RootElement, "thread_id")
-            ?? TryReadString(response.Document.RootElement, "threadId");
-    }
-
-    private async Task<bool> AddUserMessageAsync(string threadId, string message, CancellationToken cancellationToken)
-    {
-        var payload = new JsonObject
+        foreach (var outputItem in outputItems.EnumerateArray())
         {
-            ["role"] = "user",
-            ["content"] = message,
-        };
-
-        var response = await SendJsonAsync(
-            HttpMethod.Post,
-            BuildApiPath($"/threads/{Uri.EscapeDataString(threadId)}/messages", includeApiVersion: true),
-            payload,
-            cancellationToken);
-
-        return response.Succeeded;
-    }
-
-    private async Task<string?> CreateRunAsync(string threadId, string agentId, CancellationToken cancellationToken)
-    {
-        var payload = new JsonObject
-        {
-            ["assistant_id"] = agentId,
-        };
-
-        var response = await SendJsonAsync(
-            HttpMethod.Post,
-            BuildApiPath($"/threads/{Uri.EscapeDataString(threadId)}/runs", includeApiVersion: true),
-            payload,
-            cancellationToken);
-
-        if (!response.Succeeded || response.Document is null)
-        {
-            return null;
+            var itemText = ExtractOutputItemText(outputItem);
+            if (!string.IsNullOrWhiteSpace(itemText))
+            {
+                return itemText;
+            }
         }
 
-        return TryReadString(response.Document.RootElement, "id")
-            ?? TryReadString(response.Document.RootElement, "run_id")
-            ?? TryReadString(response.Document.RootElement, "runId");
+        return null;
     }
 
-    private async Task<string?> WaitForTerminalRunStatusAsync(string threadId, string runId, CancellationToken cancellationToken)
+    private static string? ExtractOutputItemText(JsonElement outputItem)
     {
-        for (var attempt = 0; attempt < 25; attempt++)
+        var directText = TryReadString(outputItem, "text");
+        if (!string.IsNullOrWhiteSpace(directText))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var response = await SendJsonAsync(
-                HttpMethod.Get,
-                BuildApiPath($"/threads/{Uri.EscapeDataString(threadId)}/runs/{Uri.EscapeDataString(runId)}", includeApiVersion: true),
-                body: null,
-                cancellationToken);
-
-            if (!response.Succeeded || response.Document is null)
-            {
-                return "failed";
-            }
-
-            var status = TryReadString(response.Document.RootElement, "status");
-            if (IsTerminalStatus(status))
-            {
-                return status;
-            }
-
-            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            return directText;
         }
 
-        return "timeout";
+        if (outputItem.TryGetProperty("content", out var content))
+        {
+            var contentText = ExtractContentText(content);
+            if (!string.IsNullOrWhiteSpace(contentText))
+            {
+                return contentText;
+            }
+        }
+
+        if (outputItem.TryGetProperty("message", out var messageElement))
+        {
+            var messageText = ExtractOutputItemText(messageElement);
+            if (!string.IsNullOrWhiteSpace(messageText))
+            {
+                return messageText;
+            }
+        }
+
+        return null;
     }
 
-    private async Task<string?> GetLatestAssistantMessageAsync(string threadId, CancellationToken cancellationToken)
+    private static string? ExtractContentText(JsonElement contentElement)
     {
-        var response = await SendJsonAsync(
-            HttpMethod.Get,
-            BuildApiPath($"/threads/{Uri.EscapeDataString(threadId)}/messages?order=desc&limit=20", includeApiVersion: true),
-            body: null,
-            cancellationToken);
-
-        if (!response.Succeeded || response.Document is null)
+        if (contentElement.ValueKind == JsonValueKind.String)
         {
-            return null;
+            return contentElement.GetString();
         }
 
-        var root = response.Document.RootElement;
-        if (!root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+        if (contentElement.ValueKind == JsonValueKind.Array)
         {
-            return null;
-        }
-
-        foreach (var item in data.EnumerateArray())
-        {
-            var role = TryReadString(item, "role");
-            if (!string.Equals(role, "assistant", StringComparison.OrdinalIgnoreCase))
+            foreach (var item in contentElement.EnumerateArray())
             {
-                continue;
-            }
-
-            var topLevelContent = TryReadString(item, "content");
-            if (!string.IsNullOrWhiteSpace(topLevelContent))
-            {
-                return topLevelContent;
-            }
-
-            if (!item.TryGetProperty("content", out var contentArray)
-                || contentArray.ValueKind != JsonValueKind.Array)
-            {
-                continue;
-            }
-
-            foreach (var contentEntry in contentArray.EnumerateArray())
-            {
-                var text = TryReadString(contentEntry, "text");
-                if (!string.IsNullOrWhiteSpace(text))
+                var itemText = ExtractContentText(item);
+                if (!string.IsNullOrWhiteSpace(itemText))
                 {
-                    return text;
+                    return itemText;
                 }
+            }
 
-                if (contentEntry.TryGetProperty("text", out var nestedText)
-                    && nestedText.ValueKind == JsonValueKind.Object)
-                {
-                    var value = TryReadString(nestedText, "value");
-                    if (!string.IsNullOrWhiteSpace(value))
-                    {
-                        return value;
-                    }
-                }
+            return null;
+        }
+
+        if (contentElement.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var directText = TryReadString(contentElement, "text")
+            ?? TryReadString(contentElement, "output_text")
+            ?? TryReadString(contentElement, "value");
+        if (!string.IsNullOrWhiteSpace(directText))
+        {
+            return directText;
+        }
+
+        if (contentElement.TryGetProperty("text", out var nestedText))
+        {
+            var nested = ExtractContentText(nestedText);
+            if (!string.IsNullOrWhiteSpace(nested))
+            {
+                return nested;
+            }
+        }
+
+        if (contentElement.TryGetProperty("content", out var nestedContent))
+        {
+            var nested = ExtractContentText(nestedContent);
+            if (!string.IsNullOrWhiteSpace(nested))
+            {
+                return nested;
             }
         }
 
@@ -1037,23 +1012,6 @@ public sealed class FoundryAgentRuntimeService(
 
         var separator = relativePath.Contains('?', StringComparison.Ordinal) ? "&" : "?";
         return relativePath + separator + "api-version=" + Uri.EscapeDataString(options.Value.ApiVersion);
-    }
-
-    private static bool IsTerminalStatus(string? status)
-    {
-        if (string.IsNullOrWhiteSpace(status))
-        {
-            return false;
-        }
-
-        return status.Equals("completed", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("failed", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("cancelled", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("incomplete", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("expired", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("requires_action", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("requiresaction", StringComparison.OrdinalIgnoreCase)
-            || status.Equals("canceled", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? TryReadString(JsonElement? element, string propertyName)

@@ -19,7 +19,7 @@ This folder contains AI-agent-facing context and implementation policies.
 - `identity-claim-mapping-and-account-access-migration-playbook.md`: MM-ASP-08/MM-ASP-09 identity mapping contract and migration rollout/rollback runbook.
 - `clerk-sample-users-household-validation-runbook.md`: repeatable two-persona Clerk sample-user + household bootstrap and API/UI/DB verification workflow.
 - `runtime-agentic-worker-runbook.md`: runtime worker queue retry/dead-letter/replay and trace-correlation operations for assistant and orchestration lanes.
-- `foundry-mcp-iq-bootstrap-runbook.md`: setup script and configuration contract for Foundry agent provisioning with API/Postgres MCP and Foundry IQ knowledge-base grounding.
+- `foundry-mcp-iq-bootstrap-runbook.md`: minimal v1 Foundry agent bootstrap runbook (model + system prompt), plus tracked follow-up items for MCP tool integration.
 - `secrets-and-configuration-playbook.md`: layered secret management and per-project configuration contract guidance.
 - `semantic-search-pattern.md`: canonical dynamic semantic-search and hybrid retrieval pattern for transaction search APIs.
 - `skills-catalog.md`: cross-directory skill inventory (repo, user, extension), JIT loading policy, and per-agent baseline/on-demand mappings.

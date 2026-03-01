@@ -1,11 +1,11 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isClerkConfiguredCorrectly } from "./lib/clerk-server-utils";
 
-const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
 export default function proxy(request, event) {
-  if (!isClerkConfigured) {
+  if (!isClerkConfiguredCorrectly()) {
     return NextResponse.next();
   }
 
@@ -22,3 +22,4 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
+

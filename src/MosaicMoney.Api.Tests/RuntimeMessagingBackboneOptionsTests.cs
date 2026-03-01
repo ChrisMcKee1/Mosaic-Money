@@ -27,7 +27,7 @@ public sealed class RuntimeMessagingBackboneOptionsTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:runtime-ingestion-completed"] = "sb://localhost:5672",
-                ["ConnectionStrings:runtime-assistant-message-posted"] = "sb://localhost:5672",
+                ["ConnectionStrings:runtime-agent-message-posted"] = "sb://localhost:5672",
                 ["ConnectionStrings:runtime-nightly-anomaly-sweep"] = "sb://localhost:5672",
                 ["ConnectionStrings:runtime-telemetry-stream"] = "sb://localhost:5672",
             })
@@ -56,7 +56,7 @@ public sealed class RuntimeMessagingBackboneOptionsTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:runtime-ingestion-completed"] = "sb://localhost:5672",
-                ["ConnectionStrings:runtime-assistant-message-posted"] = " ",
+                ["ConnectionStrings:runtime-agent-message-posted"] = " ",
                 ["ConnectionStrings:runtime-nightly-anomaly-sweep"] = "sb://localhost:5672",
                 ["ConnectionStrings:runtime-telemetry-stream"] = "sb://localhost:5672",
             })
@@ -74,6 +74,6 @@ public sealed class RuntimeMessagingBackboneOptionsTests
 
         var missing = options.GetMissingRequiredValues(configuration);
 
-        Assert.Contains("ConnectionStrings:runtime-assistant-message-posted", missing);
+        Assert.Contains("ConnectionStrings:runtime-agent-message-posted", missing);
     }
 }

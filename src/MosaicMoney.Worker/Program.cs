@@ -5,7 +5,7 @@ var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
 builder.AddAiWorkflowIntegrationChecks();
 builder.AddRuntimeMessagingBackboneChecks();
-builder.AddAzureServiceBusClient(connectionName: "runtime-ingestion-completed");
+builder.AddAzureServiceBusClient(connectionName: "runtime-agent-message-posted");
 builder.AddAzureEventHubProducerClient(connectionName: "runtime-telemetry-stream");
 builder.AddNpgsqlDataSource(connectionName: "mosaicmoneydb");
 var foundryAgentSection = builder.Configuration.GetSection(FoundryAgentOptions.SectionName);

@@ -25,7 +25,7 @@ export async function postAgentMessage(input) {
       clientMessageId: input?.clientMessageId || null,
     };
 
-    const data = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/messages`, {
+    const data = await fetchApi(`/api/v1/agent/conversations/${conversationId}/messages`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -53,7 +53,7 @@ export async function submitAgentApproval(input) {
       clientApprovalId: input?.clientApprovalId || null,
     };
 
-    const data = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/approvals/${approvalId}`, {
+    const data = await fetchApi(`/api/v1/agent/conversations/${conversationId}/approvals/${approvalId}`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -73,10 +73,11 @@ export async function getAgentConversationStream(input) {
     }
 
     const sinceUtc = input?.sinceUtc ? `?sinceUtc=${encodeURIComponent(input.sinceUtc)}` : "";
-    const data = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/stream${sinceUtc}`);
+    const data = await fetchApi(`/api/v1/agent/conversations/${conversationId}/stream${sinceUtc}`);
     return { success: true, data };
   } catch (error) {
     console.error("Failed to fetch agent stream.", error);
     return { success: false, error: normalizeError(error), data: null };
   }
 }
+

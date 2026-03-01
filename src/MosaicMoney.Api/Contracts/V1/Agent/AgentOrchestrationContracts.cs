@@ -2,13 +2,13 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MosaicMoney.Api.Contracts.V1;
 
-public enum AssistantApprovalDecision
+public enum AgentApprovalDecision
 {
     Approve = 1,
     Reject = 2,
 }
 
-public sealed class AssistantConversationMessageRequest
+public sealed class AgentConversationMessageRequest
 {
     [Required]
     [MaxLength(2000)]
@@ -21,10 +21,10 @@ public sealed class AssistantConversationMessageRequest
     public string? UserNote { get; init; }
 }
 
-public sealed class AssistantApprovalRequest
+public sealed class AgentApprovalRequest
 {
     [Required]
-    public string Decision { get; init; } = nameof(AssistantApprovalDecision.Approve);
+    public string Decision { get; init; } = nameof(AgentApprovalDecision.Approve);
 
     [MaxLength(120)]
     public string? ClientApprovalId { get; init; }
@@ -33,7 +33,7 @@ public sealed class AssistantApprovalRequest
     public string? Rationale { get; init; }
 }
 
-public sealed record AssistantCommandAcceptedDto(
+public sealed record AgentCommandAcceptedDto(
     Guid CommandId,
     string CorrelationId,
     Guid ConversationId,
@@ -43,7 +43,7 @@ public sealed record AssistantCommandAcceptedDto(
     DateTime QueuedAtUtc,
     string Status);
 
-public sealed record AssistantConversationRunStatusDto(
+public sealed record AgentConversationRunStatusDto(
     Guid RunId,
     string CorrelationId,
     string Status,
@@ -59,6 +59,6 @@ public sealed record AssistantConversationRunStatusDto(
     string? LatestStageOutcomeSummary = null,
     string? AssignmentHint = null);
 
-public sealed record AssistantConversationStreamDto(
+public sealed record AgentConversationStreamDto(
     Guid ConversationId,
-    IReadOnlyList<AssistantConversationRunStatusDto> Runs);
+    IReadOnlyList<AgentConversationRunStatusDto> Runs);

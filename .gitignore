@@ -112,3 +112,8 @@ secrets.json
 .img/
 
 .tmp/
+src/MosaicMoney.Web/build.log
+*.log
+artifacts/tmp/*
+artifacts/*/*
+/artifacts/*/*/*

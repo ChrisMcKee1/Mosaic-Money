@@ -23,7 +23,7 @@ public sealed class FoundryAgentRuntimeServiceTests
             CreateAgentIfMissing = true,
             Deployment = "gpt-5.3-codex",
             AgentName = "Mosaic",
-            ApiVersion = "2025-11-01-preview",
+            ApiVersion = "v1",
         });
 
         var runtime = new FoundryAgentRuntimeService(
@@ -35,7 +35,7 @@ public sealed class FoundryAgentRuntimeServiceTests
             HouseholdId: Guid.CreateVersion7(),
             ConversationId: Guid.CreateVersion7(),
             HouseholdUserId: Guid.CreateVersion7(),
-            CommandType: "assistant_message_posted",
+            CommandType: "agent_message_posted",
             Message: "Can you email my landlord?",
             UserNote: "Need confirmation first",
             PolicyDisposition: "approval_required",
@@ -48,8 +48,93 @@ public sealed class FoundryAgentRuntimeServiceTests
         Assert.Equal("Mosaic", result.AgentName);
         Assert.Equal("foundry", result.AgentSource);
         Assert.Equal("approval_required", result.AssignmentHint);
-        Assert.Equal("agent_create_failed", result.OutcomeCode);
+        Assert.Equal("agent_runtime_unavailable", result.OutcomeCode);
         Assert.True(handler.RequestCount >= 1);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_RoutesGreetingThroughFoundry_WhenMessageIsSimpleSalutation()
+    {
+        var handler = new UnavailableHttpMessageHandler();
+        var httpClient = new HttpClient(handler);
+
+        var options = Options.Create(new FoundryAgentOptions
+        {
+            Enabled = true,
+            Endpoint = "https://foundry.tests.mosaic-money.local/projects/test-project",
+            ApiKey = "test-api-key",
+            CreateAgentIfMissing = true,
+            Deployment = "gpt-5.3-codex",
+            AgentName = "Mosaic",
+            ApiVersion = "v1",
+        });
+
+        var runtime = new FoundryAgentRuntimeService(
+            new StubHttpClientFactory(httpClient),
+            options,
+            NullLogger<FoundryAgentRuntimeService>.Instance);
+
+        var result = await runtime.InvokeAsync(new FoundryAgentInvocationRequest(
+            HouseholdId: Guid.CreateVersion7(),
+            ConversationId: Guid.CreateVersion7(),
+            HouseholdUserId: Guid.CreateVersion7(),
+            CommandType: "agent_message_posted",
+            Message: "Hi",
+            UserNote: null,
+            PolicyDisposition: "advisory_only",
+            ApprovalId: null,
+            ApprovalDecision: null,
+            ApprovalRationale: null));
+
+        Assert.False(result.Succeeded);
+        Assert.True(result.NeedsReview);
+        Assert.Equal("agent_runtime_unavailable", result.OutcomeCode);
+        Assert.Equal("advisory_only", result.AssignmentHint);
+        Assert.Null(result.ResponseSummary);
+        Assert.True(handler.RequestCount >= 1);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ParsesResponsesApiOutputTextFromMessageContent()
+    {
+        var handler = new ResponsesApiSuccessMessageHandler();
+        var httpClient = new HttpClient(handler);
+
+        var options = Options.Create(new FoundryAgentOptions
+        {
+            Enabled = true,
+            Endpoint = "https://foundry.tests.mosaic-money.local/projects/test-project",
+            ApiKey = "test-api-key",
+            CreateAgentIfMissing = false,
+            Deployment = "gpt-5.3-codex",
+            AgentName = "Mosaic",
+            ApiVersion = "v1",
+        });
+
+        var runtime = new FoundryAgentRuntimeService(
+            new StubHttpClientFactory(httpClient),
+            options,
+            NullLogger<FoundryAgentRuntimeService>.Instance);
+
+        var result = await runtime.InvokeAsync(new FoundryAgentInvocationRequest(
+            HouseholdId: Guid.CreateVersion7(),
+            ConversationId: Guid.CreateVersion7(),
+            HouseholdUserId: Guid.CreateVersion7(),
+            CommandType: "agent_message_posted",
+            Message: "Hi",
+            UserNote: null,
+            PolicyDisposition: "advisory_only",
+            ApprovalId: null,
+            ApprovalDecision: null,
+            ApprovalRationale: null));
+
+        Assert.True(result.Succeeded);
+        Assert.False(result.NeedsReview);
+        Assert.Equal("agent_run_completed", result.OutcomeCode);
+        Assert.NotNull(result.ResponseSummary);
+        Assert.Contains("Foundry says hello", result.ResponseSummary);
+        Assert.Contains("/agents", handler.RequestedPaths);
+        Assert.Contains("/openai/v1/responses", handler.RequestedPaths);
     }
 
     private sealed class StubHttpClientFactory(HttpClient httpClient) : IHttpClientFactory
@@ -70,6 +155,44 @@ public sealed class FoundryAgentRuntimeServiceTests
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
             {
                 Content = new StringContent("{\"error\":\"service_unavailable\"}", Encoding.UTF8, "application/json"),
+            });
+        }
+    }
+
+    private sealed class ResponsesApiSuccessMessageHandler : HttpMessageHandler
+    {
+        public List<string> RequestedPaths { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.AbsolutePath ?? string.Empty;
+            RequestedPaths.Add(path);
+
+            if (request.Method == HttpMethod.Get && path.EndsWith("/agents", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "{\"data\":[{\"id\":\"agent_123\",\"name\":\"Mosaic\",\"version\":1}]}",
+                        Encoding.UTF8,
+                        "application/json"),
+                });
+            }
+
+            if (request.Method == HttpMethod.Post && path.EndsWith("/openai/v1/responses", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        "{\"id\":\"resp_1\",\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Foundry says hello.\"}]}]}",
+                        Encoding.UTF8,
+                        "application/json"),
+                });
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)
+            {
+                Content = new StringContent("{\"error\":\"not_found\"}", Encoding.UTF8, "application/json"),
             });
         }
     }

@@ -3,12 +3,12 @@
 This runbook covers day-2 operations for the runtime agentic orchestration lanes owned by `MosaicMoney.Worker`.
 
 ## Scope
-- Command queues: `runtime-ingestion-completed`, `runtime-assistant-message-posted`, `runtime-nightly-anomaly-sweep`.
+- Command queues: `runtime-ingestion-completed`, `runtime-agent-message-posted`, `runtime-nightly-anomaly-sweep`.
 - Telemetry stream: `runtime-telemetry-stream` Event Hubs lane.
 - Lifecycle persistence: `AgentRuns`, `AgentRunStages`, `AgentSignals`, `IdempotencyKeys`.
 - API contracts that enqueue commands:
-  - `POST /api/v1/assistant/conversations/{conversationId}/messages`
-  - `POST /api/v1/assistant/conversations/{conversationId}/approvals/{approvalId}`
+   - `POST /api/v1/agent/conversations/{conversationId}/messages`
+   - `POST /api/v1/agent/conversations/{conversationId}/approvals/{approvalId}`
 
 ## Guardrails
 - Worker owns runtime orchestration command execution. API endpoints only enqueue commands and expose read models.
@@ -52,7 +52,7 @@ This runbook covers day-2 operations for the runtime agentic orchestration lanes
 
 ## Trace Correlation Procedure
 1. Start from command id or message id in API/worker logs.
-2. Resolve correlation id (`assistant:{conversationId}:{commandId}` for assistant paths).
+2. Resolve correlation id (`agent:{householdId}:{conversationId}:{commandId}` for conversational agent paths).
 3. Query lifecycle tables by correlation id to obtain run id and stage status timeline.
 4. Use Event Hubs telemetry entries for `runtime-telemetry-stream` to verify cross-service visibility.
 

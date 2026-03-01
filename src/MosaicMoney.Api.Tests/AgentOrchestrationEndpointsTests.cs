@@ -26,12 +26,12 @@ namespace MosaicMoney.Api.Tests;
 public sealed class AgentOrchestrationEndpointsTests
 {
     private const string TestIssuer = "https://issuer.tests.mosaic-money.local";
-    private const string TestSigningKey = "mosaic-money-assistant-stream-tests-signing-key-2026";
+    private const string TestSigningKey = "mosaic-money-agent-stream-tests-signing-key-2026";
     private const string TestAuthProvider = "clerk";
-    private const string TestAuthSubject = "assistant_stream_test_user";
+    private const string TestAuthSubject = "agent_stream_test_user";
 
     [Fact]
-    public async Task GetAssistantConversationStream_MapsAdditiveTimelineFieldsFromLatestStage()
+    public async Task GetAgentConversationStream_MapsAdditiveTimelineFieldsFromLatestStage()
     {
         var conversationId = Guid.CreateVersion7();
 
@@ -45,9 +45,9 @@ public sealed class AgentOrchestrationEndpointsTests
             {
                 Id = runId,
                 HouseholdId = seeded.HouseholdId,
-                CorrelationId = $"assistant:{seeded.HouseholdId:N}:{conversationId:N}:{Guid.CreateVersion7():N}",
-                WorkflowName = "assistant_message_posted",
-                TriggerSource = "runtime-assistant-message-posted",
+                CorrelationId = $"agent:{seeded.HouseholdId:N}:{conversationId:N}:{Guid.CreateVersion7():N}",
+                WorkflowName = "agent_message_posted",
+                TriggerSource = "runtime-agent-message-posted",
                 PolicyVersion = "m10-worker-orchestration-v1",
                 Status = AgentRunStatus.Completed,
                 CreatedAtUtc = now,
@@ -59,14 +59,14 @@ public sealed class AgentOrchestrationEndpointsTests
             {
                 Id = Guid.CreateVersion7(),
                 AgentRunId = runId,
-                StageName = "assistant_message_posted",
+                StageName = "agent_message_posted",
                 StageOrder = 1,
                 Executor = "foundry:Mosaic",
                 Status = AgentRunStageStatus.Succeeded,
                 Confidence = 1.0000m,
-                OutcomeCode = "assistant_run_completed",
+                OutcomeCode = "agent_run_completed",
                 OutcomeRationale = "assignment_hint=approval_required; Foundry agent invocation completed.",
-                AgentNoteSummary = "Assistant response summary.",
+                AgentNoteSummary = "Agent response summary.",
                 CreatedAtUtc = now,
                 LastModifiedAtUtc = now,
                 CompletedAtUtc = now,
@@ -74,11 +74,11 @@ public sealed class AgentOrchestrationEndpointsTests
         });
 
         var client = CreateAuthorizedClient(app);
-        var response = await client.GetAsync($"/api/v1/assistant/conversations/{conversationId}/stream");
+        var response = await client.GetAsync($"/api/v1/agent/conversations/{conversationId}/stream");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var stream = await response.Content.ReadFromJsonAsync<AssistantConversationStreamDto>();
+        var stream = await response.Content.ReadFromJsonAsync<AgentConversationStreamDto>();
         Assert.NotNull(stream);
         var run = Assert.Single(stream!.Runs);
 
@@ -108,7 +108,7 @@ public sealed class AgentOrchestrationEndpointsTests
             EnvironmentName = Environments.Development,
         });
 
-        var testDatabaseName = $"assistant-orchestration-endpoints-tests-{Guid.NewGuid()}";
+        var testDatabaseName = $"agent-orchestration-endpoints-tests-{Guid.NewGuid()}";
 
         builder.WebHost.UseTestServer();
         builder.Configuration.AddInMemoryCollection(configurationValues);

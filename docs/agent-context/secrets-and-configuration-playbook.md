@@ -469,7 +469,7 @@ Aspire-native runtime resources (AppHost):
 
 1. `AddAzureServiceBus("runtime-messaging")`
 2. `AddServiceBusQueue("runtime-ingestion-completed")`
-3. `AddServiceBusQueue("runtime-assistant-message-posted")`
+3. `AddServiceBusQueue("runtime-agent-message-posted")`
 4. `AddServiceBusQueue("runtime-nightly-anomaly-sweep")`
 5. `AddAzureEventHubs("runtime-telemetry")`
 6. `AddHub("runtime-telemetry-stream")`
@@ -478,7 +478,7 @@ Aspire-native runtime resources (AppHost):
 Connection names validated at startup when `RuntimeMessaging:Enabled=true`:
 
 1. `ConnectionStrings:runtime-ingestion-completed`
-2. `ConnectionStrings:runtime-assistant-message-posted`
+2. `ConnectionStrings:runtime-agent-message-posted`
 3. `ConnectionStrings:runtime-nightly-anomaly-sweep`
 4. `ConnectionStrings:runtime-telemetry-stream`
 

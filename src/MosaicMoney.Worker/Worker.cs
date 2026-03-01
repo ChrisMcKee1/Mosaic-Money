@@ -32,8 +32,8 @@ public sealed class Worker(
                 MaxConcurrentCalls = 2,
             });
 
-        var assistantProcessor = serviceBusClient.CreateProcessor(
-            RuntimeMessagingQueues.AssistantMessagePosted,
+        var agentCommandProcessor = serviceBusClient.CreateProcessor(
+            RuntimeMessagingQueues.AgentMessagePosted,
             new ServiceBusProcessorOptions
             {
                 AutoCompleteMessages = false,
@@ -49,21 +49,21 @@ public sealed class Worker(
             });
 
         ingestionProcessor.ProcessMessageAsync += args => ProcessMessageAsync(args, RuntimeMessagingQueues.IngestionCompleted, stoppingToken);
-        assistantProcessor.ProcessMessageAsync += args => ProcessMessageAsync(args, RuntimeMessagingQueues.AssistantMessagePosted, stoppingToken);
+        agentCommandProcessor.ProcessMessageAsync += args => ProcessMessageAsync(args, RuntimeMessagingQueues.AgentMessagePosted, stoppingToken);
         nightlySweepProcessor.ProcessMessageAsync += args => ProcessMessageAsync(args, RuntimeMessagingQueues.NightlyAnomalySweep, stoppingToken);
 
         ingestionProcessor.ProcessErrorAsync += args => ProcessErrorAsync(args, RuntimeMessagingQueues.IngestionCompleted);
-        assistantProcessor.ProcessErrorAsync += args => ProcessErrorAsync(args, RuntimeMessagingQueues.AssistantMessagePosted);
+        agentCommandProcessor.ProcessErrorAsync += args => ProcessErrorAsync(args, RuntimeMessagingQueues.AgentMessagePosted);
         nightlySweepProcessor.ProcessErrorAsync += args => ProcessErrorAsync(args, RuntimeMessagingQueues.NightlyAnomalySweep);
 
         await ingestionProcessor.StartProcessingAsync(stoppingToken);
-        await assistantProcessor.StartProcessingAsync(stoppingToken);
+        await agentCommandProcessor.StartProcessingAsync(stoppingToken);
         await nightlySweepProcessor.StartProcessingAsync(stoppingToken);
 
         logger.LogInformation(
-            "Worker command processors started for queues: {IngestionQueue}, {AssistantQueue}, {NightlyQueue}",
+            "Worker command processors started for queues: {IngestionQueue}, {AgentQueue}, {NightlyQueue}",
             RuntimeMessagingQueues.IngestionCompleted,
-            RuntimeMessagingQueues.AssistantMessagePosted,
+            RuntimeMessagingQueues.AgentMessagePosted,
             RuntimeMessagingQueues.NightlyAnomalySweep);
 
         try
@@ -76,11 +76,11 @@ public sealed class Worker(
         finally
         {
             await ingestionProcessor.StopProcessingAsync(CancellationToken.None);
-            await assistantProcessor.StopProcessingAsync(CancellationToken.None);
+            await agentCommandProcessor.StopProcessingAsync(CancellationToken.None);
             await nightlySweepProcessor.StopProcessingAsync(CancellationToken.None);
 
             await ingestionProcessor.DisposeAsync();
-            await assistantProcessor.DisposeAsync();
+            await agentCommandProcessor.DisposeAsync();
             await nightlySweepProcessor.DisposeAsync();
         }
     }
@@ -218,8 +218,8 @@ public sealed class Worker(
                 OutcomeCode: "ingestion_trigger_processed",
                 OutcomeRationale: "Worker processed ingestion trigger and preserved fail-closed routing requirements.",
                 AgentNoteSummary: "Ingestion command acknowledged."),
-            RuntimeCommandTypes.AssistantMessagePosted => await ExecuteAssistantMessageCommandAsync(envelope.Payload, cancellationToken),
-            RuntimeCommandTypes.AssistantApprovalSubmitted => await ExecuteAssistantApprovalCommandAsync(envelope.Payload, cancellationToken),
+            RuntimeCommandTypes.AgentMessagePosted => await ExecuteAgentMessageCommandAsync(envelope.Payload, cancellationToken),
+            RuntimeCommandTypes.AgentApprovalSubmitted => await ExecuteAgentApprovalCommandAsync(envelope.Payload, cancellationToken),
             RuntimeCommandTypes.NightlyAnomalySweep => new StageExecutionResult(
                 NeedsReview: false,
                 Executor: "MosaicMoney.Worker",
@@ -302,14 +302,14 @@ public sealed class Worker(
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    private async Task<StageExecutionResult> ExecuteAssistantMessageCommandAsync(JsonElement payload, CancellationToken cancellationToken)
+    private async Task<StageExecutionResult> ExecuteAgentMessageCommandAsync(JsonElement payload, CancellationToken cancellationToken)
     {
-        var command = DeserializeAssistantMessageCommand(payload);
+        var command = DeserializeAgentMessageCommand(payload);
         var invocationRequest = new FoundryAgentInvocationRequest(
             command.HouseholdId,
             command.ConversationId,
             command.HouseholdUserId,
-            RuntimeCommandTypes.AssistantMessagePosted,
+            RuntimeCommandTypes.AgentMessagePosted,
             command.Message,
             command.UserNote,
             command.PolicyDisposition,
@@ -318,19 +318,19 @@ public sealed class Worker(
             ApprovalRationale: null);
 
         var invocation = await foundryAgentRuntimeService.InvokeAsync(invocationRequest, cancellationToken);
-        return CreateAssistantStageResult(invocation);
+        return CreateAgentStageResult(invocation);
     }
 
-    private async Task<StageExecutionResult> ExecuteAssistantApprovalCommandAsync(JsonElement payload, CancellationToken cancellationToken)
+    private async Task<StageExecutionResult> ExecuteAgentApprovalCommandAsync(JsonElement payload, CancellationToken cancellationToken)
     {
-        var command = DeserializeAssistantApprovalCommand(payload);
+        var command = DeserializeAgentApprovalCommand(payload);
         var syntheticMessage = $"Approval decision '{command.Decision}' submitted for approval '{command.ApprovalId:D}'.";
 
         var invocationRequest = new FoundryAgentInvocationRequest(
             command.HouseholdId,
             command.ConversationId,
             command.HouseholdUserId,
-            RuntimeCommandTypes.AssistantApprovalSubmitted,
+            RuntimeCommandTypes.AgentApprovalSubmitted,
             syntheticMessage,
             command.Rationale,
             command.PolicyDisposition,
@@ -339,16 +339,16 @@ public sealed class Worker(
             command.Rationale);
 
         var invocation = await foundryAgentRuntimeService.InvokeAsync(invocationRequest, cancellationToken);
-        return CreateAssistantStageResult(invocation);
+        return CreateAgentStageResult(invocation);
     }
 
-    private static StageExecutionResult CreateAssistantStageResult(FoundryAgentInvocationResult invocation)
+    private static StageExecutionResult CreateAgentStageResult(FoundryAgentInvocationResult invocation)
     {
         var assignmentHint = string.IsNullOrWhiteSpace(invocation.AssignmentHint)
             ? "needs_review"
             : invocation.AssignmentHint.Trim();
         var rationale = BuildRationaleWithAssignmentHint(assignmentHint, invocation.Summary);
-        var executor = BuildAssistantExecutor(invocation.AgentSource, invocation.AgentName);
+        var executor = BuildAgentExecutor(invocation.AgentSource, invocation.AgentName);
         var noteSummary = string.IsNullOrWhiteSpace(invocation.ResponseSummary)
             ? invocation.Summary
             : invocation.ResponseSummary;
@@ -365,7 +365,7 @@ public sealed class Worker(
             AgentNoteSummary: noteSummary);
     }
 
-    private static string BuildAssistantExecutor(string? agentSource, string? agentName)
+    private static string BuildAgentExecutor(string? agentSource, string? agentName)
     {
         if (string.IsNullOrWhiteSpace(agentSource) || string.IsNullOrWhiteSpace(agentName))
         {
@@ -380,9 +380,9 @@ public sealed class Worker(
         return $"assignment_hint={assignmentHint}; {summary}";
     }
 
-    private static AssistantMessagePostedCommand DeserializeAssistantMessageCommand(JsonElement payload)
+    private static AgentMessagePostedCommand DeserializeAgentMessageCommand(JsonElement payload)
     {
-        var command = payload.Deserialize<AssistantMessagePostedCommand>(PayloadJsonSerializerOptions);
+        var command = payload.Deserialize<AgentMessagePostedCommand>(PayloadJsonSerializerOptions);
         if (command is null
             || command.HouseholdId == Guid.Empty
             || command.ConversationId == Guid.Empty
@@ -390,15 +390,15 @@ public sealed class Worker(
             || string.IsNullOrWhiteSpace(command.Message)
             || string.IsNullOrWhiteSpace(command.PolicyDisposition))
         {
-            throw new InvalidOperationException("Assistant message payload is missing required fields.");
+            throw new InvalidOperationException("Agent message payload is missing required fields.");
         }
 
         return command;
     }
 
-    private static AssistantApprovalSubmittedCommand DeserializeAssistantApprovalCommand(JsonElement payload)
+    private static AgentApprovalSubmittedCommand DeserializeAgentApprovalCommand(JsonElement payload)
     {
-        var command = payload.Deserialize<AssistantApprovalSubmittedCommand>(PayloadJsonSerializerOptions);
+        var command = payload.Deserialize<AgentApprovalSubmittedCommand>(PayloadJsonSerializerOptions);
         if (command is null
             || command.HouseholdId == Guid.Empty
             || command.ConversationId == Guid.Empty
@@ -407,7 +407,7 @@ public sealed class Worker(
             || string.IsNullOrWhiteSpace(command.Decision)
             || string.IsNullOrWhiteSpace(command.PolicyDisposition))
         {
-            throw new InvalidOperationException("Assistant approval payload is missing required fields.");
+            throw new InvalidOperationException("Agent approval payload is missing required fields.");
         }
 
         return command;
@@ -562,7 +562,7 @@ public sealed class Worker(
         command.Parameters.AddWithValue("raisedAtUtc", DateTime.UtcNow);
         command.Parameters.AddWithValue("payloadJson", JsonSerializer.Serialize(new
         {
-            source = "assistant_fail_closed",
+            source = "agent_fail_closed",
             executionResult.NeedsReview,
         }));
 
@@ -815,15 +815,15 @@ public sealed class Worker(
     private static class RuntimeMessagingQueues
     {
         public const string IngestionCompleted = "runtime-ingestion-completed";
-        public const string AssistantMessagePosted = "runtime-assistant-message-posted";
+        public const string AgentMessagePosted = "runtime-agent-message-posted";
         public const string NightlyAnomalySweep = "runtime-nightly-anomaly-sweep";
     }
 
     private static class RuntimeCommandTypes
     {
         public const string IngestionCompleted = "ingestion_completed";
-        public const string AssistantMessagePosted = "assistant_message_posted";
-        public const string AssistantApprovalSubmitted = "assistant_approval_submitted";
+        public const string AgentMessagePosted = "agent_message_posted";
+        public const string AgentApprovalSubmitted = "agent_approval_submitted";
         public const string NightlyAnomalySweep = "nightly_anomaly_sweep";
     }
 
@@ -835,7 +835,7 @@ public sealed class Worker(
         string? ClientReferenceId,
         JsonElement Payload);
 
-    private sealed record AssistantMessagePostedCommand(
+    private sealed record AgentMessagePostedCommand(
         Guid HouseholdId,
         Guid ConversationId,
         Guid HouseholdUserId,
@@ -843,7 +843,7 @@ public sealed class Worker(
         string? UserNote,
         string PolicyDisposition);
 
-    private sealed record AssistantApprovalSubmittedCommand(
+    private sealed record AgentApprovalSubmittedCommand(
         Guid HouseholdId,
         Guid ConversationId,
         Guid ApprovalId,

@@ -13,16 +13,18 @@ using MosaicMoney.Api.Domain.Ledger.Plaid;
 using MosaicMoney.Api.Domain.Ledger.Taxonomy;
 using Npgsql;
 using Pgvector.EntityFrameworkCore;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddAiWorkflowIntegrationChecks();
 builder.AddRuntimeMessagingBackboneChecks();
-builder.AddAzureServiceBusClient(connectionName: "runtime-assistant-message-posted");
+builder.AddAzureServiceBusClient(connectionName: "runtime-agent-message-posted");
 builder.AddAzureEventHubProducerClient(connectionName: "runtime-telemetry-stream");
 builder.AddNpgsqlDbContext<MosaicMoneyDbContext>(
     connectionName: "mosaicmoneydb",
     configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
+builder.Services.AddOpenApi();
 builder.Services.AddDataProtection();
 builder.Services.AddClerkJwtAuthentication(builder.Configuration);
 builder.Services.Configure<TaxonomyOperatorOptions>(builder.Configuration.GetSection(TaxonomyOperatorOptions.SectionName));
@@ -128,9 +130,15 @@ if (allowedCorsOrigins.Length > 0)
 app.UseAuthentication();
 app.UseAuthorization();
 
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+}
+
 app.MapDefaultEndpoints();
 app.MapMosaicMoneyApi();
-app.MapMcp("/api/mcp");
+app.MapMcp("/api/mcp").RequireAuthorization();
 
 app.Run();
 

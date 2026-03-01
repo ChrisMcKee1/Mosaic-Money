@@ -98,6 +98,7 @@ export function GlobalAgentPanel() {
 
   const {
     messages,
+    setMessages,
     sendMessage,
     status,
     stop,
@@ -105,7 +106,7 @@ export function GlobalAgentPanel() {
   } = useChat({
     id: conversationId || undefined,
     transport: new DefaultChatTransport({
-      api: "/api/assistant/chat",
+      api: "/api/agent/chat",
     }),
     onData: (dataPart) => {
       if (dataPart?.type === "data-command") {
@@ -330,7 +331,7 @@ export function GlobalAgentPanel() {
 
       {!error && chatError ? (
         <div className="mx-4 mt-3 rounded-lg border border-[var(--color-negative)]/30 bg-[var(--color-negative-bg)] px-3 py-2 text-xs text-[var(--color-negative)]">
-          Something went wrong while streaming the assistant response.
+          Something went wrong while streaming the agent response.
         </div>
       ) : null}
 
@@ -427,8 +428,17 @@ export function GlobalAgentPanel() {
               )}
 
               {isSubmitting ? (
-                <div className="mr-8 rounded-xl border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-3 py-2 text-xs text-[var(--color-primary)]">
-                  Mosaic is thinking...
+                <div 
+                  className="mr-8 rounded-xl border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-3 py-3 text-xs text-[var(--color-primary)] flex items-center"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <span className="sr-only">Mosaic is thinking...</span>
+                  <div className="flex gap-1 items-center" aria-hidden="true">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)] motion-safe:animate-bounce motion-reduce:animate-pulse [animation-delay:-0.3s]"></span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)] motion-safe:animate-bounce motion-reduce:animate-pulse [animation-delay:-0.15s]"></span>
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-primary)] motion-safe:animate-bounce motion-reduce:animate-pulse"></span>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -556,11 +566,15 @@ export function GlobalAgentPanel() {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-semibold text-[var(--color-text-main)] shadow-xl hover:bg-[var(--color-surface-hover)]"
+        className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-md px-5 py-2.5 text-sm font-semibold text-[var(--color-text-main)] shadow-2xl ring-1 ring-[var(--color-primary)]/20 hover:bg-[var(--color-surface-hover)] transition-all hover:scale-105 active:scale-95"
         aria-label={isOpen ? "Close agent" : "Open agent"}
       >
-        {isOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
-        Agent
+        {isOpen ? <PanelRightClose className="h-4 w-4 text-[var(--color-text-muted)]" /> : (
+          <>
+            <Sparkles className="h-4 w-4 text-[var(--color-primary)] animate-pulse" />
+            <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-text-main)] bg-clip-text text-transparent">Agent</span>
+          </>
+        )}
       </button>
 
       <section

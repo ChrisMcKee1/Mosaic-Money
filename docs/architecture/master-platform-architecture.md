@@ -108,7 +108,7 @@ flowchart TB
         EHR[runtime-telemetry\nAddAzureEventHubs]
 
         Q1[runtime-ingestion-completed queue]
-        Q2[runtime-assistant-message-posted queue]
+        Q2[runtime-agent-message-posted queue]
         Q3[runtime-nightly-anomaly-sweep queue]
 
         HUB[runtime-telemetry-stream hub]

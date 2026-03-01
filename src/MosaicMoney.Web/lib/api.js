@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { isClerkConfiguredCorrectly } from "./clerk-server-utils";
 
 /**
  * Server-side API fetch utility.
@@ -21,8 +22,7 @@ export function getApiBaseUrl() {
 }
 
 async function getAuthorizationHeader() {
-  const isClerkConfigured = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && !!process.env.CLERK_SECRET_KEY;
-  if (!isClerkConfigured) {
+  if (!isClerkConfiguredCorrectly()) {
     return {};
   }
 
@@ -66,8 +66,9 @@ export async function fetchApi(path, options = {}) {
   });
 
   if (!response.ok) {
-    console.error(`API fetch failed for ${url}: ${response.status} ${response.statusText}`);
-    throw new Error(`API fetch failed: ${response.status} ${response.statusText}`);
+    const errorText = await response.text().catch(() => "Could not read response text");
+    console.error(`API fetch failed for ${url}: ${response.status} ${response.statusText} - Body: ${errorText}`);
+    throw new Error(`API fetch failed: ${response.status} ${response.statusText} - Body: ${errorText}`);
   }
 
   const contentType = response.headers.get("content-type");

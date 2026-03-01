@@ -16,7 +16,7 @@ import {
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { ThemeSwitcher } from "../theme/ThemeSwitcher";
-import { SignedIn, SignedOut, SignInButton, UserButton, useClerk } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignIn, SignInButton, UserButton, useClerk } from "@clerk/nextjs";
 import { GlobalAgentPanel } from "../agent/GlobalAgentPanel";
 
 function cn(...inputs) {
@@ -82,7 +82,18 @@ export function Shell({ children, isClerkConfigured }) {
   const pathname = usePathname();
   const showAgentPanel = !pathname.startsWith("/sign-in") && !pathname.startsWith("/sign-up");
 
-  return (
+  const plainLayout = (
+    <div className="flex h-screen overflow-hidden bg-[var(--color-background)] text-[var(--color-text-main)] relative">
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeSwitcher />
+      </div>
+      <main id="main-content" className="flex-1 flex overflow-hidden relative">
+        {children}
+      </main>
+    </div>
+  );
+
+  const mainLayout = (
     <div className="flex h-screen overflow-hidden bg-[var(--color-background)] text-[var(--color-text-main)]">
       {/* Left Sidebar */}
       <aside className="w-64 flex-shrink-0 border-r border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col">
@@ -146,7 +157,32 @@ export function Shell({ children, isClerkConfigured }) {
         {children}
       </main>
 
-      {showAgentPanel ? <GlobalAgentPanel /> : null}
+      {showAgentPanel && <GlobalAgentPanel />}
     </div>
+  );
+
+  if (!isClerkConfigured) {
+    return !showAgentPanel ? plainLayout : mainLayout;
+  }
+
+  return (
+    <>
+      <SignedIn>
+        {!showAgentPanel ? plainLayout : mainLayout}
+      </SignedIn>
+      <SignedOut>
+        {!showAgentPanel ? plainLayout : (
+          <div className="flex h-screen overflow-hidden bg-[var(--color-background)] text-[var(--color-text-main)] relative">
+            <div className="hidden">{children}</div>
+            <div className="absolute top-4 right-4 z-50">
+              <ThemeSwitcher />
+            </div>
+            <main className="flex-1 w-full h-full relative overflow-y-auto flex items-center justify-center p-4">
+              <SignIn routing="hash" signUpUrl="/sign-up" />
+            </main>
+          </div>
+        )}
+      </SignedOut>
+    </>
   );
 }

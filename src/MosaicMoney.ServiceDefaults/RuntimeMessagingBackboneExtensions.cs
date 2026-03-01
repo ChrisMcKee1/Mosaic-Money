@@ -9,7 +9,7 @@ public sealed class RuntimeMessagingBackboneOptions
     public static readonly IReadOnlyList<string> RequiredAspireConnectionNames =
     [
         "runtime-ingestion-completed",
-        "runtime-assistant-message-posted",
+        "runtime-agent-message-posted",
         "runtime-nightly-anomaly-sweep",
         "runtime-telemetry-stream",
     ];

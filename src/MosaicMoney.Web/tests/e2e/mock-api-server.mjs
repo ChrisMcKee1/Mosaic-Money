@@ -229,7 +229,7 @@ function createState() {
       failNeedsReview: false,
     },
     data: clone(fixture),
-    assistantRunsByConversation: {},
+    agentRunsByConversation: {},
   };
 }
 
@@ -279,11 +279,11 @@ function shouldRequireApproval(message) {
 }
 
 function getConversationRuns(conversationId) {
-  if (!Array.isArray(state.assistantRunsByConversation[conversationId])) {
-    state.assistantRunsByConversation[conversationId] = [];
+  if (!Array.isArray(state.agentRunsByConversation[conversationId])) {
+    state.agentRunsByConversation[conversationId] = [];
   }
 
-  return state.assistantRunsByConversation[conversationId];
+  return state.agentRunsByConversation[conversationId];
 }
 
 const server = createServer(async (req, res) => {
@@ -489,9 +489,9 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const assistantMessageMatch = pathname.match(/^\/api\/v1\/assistant\/conversations\/([^/]+)\/messages$/);
-  if (req.method === "POST" && assistantMessageMatch) {
-    const conversationId = assistantMessageMatch[1];
+  const agentMessageMatch = pathname.match(/^\/api\/v1\/agent\/conversations\/([^/]+)\/messages$/);
+  if (req.method === "POST" && agentMessageMatch) {
+    const conversationId = agentMessageMatch[1];
     const body = await readJson(req);
     const message = String(body?.message ?? "").trim();
     if (!message) {
@@ -504,7 +504,7 @@ const server = createServer(async (req, res) => {
       : "advisory_only";
 
     const commandId = randomUUID();
-    const correlationId = `assistant:11111111111111111111111111111111:${conversationId.replace(/-/g, "")}:${commandId.replace(/-/g, "")}`;
+    const correlationId = `agent:11111111111111111111111111111111:${conversationId.replace(/-/g, "")}:${commandId.replace(/-/g, "")}`;
     const now = new Date().toISOString();
 
     const runs = getConversationRuns(conversationId);
@@ -512,7 +512,7 @@ const server = createServer(async (req, res) => {
       runId: randomUUID(),
       correlationId,
       status: policyDisposition === "approval_required" ? "NeedsReview" : "Completed",
-      triggerSource: "assistant_message_posted",
+      triggerSource: "agent_message_posted",
       failureCode: null,
       failureRationale: null,
       createdAtUtc: now,
@@ -523,7 +523,7 @@ const server = createServer(async (req, res) => {
       agentNoteSummary:
         policyDisposition === "approval_required"
           ? "This high-impact request is waiting for approval."
-          : "Mock assistant response: I reviewed your request and captured a deterministic summary.",
+          : "Mock agent response: I reviewed your request and captured a deterministic summary.",
       latestStageOutcomeSummary:
         policyDisposition === "approval_required"
           ? "High-impact request requires approval."
@@ -535,8 +535,8 @@ const server = createServer(async (req, res) => {
       commandId,
       correlationId,
       conversationId,
-      commandType: "assistant_message_posted",
-      queue: "runtime-assistant-message-posted",
+      commandType: "agent_message_posted",
+      queue: "runtime-agent-message-posted",
       policyDisposition,
       queuedAtUtc: now,
       status: "queued",
@@ -544,10 +544,10 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const assistantApprovalMatch = pathname.match(/^\/api\/v1\/assistant\/conversations\/([^/]+)\/approvals\/([^/]+)$/);
-  if (req.method === "POST" && assistantApprovalMatch) {
-    const conversationId = assistantApprovalMatch[1];
-    const approvalId = assistantApprovalMatch[2];
+  const agentApprovalMatch = pathname.match(/^\/api\/v1\/agent\/conversations\/([^/]+)\/approvals\/([^/]+)$/);
+  if (req.method === "POST" && agentApprovalMatch) {
+    const conversationId = agentApprovalMatch[1];
+    const approvalId = agentApprovalMatch[2];
     const body = await readJson(req);
     const decision = String(body?.decision ?? "Approve");
     const now = new Date().toISOString();
@@ -571,10 +571,10 @@ const server = createServer(async (req, res) => {
 
     json(res, 202, {
       commandId: approvalId,
-      correlationId: `assistant:approval:${approvalId}`,
+      correlationId: `agent:approval:${approvalId}`,
       conversationId,
-      commandType: "assistant_approval_submitted",
-      queue: "runtime-assistant-message-posted",
+      commandType: "agent_approval_submitted",
+      queue: "runtime-agent-message-posted",
       policyDisposition: decision.toLowerCase() === "approve" ? "approved_by_human" : "rejected_by_human",
       queuedAtUtc: now,
       status: "queued",
@@ -582,9 +582,9 @@ const server = createServer(async (req, res) => {
     return;
   }
 
-  const assistantStreamMatch = pathname.match(/^\/api\/v1\/assistant\/conversations\/([^/]+)\/stream$/);
-  if (req.method === "GET" && assistantStreamMatch) {
-    const conversationId = assistantStreamMatch[1];
+  const agentStreamMatch = pathname.match(/^\/api\/v1\/agent\/conversations\/([^/]+)\/stream$/);
+  if (req.method === "GET" && agentStreamMatch) {
+    const conversationId = agentStreamMatch[1];
     json(res, 200, {
       conversationId,
       runs: getConversationRuns(conversationId),
@@ -601,3 +601,4 @@ server.listen(port, "127.0.0.1", () => {
   // eslint-disable-next-line no-console
   console.log(`MM FE-08 mock API listening on http://127.0.0.1:${port}`);
 });
+

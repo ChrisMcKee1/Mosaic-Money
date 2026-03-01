@@ -1,6 +1,10 @@
 # Unified API and MCP Entrypoints
 
-Last updated: 2026-02-28
+Last updated: 2026-03-01
+
+Status note (2026-03-01):
+- Foundry hosted agent bootstrap is intentionally running in minimal mode (model + prompt only) while API/MCP entrypoint hardening is completed.
+- Native Postgres container MCP integration is paused in favor of first-party Mosaic MCP tools backed by shared API business services.
 
 ## Purpose
 Define the Mosaic Money pattern for hosting standard REST endpoints (Minimal APIs) and MCP tools in the same ASP.NET Core service while reusing one shared business logic layer.
@@ -95,6 +99,12 @@ app.MapMcp("/api/mcp");
 Current implementation note:
 
 - `MosaicMoney.Api` exposes taxonomy-focused MCP tools via `MosaicMoneyTaxonomyMcpTools` and routes all mutations through shared business services with explicit human approver context.
+- `MosaicMoney.Api` now requires authenticated access on `/api/mcp` and keeps auth middleware before MCP mapping.
+
+## Transport and auth direction
+- Near-term: keep MCP endpoint stable on the current HTTP transport while validating API and UI paths.
+- Follow-up investigation: evaluate Streamable HTTP transport for MCP as the preferred path, including SDK compatibility, auth propagation, and rollout/rollback steps.
+- Authentication requirement: MCP tool execution must always resolve user context and enforce per-household/per-user data authorization before any read/write operation.
 
 ## Guardrails and Constraints
 - Do not expose secrets or raw connection details through MCP tools.
