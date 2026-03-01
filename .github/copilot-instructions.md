@@ -23,6 +23,21 @@ These instructions are always on for this repository.
 - For JavaScript resources, use `AddJavaScriptApp`, `AddViteApp`, or `AddNodeApp`.
 - Do not introduce deprecated `AddNpmApp`.
 
+## Foundry New Vs Classic Guardrails
+- Always determine whether docs/examples target Foundry (new) or Foundry (classic) before implementation.
+- For New Foundry Agent Service, prefer project endpoints in the form `https://<resource>.services.ai.azure.com/api/projects/<project>`.
+- For New Foundry agent creation and tool execution, prefer `Authorization: Bearer <token>` from `az account get-access-token --resource https://ai.azure.com`.
+- Treat `"Key-based authentication is not supported for this route"` as a route/auth mismatch and immediately retry with Entra bearer tokens.
+- For New Foundry agent create/update, start with `POST {project_endpoint}/agents?api-version=v1`; only fallback to preview API versions if tenant compatibility requires it.
+- Do not mix Azure OpenAI inference guidance (`openai.azure.com`, `cognitiveservices.azure.com` scope) into Foundry Agent Service routes unless the target API explicitly requires it.
+- For MCP tools, use the New Foundry schema fields: `type=mcp`, `server_label`, `server_url`, optional `allowed_tools`, `require_approval`, and `project_connection_id`.
+- For direct PostgreSQL MCP integration, include explicit tool parameter guidance in agent instructions for: `database`, `resource-group`, `server`, `subscription`, and `user` (container app identity).
+- For Foundry IQ knowledge bases, use MCP endpoint format `https://<search>.search.windows.net/knowledgebases/<kb>/mcp?api-version=2025-11-01-preview` and `allowed_tools` containing `knowledge_base_retrieve`.
+- For Search knowledge-base create/update on current tenant/API, prefer `outputMode=answerSynthesis`; if using `mcpTool` knowledge sources, set retrieval reasoning effort to `medium`.
+- Treat memory attachment as capability-gated per model/tenant: verify `memory_search` support before combining memory and MCP tools on a new agent version.
+- Project connection lifecycle can require two planes: ARM (`https://management.azure.com/.../connections/...`) for create/update and Foundry data-plane (`{project_endpoint}/connections`) for list/get. Verify the required plane from current docs before coding.
+- When project resource IDs are difficult to resolve in New Foundry, derive from existing connection IDs returned by the data-plane and avoid hardcoded provider assumptions.
+
 ## Secret And Configuration Conventions
 - Define orchestration-level sensitive values in AppHost with `builder.AddParameter("<name>", secret: true)`.
 - Store local secret values in AppHost user-secrets (`dotnet user-secrets`) instead of source-controlled files.

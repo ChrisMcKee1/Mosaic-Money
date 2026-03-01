@@ -4,7 +4,7 @@ using System.Text.Json;
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Messaging.ServiceBus;
-using MosaicMoney.Api.Domain.Assistant;
+using MosaicMoney.Api.Domain.Agent;
 using Npgsql;
 
 namespace MosaicMoney.Worker;

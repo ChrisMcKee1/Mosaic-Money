@@ -261,6 +261,11 @@ public static class AgentOrchestrationEndpoints
                         .ThenByDescending(stage => stage.CreatedAtUtc)
                         .Select(stage => stage.OutcomeRationale)
                         .FirstOrDefault(),
+                    LatestStageAgentNoteSummary = x.Stages
+                        .OrderByDescending(stage => stage.StageOrder)
+                        .ThenByDescending(stage => stage.CreatedAtUtc)
+                        .Select(stage => stage.AgentNoteSummary)
+                        .FirstOrDefault(),
                 })
                 .ToListAsync(cancellationToken);
 
@@ -282,6 +287,7 @@ public static class AgentOrchestrationEndpoints
                         run.CompletedAtUtc,
                         AgentName: agentName,
                         AgentSource: agentSource,
+                        AgentNoteSummary: run.LatestStageAgentNoteSummary,
                         LatestStageOutcomeSummary: latestStageOutcomeSummary,
                         AssignmentHint: assignmentHint);
                 })

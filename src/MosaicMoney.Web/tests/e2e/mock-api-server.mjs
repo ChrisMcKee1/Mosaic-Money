@@ -229,6 +229,7 @@ function createState() {
       failNeedsReview: false,
     },
     data: clone(fixture),
+    assistantRunsByConversation: {},
   };
 }
 
@@ -267,6 +268,22 @@ function readJson(req) {
     });
     req.on("error", (error) => reject(error));
   });
+}
+
+function shouldRequireApproval(message) {
+  const value = String(message ?? "").toLowerCase();
+  return value.includes("send")
+    || value.includes("email")
+    || value.includes("wire")
+    || value.includes("text");
+}
+
+function getConversationRuns(conversationId) {
+  if (!Array.isArray(state.assistantRunsByConversation[conversationId])) {
+    state.assistantRunsByConversation[conversationId] = [];
+  }
+
+  return state.assistantRunsByConversation[conversationId];
 }
 
 const server = createServer(async (req, res) => {
@@ -468,6 +485,109 @@ const server = createServer(async (req, res) => {
       itemId: `item-${randomUUID()}`,
       institutionId: "ins_1",
       linkedAt: "2026-02-23T12:00:00.000Z",
+    });
+    return;
+  }
+
+  const assistantMessageMatch = pathname.match(/^\/api\/v1\/assistant\/conversations\/([^/]+)\/messages$/);
+  if (req.method === "POST" && assistantMessageMatch) {
+    const conversationId = assistantMessageMatch[1];
+    const body = await readJson(req);
+    const message = String(body?.message ?? "").trim();
+    if (!message) {
+      json(res, 400, { error: "message is required" });
+      return;
+    }
+
+    const policyDisposition = shouldRequireApproval(message)
+      ? "approval_required"
+      : "advisory_only";
+
+    const commandId = randomUUID();
+    const correlationId = `assistant:11111111111111111111111111111111:${conversationId.replace(/-/g, "")}:${commandId.replace(/-/g, "")}`;
+    const now = new Date().toISOString();
+
+    const runs = getConversationRuns(conversationId);
+    runs.unshift({
+      runId: randomUUID(),
+      correlationId,
+      status: policyDisposition === "approval_required" ? "NeedsReview" : "Completed",
+      triggerSource: "assistant_message_posted",
+      failureCode: null,
+      failureRationale: null,
+      createdAtUtc: now,
+      lastModifiedAtUtc: now,
+      completedAtUtc: now,
+      agentName: "Mosaic",
+      agentSource: "foundry",
+      agentNoteSummary:
+        policyDisposition === "approval_required"
+          ? "This high-impact request is waiting for approval."
+          : "Mock assistant response: I reviewed your request and captured a deterministic summary.",
+      latestStageOutcomeSummary:
+        policyDisposition === "approval_required"
+          ? "High-impact request requires approval."
+          : "Foundry agent invocation completed.",
+      assignmentHint: policyDisposition,
+    });
+
+    json(res, 202, {
+      commandId,
+      correlationId,
+      conversationId,
+      commandType: "assistant_message_posted",
+      queue: "runtime-assistant-message-posted",
+      policyDisposition,
+      queuedAtUtc: now,
+      status: "queued",
+    });
+    return;
+  }
+
+  const assistantApprovalMatch = pathname.match(/^\/api\/v1\/assistant\/conversations\/([^/]+)\/approvals\/([^/]+)$/);
+  if (req.method === "POST" && assistantApprovalMatch) {
+    const conversationId = assistantApprovalMatch[1];
+    const approvalId = assistantApprovalMatch[2];
+    const body = await readJson(req);
+    const decision = String(body?.decision ?? "Approve");
+    const now = new Date().toISOString();
+
+    const runs = getConversationRuns(conversationId);
+    const pendingRun = runs.find((run) => run.assignmentHint === "approval_required") ?? null;
+    if (pendingRun) {
+      pendingRun.status = decision.toLowerCase() === "approve" ? "Completed" : "NeedsReview";
+      pendingRun.agentNoteSummary = decision.toLowerCase() === "approve"
+        ? "Approval received. The action can continue under human-reviewed policy."
+        : "Approval rejected. The action remains blocked and requires follow-up review.";
+      pendingRun.latestStageOutcomeSummary = decision.toLowerCase() === "approve"
+        ? "Human approval submitted."
+        : "Human rejection submitted.";
+      pendingRun.lastModifiedAtUtc = now;
+      pendingRun.completedAtUtc = now;
+      pendingRun.assignmentHint = decision.toLowerCase() === "approve"
+        ? "approved_by_human"
+        : "rejected_by_human";
+    }
+
+    json(res, 202, {
+      commandId: approvalId,
+      correlationId: `assistant:approval:${approvalId}`,
+      conversationId,
+      commandType: "assistant_approval_submitted",
+      queue: "runtime-assistant-message-posted",
+      policyDisposition: decision.toLowerCase() === "approve" ? "approved_by_human" : "rejected_by_human",
+      queuedAtUtc: now,
+      status: "queued",
+    });
+    return;
+  }
+
+  const assistantStreamMatch = pathname.match(/^\/api\/v1\/assistant\/conversations\/([^/]+)\/stream$/);
+  if (req.method === "GET" && assistantStreamMatch) {
+    const conversationId = assistantStreamMatch[1];
+    json(res, 200, {
+      conversationId,
+      runs: getConversationRuns(conversationId),
     });
     return;
   }

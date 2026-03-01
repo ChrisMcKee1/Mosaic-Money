@@ -54,6 +54,21 @@ var foundryAgentEnabled = builder.AddParameter("foundry-agent-enabled");
 var foundryAgentEndpoint = builder.AddParameter("foundry-agent-endpoint");
 var foundryAgentApiKey = builder.AddParameter("foundry-agent-api-key", secret: true);
 var foundryAgentDeployment = builder.AddParameter("foundry-agent-deployment");
+var foundryAgentMcpDatabaseToolName = builder.AddParameter("foundry-agent-mcp-database-tool-name");
+var foundryAgentMcpDatabaseToolEndpoint = builder.AddParameter("foundry-agent-mcp-database-tool-endpoint");
+var foundryAgentMcpDatabaseConnectionId = builder.AddParameter("foundry-agent-mcp-database-project-connection-id");
+var foundryAgentMcpDatabaseAllowedToolsCsv = builder.AddParameter("foundry-agent-mcp-database-allowed-tools-csv");
+var foundryAgentMcpDatabaseRequireApproval = builder.AddParameter("foundry-agent-mcp-database-require-approval");
+var foundryAgentMcpApiToolName = builder.AddParameter("foundry-agent-mcp-api-tool-name");
+var foundryAgentMcpApiToolEndpoint = builder.AddParameter("foundry-agent-mcp-api-tool-endpoint");
+var foundryAgentMcpApiConnectionId = builder.AddParameter("foundry-agent-mcp-api-project-connection-id");
+var foundryAgentMcpApiAllowedToolsCsv = builder.AddParameter("foundry-agent-mcp-api-allowed-tools-csv");
+var foundryAgentMcpApiRequireApproval = builder.AddParameter("foundry-agent-mcp-api-require-approval");
+var foundryAgentKnowledgeBaseLabel = builder.AddParameter("foundry-agent-knowledge-base-label");
+var foundryAgentKnowledgeBaseEndpoint = builder.AddParameter("foundry-agent-knowledge-base-endpoint");
+var foundryAgentKnowledgeBaseConnectionId = builder.AddParameter("foundry-agent-knowledge-base-project-connection-id");
+var foundryAgentKnowledgeBaseAllowedToolsCsv = builder.AddParameter("foundry-agent-knowledge-base-allowed-tools-csv");
+var foundryAgentKnowledgeBaseRequireApproval = builder.AddParameter("foundry-agent-knowledge-base-require-approval");
 
 // M10 MM-ASP-12 runtime messaging backbone (Aspire-native resources and references).
 var runtimeServiceBus = builder
@@ -98,6 +113,21 @@ var api = builder
 	.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint)
 	.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey)
 	.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolName", foundryAgentMcpDatabaseToolName)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolEndpoint", foundryAgentMcpDatabaseToolEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolProjectConnectionId", foundryAgentMcpDatabaseConnectionId)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseAllowedToolsCsv", foundryAgentMcpDatabaseAllowedToolsCsv)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseRequireApproval", foundryAgentMcpDatabaseRequireApproval)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolName", foundryAgentMcpApiToolName)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolEndpoint", foundryAgentMcpApiToolEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolProjectConnectionId", foundryAgentMcpApiConnectionId)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiAllowedToolsCsv", foundryAgentMcpApiAllowedToolsCsv)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiRequireApproval", foundryAgentMcpApiRequireApproval)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpServerLabel", foundryAgentKnowledgeBaseLabel)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpEndpoint", foundryAgentKnowledgeBaseEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseProjectConnectionId", foundryAgentKnowledgeBaseConnectionId)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseAllowedToolsCsv", foundryAgentKnowledgeBaseAllowedToolsCsv)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseRequireApproval", foundryAgentKnowledgeBaseRequireApproval)
 	.WithEnvironment("RuntimeMessaging__Enabled", "false")
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)
@@ -130,6 +160,21 @@ var worker = builder
 	.WithEnvironment("AiWorkflow__Agent__Foundry__Endpoint", foundryAgentEndpoint)
 	.WithEnvironment("AiWorkflow__Agent__Foundry__ApiKey", foundryAgentApiKey)
 	.WithEnvironment("AiWorkflow__Agent__Foundry__Deployment", foundryAgentDeployment)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolName", foundryAgentMcpDatabaseToolName)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolEndpoint", foundryAgentMcpDatabaseToolEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseToolProjectConnectionId", foundryAgentMcpDatabaseConnectionId)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseAllowedToolsCsv", foundryAgentMcpDatabaseAllowedToolsCsv)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpDatabaseRequireApproval", foundryAgentMcpDatabaseRequireApproval)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolName", foundryAgentMcpApiToolName)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolEndpoint", foundryAgentMcpApiToolEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiToolProjectConnectionId", foundryAgentMcpApiConnectionId)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiAllowedToolsCsv", foundryAgentMcpApiAllowedToolsCsv)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__McpApiRequireApproval", foundryAgentMcpApiRequireApproval)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpServerLabel", foundryAgentKnowledgeBaseLabel)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseMcpEndpoint", foundryAgentKnowledgeBaseEndpoint)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseProjectConnectionId", foundryAgentKnowledgeBaseConnectionId)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseAllowedToolsCsv", foundryAgentKnowledgeBaseAllowedToolsCsv)
+	.WithEnvironment("AiWorkflow__Agent__Foundry__KnowledgeBaseRequireApproval", foundryAgentKnowledgeBaseRequireApproval)
 	.WithEnvironment("RuntimeMessaging__Enabled", "false")
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishEndpoint", runtimeEventGridPublishEndpoint)
 	.WithEnvironment("RuntimeMessaging__EventGrid__PublishAccessKey", runtimeEventGridPublishAccessKey)

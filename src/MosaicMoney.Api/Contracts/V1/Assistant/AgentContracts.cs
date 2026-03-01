@@ -55,6 +55,7 @@ public sealed record AssistantConversationRunStatusDto(
     DateTime? CompletedAtUtc,
     string? AgentName = null,
     string? AgentSource = null,
+    string? AgentNoteSummary = null,
     string? LatestStageOutcomeSummary = null,
     string? AssignmentHint = null);
 

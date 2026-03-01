@@ -1,5 +1,5 @@
 using MosaicMoney.Worker;
-using MosaicMoney.Api.Domain.Assistant;
+using MosaicMoney.Api.Domain.Agent;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.AddServiceDefaults();
@@ -13,7 +13,8 @@ builder.Services.Configure<FoundryAgentOptions>(
 	foundryAgentSection.Exists()
 		? foundryAgentSection
 		: builder.Configuration.GetSection(FoundryAgentOptions.LegacySectionName));
-builder.Services.AddHttpClient<IFoundryAgentRuntimeService, FoundryAgentRuntimeService>();
+builder.Services.AddHttpClient(nameof(FoundryAgentRuntimeService));
+builder.Services.AddSingleton<IFoundryAgentRuntimeService, FoundryAgentRuntimeService>();
 
 builder.Services.AddHostedService<Worker>();
 

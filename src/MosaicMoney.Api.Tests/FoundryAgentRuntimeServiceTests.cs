@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using MosaicMoney.Api.Domain.Assistant;
+using MosaicMoney.Api.Domain.Agent;
 using Xunit;
 
 namespace MosaicMoney.Api.Tests;
@@ -20,9 +20,10 @@ public sealed class FoundryAgentRuntimeServiceTests
             Enabled = true,
             Endpoint = "https://foundry.tests.mosaic-money.local/projects/test-project",
             ApiKey = "test-api-key",
+            CreateAgentIfMissing = true,
             Deployment = "gpt-5.3-codex",
             AgentName = "Mosaic",
-            ApiVersion = "2025-05-01",
+            ApiVersion = "2025-11-01-preview",
         });
 
         var runtime = new FoundryAgentRuntimeService(
@@ -47,7 +48,7 @@ public sealed class FoundryAgentRuntimeServiceTests
         Assert.Equal("Mosaic", result.AgentName);
         Assert.Equal("foundry", result.AgentSource);
         Assert.Equal("approval_required", result.AssignmentHint);
-        Assert.Equal("assistant_agent_create_failed", result.OutcomeCode);
+        Assert.Equal("agent_create_failed", result.OutcomeCode);
         Assert.True(handler.RequestCount >= 1);
     }
 

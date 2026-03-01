@@ -83,6 +83,18 @@ dotnet add package Microsoft.Agents.AI
 - Use middleware to intercept and enhance agent actions
 - Support model providers including Azure AI Foundry, Azure OpenAI, OpenAI, and other AI services, but prioritize Azure AI Foundry services for new projects
 
+**Foundry New vs Classic Safety Rules:**
+
+- Validate whether documentation is Foundry (new) or Foundry (classic) before implementation. Do not mix examples across those surfaces.
+- For Foundry Agent Service REST routes under `https://<resource>.services.ai.azure.com/api/projects/<project>`, prefer Entra bearer tokens from `az account get-access-token --resource https://ai.azure.com`.
+- Start agent create/update with `POST {project_endpoint}/agents?api-version=v1`; only fallback to preview API versions when required by tenant behavior.
+- If you receive `Key-based authentication is not supported for this route`, treat it as expected auth mismatch and retry with Entra bearer auth.
+- Keep Azure OpenAI inference (`openai/v1`, `cognitiveservices.azure.com` scope) separate from Foundry Agent Service route auth unless docs explicitly require crossover.
+- For MCP tools, use New Foundry schema fields (`server_label`, `server_url`, `allowed_tools`, `require_approval`, `project_connection_id`) and resolve project connections before binding tools.
+- For Search knowledge-base create/update on this tenant, prefer `outputMode=answerSynthesis`; with `mcpTool` knowledge sources, use retrieval reasoning effort `medium`.
+- Treat memory attachment as capability-gated by model/tenant and verify `memory_search` support before combining memory and MCP tools in the same definition payload.
+- For direct PostgreSQL MCP usage, include explicit instruction guidance for `database`, `resource-group`, `server`, `subscription`, and `user` values to avoid ambiguous MCP tool execution.
+
 **Workflows:**
 
 - Use workflows for complex, multi-step tasks that involve multiple agents or predefined sequences

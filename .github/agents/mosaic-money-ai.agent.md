@@ -56,6 +56,17 @@ Hard constraints:
 - Treat `NEXT_PUBLIC_*` variables as public and keep model keys/tokens on server boundaries only.
 - Always run governance and evaluation checks from the loaded skills before shipping workflow changes.
 
+Foundry API hygiene:
+- Treat Foundry (new) and Foundry (classic) docs as different surfaces; verify the doc `view` and endpoint family before coding.
+- For Foundry Agent Service calls, prefer Entra bearer auth (`az account get-access-token --resource https://ai.azure.com`) and start with `api-version=v1`.
+- If a route responds with `Key-based authentication is not supported for this route`, switch to bearer auth and continue.
+- Use New Foundry MCP tool fields (`server_label`, `server_url`, `allowed_tools`, `require_approval`, `project_connection_id`) and avoid legacy `name`-only MCP payloads.
+- For connection setup, distinguish ARM create/update (`management.azure.com`) from Foundry data-plane list/get (`{project_endpoint}/connections`).
+- Never mix Azure OpenAI inference auth scopes/endpoints into Foundry Agent Service routes unless the API reference explicitly requires it.
+- For Search knowledge-base setup on this tenant, use `outputMode=answerSynthesis`; if the source kind is `mcpTool`, set retrieval reasoning effort to `medium`.
+- Treat memory attachment as capability-gated: verify `memory_search` is accepted for the selected model/tenant before combining memory and MCP tools in one agent definition.
+- For direct PostgreSQL MCP integrations, require explicit instruction guidance for `database`, `resource-group`, `server`, `subscription`, and `user` so tool calls remain deterministic and auditable.
+
 Implementation standards:
 - Keep model calls bounded and auditable.
 - Produce concise `AgentNote` summaries rather than transcript dumps.

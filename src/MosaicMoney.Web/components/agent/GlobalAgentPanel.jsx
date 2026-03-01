@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import {
   Bot,
   Clock3,
@@ -16,7 +18,6 @@ import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import {
   getAgentConversationStream,
-  postAgentMessage,
   submitAgentApproval,
 } from "../../app/agent/actions";
 
@@ -64,18 +65,80 @@ function statusClassName(status) {
   return "bg-[var(--color-surface-hover)] text-[var(--color-text-muted)] border-[var(--color-border)]";
 }
 
+function extractMessageText(message) {
+  if (Array.isArray(message?.parts)) {
+    const text = message.parts
+      .filter((part) => part?.type === "text" && typeof part.text === "string")
+      .map((part) => part.text)
+      .join("")
+      .trim();
+
+    if (text.length > 0) {
+      return text;
+    }
+  }
+
+  if (typeof message?.content === "string") {
+    return message.content;
+  }
+
+  return "";
+}
+
 export function GlobalAgentPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("conversation");
   const [conversationId, setConversationId] = useState("");
   const [inputValue, setInputValue] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  const [messages, setMessages] = useState([]);
   const [approvalCards, setApprovalCards] = useState([]);
   const [timelineRuns, setTimelineRuns] = useState([]);
+
+  const {
+    messages,
+    sendMessage,
+    status,
+    stop,
+    error: chatError,
+  } = useChat({
+    id: conversationId || undefined,
+    transport: new DefaultChatTransport({
+      api: "/api/assistant/chat",
+    }),
+    onData: (dataPart) => {
+      if (dataPart?.type === "data-command") {
+        const payload = dataPart?.data ?? {};
+        if (payload?.policyDisposition === "approval_required" && payload?.commandId) {
+          setApprovalCards((previous) => {
+            if (previous.some((card) => card.commandId === payload.commandId)) {
+              return previous;
+            }
+
+            return [
+              {
+                id: payload.commandId,
+                commandId: payload.commandId,
+                conversationId: payload.conversationId,
+                status: "pending",
+                title: "High-impact action requires approval",
+                summary: payload.summary || "Approval required for this action.",
+                createdAt: payload.queuedAtUtc || new Date().toISOString(),
+              },
+              ...previous,
+            ];
+          });
+        }
+      }
+
+      if (dataPart?.type === "data-run") {
+        void refreshStream();
+      }
+    },
+  });
+
+  const isSubmitting = status === "submitted" || status === "streaming";
 
   useEffect(() => {
     try {
@@ -133,74 +196,21 @@ export function GlobalAgentPanel() {
     }
 
     setError("");
-    setIsSubmitting(true);
-
-    const optimisticMessage = {
-      id: `${Date.now()}-local`,
-      role: "user",
-      text: message,
-      createdAt: new Date().toISOString(),
-    };
-
-    setMessages((previous) => [...previous, optimisticMessage]);
     setInputValue("");
 
-    const result = await postAgentMessage({
-      conversationId,
-      message,
-      clientMessageId: optimisticMessage.id,
-    });
-
-    setIsSubmitting(false);
-
-    if (!result.success) {
-      setError(result.error || "Agent message failed.");
-      setMessages((previous) => [
-        ...previous,
+    try {
+      await sendMessage(
+        { text: message },
         {
-          id: `${Date.now()}-error`,
-          role: "system",
-          text: "The agent could not queue that message. Please retry.",
-          createdAt: new Date().toISOString(),
-          tone: "error",
+          body: {
+            conversationId,
+          },
         },
-      ]);
-      return;
+      );
+      void refreshStream();
+    } catch {
+      setError("The agent could not queue that message. Please retry.");
     }
-
-    const accepted = result.data;
-    const policyDisposition = accepted?.policyDisposition || "advisory_only";
-
-    setMessages((previous) => [
-      ...previous,
-      {
-        id: `${accepted.commandId}-queued`,
-        role: "agent",
-        text:
-          policyDisposition === "approval_required"
-            ? "This request is marked high-impact. Review and approve before execution."
-            : "Queued. I will stream run updates as the workflow progresses.",
-        createdAt: accepted?.queuedAtUtc || new Date().toISOString(),
-        tone: policyDisposition === "approval_required" ? "warning" : "normal",
-      },
-    ]);
-
-    if (policyDisposition === "approval_required") {
-      setApprovalCards((previous) => [
-        {
-          id: accepted.commandId,
-          commandId: accepted.commandId,
-          conversationId: accepted.conversationId,
-          status: "pending",
-          title: "High-impact action requires approval",
-          summary: message,
-          createdAt: accepted.queuedAtUtc || new Date().toISOString(),
-        },
-        ...previous,
-      ]);
-    }
-
-    void refreshStream();
   }
 
   async function handleApprovalDecision(cardId, decision) {
@@ -318,6 +328,12 @@ export function GlobalAgentPanel() {
         </div>
       ) : null}
 
+      {!error && chatError ? (
+        <div className="mx-4 mt-3 rounded-lg border border-[var(--color-negative)]/30 bg-[var(--color-negative-bg)] px-3 py-2 text-xs text-[var(--color-negative)]">
+          Something went wrong while streaming the assistant response.
+        </div>
+      ) : null}
+
       {activeTab === "conversation" ? (
         <>
           <section className="border-b border-[var(--color-border)] px-4 py-3">
@@ -397,22 +413,24 @@ export function GlobalAgentPanel() {
                       "rounded-xl border px-3 py-2 text-sm",
                       message.role === "user"
                         ? "ml-8 border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10"
-                        : message.tone === "warning"
-                          ? "mr-8 border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)]"
-                          : message.tone === "error"
-                            ? "mr-8 border-[var(--color-negative)]/30 bg-[var(--color-negative-bg)]"
-                            : "mr-8 border-[var(--color-border)] bg-[var(--color-surface-hover)]",
+                        : "mr-8 border-[var(--color-border)] bg-[var(--color-surface-hover)]",
                     )}
                   >
                     <div className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wide text-[var(--color-text-muted)]">
                       {message.role === "user" ? <User className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
                       <span>{message.role}</span>
-                      <span className="ml-auto normal-case tracking-normal">{formatTime(message.createdAt)}</span>
+                      <span className="ml-auto normal-case tracking-normal">{formatTime(message.createdAt ?? message.updatedAt)}</span>
                     </div>
-                    <p className="text-[var(--color-text-main)]">{message.text}</p>
+                    <p className="text-[var(--color-text-main)] whitespace-pre-wrap">{extractMessageText(message)}</p>
                   </article>
                 ))
               )}
+
+              {isSubmitting ? (
+                <div className="mr-8 rounded-xl border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/10 px-3 py-2 text-xs text-[var(--color-primary)]">
+                  Mosaic is thinking...
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -437,6 +455,16 @@ export function GlobalAgentPanel() {
                 <Send className="h-3.5 w-3.5" />
                 {isSubmitting ? "Sending" : "Send"}
               </button>
+
+              {(status === "submitted" || status === "streaming") ? (
+                <button
+                  type="button"
+                  onClick={() => stop()}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-3 py-2 text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)]"
+                >
+                  Stop
+                </button>
+              ) : null}
             </div>
           </form>
         </>
@@ -487,6 +515,12 @@ export function GlobalAgentPanel() {
                       <Sparkles className="h-3 w-3" />
                       Last update {formatTime(run.lastModifiedAtUtc)}
                     </p>
+                    {run.agentNoteSummary ? (
+                      <div className="mt-1.5 rounded-md border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 p-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-primary)]">Latest agent note</p>
+                        <p className="mt-1 text-[11px] text-[var(--color-text-main)] break-words whitespace-pre-wrap">{run.agentNoteSummary}</p>
+                      </div>
+                    ) : null}
                     {run.latestStageOutcomeSummary ? (
                       <div className="mt-1.5 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
                         <p className="text-[10px] text-[var(--color-text-main)] break-words">{run.latestStageOutcomeSummary}</p>
