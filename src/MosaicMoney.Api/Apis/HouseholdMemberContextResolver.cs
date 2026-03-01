@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MosaicMoney.Api.Contracts.V1;
+using MosaicMoney.Api.Authentication;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 
@@ -20,6 +22,7 @@ internal static class HouseholdMemberContextResolver
         string membershipDeniedMessage,
         CancellationToken cancellationToken)
     {
+        var authProvider = ResolveConfiguredAuthProvider(httpContext);
         var principalValue = httpContext.User.FindFirstValue(MosaicHouseholdUserIdClaimType)
             ?? httpContext.User.FindFirstValue(HouseholdUserIdClaimType);
 
@@ -44,6 +47,7 @@ internal static class HouseholdMemberContextResolver
                 dbContext,
                 principalValue,
                 authSubject,
+                authProvider,
                 householdId,
                 membershipDeniedMessage,
                 cancellationToken);
@@ -55,6 +59,7 @@ internal static class HouseholdMemberContextResolver
                 httpContext,
                 dbContext,
                 authSubject,
+                authProvider,
                 householdId,
                 membershipDeniedMessage,
                 cancellationToken);
@@ -66,6 +71,17 @@ internal static class HouseholdMemberContextResolver
                 httpContext,
                 "member_context_required",
                 "A household member context claim, X-Mosaic-Household-User-Id header, or authenticated subject mapping is required."));
+    }
+
+    private static string ResolveConfiguredAuthProvider(HttpContext httpContext)
+    {
+        var options = httpContext.RequestServices
+            .GetService<IOptions<ClerkAuthenticationOptions>>()
+            ?.Value;
+
+        return string.IsNullOrWhiteSpace(options?.AuthProvider)
+            ? "clerk"
+            : options.AuthProvider.Trim();
     }
 
     private static string? TryResolveAuthSubjectFromBearerHeader(HttpContext httpContext)
@@ -104,6 +120,7 @@ internal static class HouseholdMemberContextResolver
         MosaicMoneyDbContext dbContext,
         string principalValue,
         string? authSubject,
+        string authProvider,
         Guid? householdId,
         string membershipDeniedMessage,
         CancellationToken cancellationToken)
@@ -159,6 +176,7 @@ internal static class HouseholdMemberContextResolver
                     x =>
                         x.Id == membership.MosaicUserId
                         && x.IsActive
+                        && x.AuthProvider == authProvider
                         && x.AuthSubject == authSubject,
                     cancellationToken);
 
@@ -180,6 +198,7 @@ internal static class HouseholdMemberContextResolver
         HttpContext httpContext,
         MosaicMoneyDbContext dbContext,
         string authSubject,
+        string authProvider,
         Guid? householdId,
         string membershipDeniedMessage,
         CancellationToken cancellationToken)
@@ -188,6 +207,7 @@ internal static class HouseholdMemberContextResolver
             .AsNoTracking()
             .Where(x =>
                 x.IsActive
+                && x.AuthProvider == authProvider
                 && x.AuthSubject == authSubject)
             .Select(x => x.Id)
             .ToListAsync(cancellationToken);

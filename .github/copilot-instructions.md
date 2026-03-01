@@ -48,6 +48,8 @@ These instructions are always on for this repository.
 - Treat `NEXT_PUBLIC_*` variables as public and never place sensitive values in them.
 - Redact secret values from logs, docs, screenshots, and sample command output.
 - Store Partner A / Partner B triage login credentials only in local ignored files under `src/MosaicMoney.Web`: `triage-partners.env.local` (for `MM_PARTNER_A_EMAIL`, `MM_PARTNER_A_PASSWORD`, `MM_PARTNER_B_EMAIL`, `MM_PARTNER_B_PASSWORD`) and optional operator notes in `partner-triage.credentials.local.md`.
+- Store combined Clerk + Plaid sandbox triage credentials only in local ignored `src/MosaicMoney.Web/triage-idp-plaid.env.local`, including `MM_CLERK_FRONTEND_API_URL`, `MM_CLERK_BACKEND_API_URL`, `MM_CLERK_API_VERSION`, `MM_CLERK_SECRET_KEY`, `MM_CLERK_USER_A_EMAIL`, `MM_CLERK_USER_B_EMAIL`, `MM_CLERK_USER_A_USERNAME`, `MM_CLERK_USER_B_USERNAME`, `MM_CLERK_TEST_PASSWORD`, `MM_PLAID_CLIENT_ID`, `MM_PLAID_SANDBOX_SECRET`, `MM_PLAID_TEST_USERNAME`, and `MM_PLAID_TEST_PASSWORD`.
+- Keep Plaid sandbox reference links next to local triage credentials for operator validation: `https://plaid.com/docs/sandbox/test-credentials/` and `https://plaid.com/docs/sandbox/user-custom/`.
 - Playwright triage scripts under `src/MosaicMoney.Web/scripts` auto-load `src/MosaicMoney.Web/triage-partners.env.local` before reading `MM_PARTNER_*` values; use `MM_TRIAGE_ENV_FILE` only when intentionally loading an alternate local env path.
 - Never commit partner triage credentials or include them in `artifacts/release-gates/**` outputs.
 

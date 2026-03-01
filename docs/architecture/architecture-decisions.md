@@ -1,6 +1,6 @@
 # Architecture Decision Log
 
-Last updated: 2026-02-27
+Last updated: 2026-03-01
 
 This log captures active architecture decisions for Mosaic Money and links to the canonical docs that explain implementation details.
 
@@ -80,3 +80,17 @@ This log captures active architecture decisions for Mosaic Money and links to th
 - Decision: Minimal API routes are not auto-exposed as MCP tools. MCP entrypoints are explicit tool wrappers that call shared core services.
 - Rationale: HTTP endpoint shape and MCP JSON-RPC tool contracts differ in protocol and interaction model, so explicit presentation-layer wrappers are required.
 - Sources: `docs/architecture/unified-api-mcp-entrypoints.md`, `.github/instructions/csharp-mcp-server.instructions.md`
+
+## AD-012: MCP transport baseline is HTTP transport with authenticated `/api/mcp`
+- Status: Accepted
+- Date: 2026-03-01
+- Decision: `MosaicMoney.Api` uses `ModelContextProtocol.AspNetCore` `.WithHttpTransport()` and maps MCP at `/api/mcp` with required authorization.
+- Rationale: Aligns with current Streamable HTTP-compatible guidance while preserving a single authenticated endpoint for agent tool access.
+- Sources: `src/MosaicMoney.Api/Program.cs`, `docs/architecture/unified-api-mcp-entrypoints.md`, `docs/agent-context/foundry-mcp-iq-bootstrap-runbook.md`
+
+## AD-013: Service Bus is selective, not default, for API and MCP execution paths
+- Status: Accepted
+- Date: 2026-03-01
+- Decision: Interactive API and MCP request/response operations stay synchronous; Service Bus lanes are reserved for asynchronous, retry-heavy, and outage-tolerant workflows.
+- Rationale: Prevents unnecessary queue latency for user-facing operations while preserving reliability and load-leveling where asynchronous semantics are required.
+- Sources: `docs/architecture/unified-api-mcp-entrypoints.md`, `docs/agent-context/foundry-mcp-iq-bootstrap-runbook.md`, `https://learn.microsoft.com/azure/architecture/microservices/design/interservice-communication`

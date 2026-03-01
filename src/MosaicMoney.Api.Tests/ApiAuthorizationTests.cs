@@ -220,6 +220,51 @@ public sealed class ApiAuthorizationTests
     }
 
     [Fact]
+    public async Task TransactionsRoute_SubClaimMappedToDifferentAuthProvider_ReturnsForbidden()
+    {
+        await using var app = await CreateApiAsync(dbContext =>
+        {
+            var householdId = Guid.CreateVersion7();
+            var mosaicUserId = Guid.CreateVersion7();
+
+            dbContext.Households.Add(new Household
+            {
+                Id = householdId,
+                Name = "Different provider household",
+                CreatedAtUtc = DateTime.UtcNow,
+            });
+
+            dbContext.MosaicUsers.Add(new MosaicUser
+            {
+                Id = mosaicUserId,
+                AuthProvider = "entra-id",
+                AuthSubject = TestAuthSubject,
+                DisplayName = "Different Provider User",
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow,
+                LastSeenAtUtc = DateTime.UtcNow,
+            });
+
+            dbContext.HouseholdUsers.Add(new HouseholdUser
+            {
+                Id = Guid.CreateVersion7(),
+                HouseholdId = householdId,
+                MosaicUserId = mosaicUserId,
+                DisplayName = "Different Provider Member",
+                MembershipStatus = HouseholdMembershipStatus.Active,
+                ActivatedAtUtc = DateTime.UtcNow,
+            });
+        });
+
+        var client = app.GetTestClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", CreateValidToken());
+
+        var response = await client.GetAsync("/api/v1/transactions");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
     public async Task TransactionsRoute_ExplicitMemberContextMustMatchAuthenticatedSubject()
     {
         var householdUserId = Guid.CreateVersion7();

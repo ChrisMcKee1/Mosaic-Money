@@ -12,4 +12,7 @@ public sealed class ClerkAuthenticationOptions
     public string SecretKey { get; init; } = string.Empty;
 
     public string Audience { get; init; } = string.Empty;
+
+    [Required]
+    public string AuthProvider { get; init; } = "clerk";
 }

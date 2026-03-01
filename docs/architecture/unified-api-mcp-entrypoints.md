@@ -102,9 +102,28 @@ Current implementation note:
 - `MosaicMoney.Api` now requires authenticated access on `/api/mcp` and keeps auth middleware before MCP mapping.
 
 ## Transport and auth direction
-- Near-term: keep MCP endpoint stable on the current HTTP transport while validating API and UI paths.
-- Follow-up investigation: evaluate Streamable HTTP transport for MCP as the preferred path, including SDK compatibility, auth propagation, and rollout/rollback steps.
+- Baseline transport: `ModelContextProtocol.AspNetCore` `.WithHttpTransport()` on `MosaicMoney.Api` as the Streamable HTTP-compatible path.
+- Endpoint contract: keep MCP mounted at `/api/mcp` over HTTPS and require bearer-authenticated access.
 - Authentication requirement: MCP tool execution must always resolve user context and enforce per-household/per-user data authorization before any read/write operation.
+- Rollout policy: validate each MCP client path for HTTP transport and authorization header propagation before removing any legacy compatibility path.
+- Rollback policy: if a required client fails authenticated HTTP MCP calls, keep server transport unchanged and park that client migration until SDK compatibility is confirmed.
+
+## Service Bus decision matrix
+Use Service Bus where asynchronous decoupling adds reliability or scale. Do not route all API or MCP traffic through queues by default.
+
+Use direct REST/MCP request-response when:
+- The caller needs immediate results.
+- Authorization depends on current authenticated user claims.
+- The operation is short-lived and deterministic.
+
+Use Service Bus when:
+- The workflow is long-running or retry-heavy.
+- Work must continue through downstream outages.
+- Queue-based load leveling is needed for bursty traffic.
+
+Mosaic Money application of this matrix:
+- Keep interactive taxonomy, review, and ledger-facing tool calls on direct API/MCP paths.
+- Keep async embeddings, ingestion fan-out, and deferred orchestration commands on message lanes.
 
 ## Guardrails and Constraints
 - Do not expose secrets or raw connection details through MCP tools.

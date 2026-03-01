@@ -53,9 +53,13 @@ blob-report/
 # Generated release-gate artifacts (ephemeral and may contain sensitive data)
 artifacts/release-gates/**
 
+# Keep all artifacts local-only; never track under this folder.
+/artifacts/**
+
 # Local-only partner triage credential stores
 src/MosaicMoney.Web/triage-partners.env.local
 src/MosaicMoney.Web/partner-triage.credentials.local.md
+src/MosaicMoney.Web/triage-idp-plaid.env.local
 
 # Environment files (block real secrets)
 .env
@@ -114,6 +118,3 @@ secrets.json
 .tmp/
 src/MosaicMoney.Web/build.log
 *.log
-artifacts/tmp/*
-artifacts/*/*
-/artifacts/*/*/*
