@@ -39,19 +39,18 @@ public static class PlaidLinkLifecycleEndpoints
             CreatePlaidLinkTokenRequest request,
             CancellationToken cancellationToken) =>
         {
-            var errors = ValidateCreateLinkTokenRequest(request).ToList();
-
-            if (request.HouseholdId.HasValue)
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                request.HouseholdId,
+                "The authenticated household member is not active and cannot create Plaid link tokens for this household.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
             {
-                var householdExists = await dbContext.Households
-                    .AsNoTracking()
-                    .AnyAsync(x => x.Id == request.HouseholdId.Value, cancellationToken);
-
-                if (!householdExists)
-                {
-                    errors.Add(new ApiValidationError(nameof(request.HouseholdId), "HouseholdId does not exist."));
-                }
+                return accessScope.ErrorResult;
             }
+
+            var errors = ValidateCreateLinkTokenRequest(request).ToList();
 
             if (errors.Count > 0)
             {
@@ -62,7 +61,7 @@ public static class PlaidLinkLifecycleEndpoints
             {
                 var result = await lifecycleService.IssueLinkTokenAsync(
                     new IssuePlaidLinkTokenCommand(
-                        request.HouseholdId,
+                        accessScope.HouseholdId,
                         request.ClientUserId,
                         request.RedirectUri,
                         request.Products,
@@ -91,16 +90,42 @@ public static class PlaidLinkLifecycleEndpoints
 
         group.MapPost("/plaid/link-sessions/{sessionId:guid}/events", async (
             HttpContext httpContext,
+            MosaicMoneyDbContext dbContext,
             PlaidLinkLifecycleService lifecycleService,
             Guid sessionId,
             LogPlaidLinkSessionEventRequest request,
             CancellationToken cancellationToken) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot write Plaid link session events.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ValidateLogLinkSessionEventRequest(request).ToList();
 
             if (errors.Count > 0)
             {
                 return ApiValidation.ToValidationResult(httpContext, errors);
+            }
+
+            var sessionHouseholdId = await dbContext.PlaidLinkSessions
+                .AsNoTracking()
+                .Where(x => x.Id == sessionId)
+                .Select(x => x.HouseholdId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (sessionHouseholdId is null || sessionHouseholdId.Value != accessScope.HouseholdId)
+            {
+                return ApiValidation.ToNotFoundResult(
+                    httpContext,
+                    "plaid_link_session_not_found",
+                    "The requested Plaid link session was not found.");
             }
 
             var result = await lifecycleService.LogLinkSessionEventAsync(
@@ -131,19 +156,18 @@ public static class PlaidLinkLifecycleEndpoints
             ExchangePlaidPublicTokenRequest request,
             CancellationToken cancellationToken) =>
         {
-            var errors = ValidateExchangePublicTokenRequest(request).ToList();
-
-            if (request.HouseholdId.HasValue)
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                request.HouseholdId,
+                "The authenticated household member is not active and cannot exchange public tokens for this household.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
             {
-                var householdExists = await dbContext.Households
-                    .AsNoTracking()
-                    .AnyAsync(x => x.Id == request.HouseholdId.Value, cancellationToken);
-
-                if (!householdExists)
-                {
-                    errors.Add(new ApiValidationError(nameof(request.HouseholdId), "HouseholdId does not exist."));
-                }
+                return accessScope.ErrorResult;
             }
+
+            var errors = ValidateExchangePublicTokenRequest(request).ToList();
 
             PlaidLinkSession? linkSession = null;
             if (request.LinkSessionId.HasValue)
@@ -160,9 +184,8 @@ public static class PlaidLinkLifecycleEndpoints
                         "The requested Plaid link session was not found.");
                 }
 
-                if (request.HouseholdId.HasValue
-                    && linkSession.HouseholdId is Guid linkHouseholdId
-                    && linkHouseholdId != request.HouseholdId.Value)
+                if (linkSession.HouseholdId is Guid linkHouseholdId
+                    && linkHouseholdId != accessScope.HouseholdId)
                 {
                     errors.Add(new ApiValidationError(nameof(request.HouseholdId), "HouseholdId does not match the link session household."));
                 }
@@ -177,7 +200,7 @@ public static class PlaidLinkLifecycleEndpoints
             {
                 var result = await lifecycleService.ExchangePublicTokenAsync(
                     new ExchangePlaidPublicTokenCommand(
-                        request.HouseholdId,
+                        accessScope.HouseholdId,
                         request.LinkSessionId,
                         request.PublicToken,
                         request.InstitutionId,

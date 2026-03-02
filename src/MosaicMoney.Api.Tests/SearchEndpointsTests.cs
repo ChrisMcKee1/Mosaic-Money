@@ -28,6 +28,7 @@ public sealed class SearchEndpointsTests
 {
     private const string TestIssuer = "https://issuer.tests.mosaic-money.local";
     private const string TestSigningKey = "mosaic-money-search-tests-signing-key-2026";
+    private const string TestAuthProvider = "clerk";
     private const string TestAuthSubject = "search_endpoint_test_user";
 
     [Fact]
@@ -318,6 +319,8 @@ public sealed class SearchEndpointsTests
             var dbContext = scope.ServiceProvider.GetRequiredService<MosaicMoneyDbContext>();
             seed(dbContext);
             await dbContext.SaveChangesAsync();
+            await EnsureScopedAccessAsync(dbContext);
+            await dbContext.SaveChangesAsync();
         }
 
         return app;
@@ -340,6 +343,99 @@ public sealed class SearchEndpointsTests
             signingCredentials: signingCredentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static async Task EnsureScopedAccessAsync(MosaicMoneyDbContext dbContext)
+    {
+        var now = DateTime.UtcNow;
+        var user = await dbContext.MosaicUsers
+            .FirstOrDefaultAsync(x => x.AuthProvider == TestAuthProvider && x.AuthSubject == TestAuthSubject);
+        if (user is null)
+        {
+            user = new MosaicUser
+            {
+                Id = Guid.CreateVersion7(),
+                AuthProvider = TestAuthProvider,
+                AuthSubject = TestAuthSubject,
+                DisplayName = "Search Test User",
+                IsActive = true,
+                CreatedAtUtc = now,
+                LastSeenAtUtc = now,
+            };
+            dbContext.MosaicUsers.Add(user);
+        }
+
+        var accountRows = await dbContext.Accounts
+            .AsNoTracking()
+            .Select(x => new
+            {
+                x.Id,
+                x.HouseholdId,
+            })
+            .ToListAsync();
+
+        var householdMemberships = new Dictionary<Guid, HouseholdUser>();
+        foreach (var householdId in accountRows.Select(x => x.HouseholdId).Distinct())
+        {
+            if (!await dbContext.Households.AsNoTracking().AnyAsync(x => x.Id == householdId))
+            {
+                dbContext.Households.Add(new Household
+                {
+                    Id = householdId,
+                    Name = $"Search Household {householdId:N}",
+                    CreatedAtUtc = now,
+                });
+            }
+
+            var householdUser = await dbContext.HouseholdUsers
+                .FirstOrDefaultAsync(x =>
+                    x.HouseholdId == householdId
+                    && x.MosaicUserId == user.Id
+                    && x.MembershipStatus == HouseholdMembershipStatus.Active);
+
+            if (householdUser is null)
+            {
+                householdUser = new HouseholdUser
+                {
+                    Id = Guid.CreateVersion7(),
+                    HouseholdId = householdId,
+                    MosaicUserId = user.Id,
+                    DisplayName = "Search Scoped Member",
+                    MembershipStatus = HouseholdMembershipStatus.Active,
+                    ActivatedAtUtc = now,
+                };
+
+                dbContext.HouseholdUsers.Add(householdUser);
+            }
+
+            householdMemberships[householdId] = householdUser;
+        }
+
+        foreach (var account in accountRows)
+        {
+            if (!householdMemberships.TryGetValue(account.HouseholdId, out var householdUser))
+            {
+                continue;
+            }
+
+            var hasGrant = await dbContext.AccountMemberAccessEntries
+                .AnyAsync(x => x.AccountId == account.Id && x.HouseholdUserId == householdUser.Id);
+
+            if (hasGrant)
+            {
+                continue;
+            }
+
+            dbContext.AccountMemberAccessEntries.Add(new AccountMemberAccess
+            {
+                AccountId = account.Id,
+                HouseholdUserId = householdUser.Id,
+                AccessRole = AccountAccessRole.Owner,
+                Visibility = AccountAccessVisibility.Visible,
+                GrantedAtUtc = now,
+                LastModifiedAtUtc = now,
+            });
+        }
     }
 
     private sealed class StableEmbeddingGenerator : ITransactionEmbeddingGenerator

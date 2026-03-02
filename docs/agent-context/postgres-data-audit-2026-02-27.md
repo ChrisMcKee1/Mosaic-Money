@@ -1,8 +1,13 @@
 # PostgreSQL Data Audit (2026-02-27)
 
+
+## Agent Loading
+- Load when: referencing the 2026-02-27 PostgreSQL baseline during data-quality investigations.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 ## Status
 - Date: 2026-02-27
-- Environment: `pgsql/mosiac-connection/mosaicmoneydb`
+- Environment: `pgsql/mosaic-connection/mosaicmoneydb`
 - Audit mode: Read-only (no data mutations)
 - Delegation: Chunked table analysis via `mosaic-money-backend` subagent (Chunk A, Chunk B)
 
@@ -209,3 +214,4 @@ SELECT
     (SELECT COUNT(*) FROM public."PlaidLinkSessions" WHERE "LinkedItemId" IS NULL) AS link_sessions_without_item,
     (SELECT COUNT(*) FROM public."PlaidItemCredentials" WHERE "LastLinkedSessionId" IS NULL) AS credentials_without_last_linked_session;
 ```
+

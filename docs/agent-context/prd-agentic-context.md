@@ -1,5 +1,10 @@
 # PRD Agentic Context
 
+
+## Agent Loading
+- Load when: decomposing scope, acceptance criteria, and milestone delivery slices.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This file is the planner-friendly grounding summary for Mosaic Money.
 Canonical source: [Full PRD](../../project-plan/PRD.md)
 
@@ -23,7 +28,7 @@ Related detail docs:
 - Recurring forecasting and safe-to-spend projections.
 - Business-expense isolation from household budget burn.
 - Semantic retrieval over local PostgreSQL embeddings.
-- Runtime multi-agent expansion with specialist finance agents and durable workflow audit state.
+- Runtime agentic orchestration with durable workflow audit state, followed by specialist finance-agent expansion.
 - Conversational assistant surface that orchestrates backend agents with explicit human approval gates.
 - Household identity and account access policy controls.
 - Clerk-based authentication and authorization across web/mobile/API with Microsoft SSO and passkey readiness.
@@ -38,3 +43,4 @@ Related detail docs:
 ## Release Governance
 - MM-AI-11: release-gate policy and score thresholds are production blockers.
 - MM-AI-12: official evaluator replay + artifact publication must be green before final promotion.
+

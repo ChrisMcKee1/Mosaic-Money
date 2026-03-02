@@ -2,6 +2,11 @@
 
 Last updated: 2026-03-01
 
+
+## Agent Loading
+- Load when: bootstrapping or updating the minimal Foundry hosted agent configuration.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 ## Purpose
 Create or update the hosted Foundry agent (`Mosaic`) with only:
 - model deployment
@@ -158,3 +163,4 @@ dotnet user-secrets set "foundry-agent-endpoint" "<value>" --file src/apphost.cs
 
 dotnet user-secrets list --file src/apphost.cs
 ```
+

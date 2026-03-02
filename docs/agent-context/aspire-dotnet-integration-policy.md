@@ -1,5 +1,10 @@
 # Aspire .NET Integration Policy
 
+
+## Agent Loading
+- Load when: changing C#/.NET service wiring, EF/Npgsql integration, or Aspire package/registration patterns.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This policy applies to any C#/.NET service that runs under Mosaic Money Aspire orchestration.
 
 ## Why this exists
@@ -52,3 +57,4 @@ This policy applies to any C#/.NET service that runs under Mosaic Money Aspire o
 - Aspire PostgreSQL get started: `https://aspire.dev/integrations/databases/postgres/postgres-get-started/`
 - Aspire PostgreSQL EF Core get started: `https://aspire.dev/integrations/databases/efcore/postgres/postgresql-get-started/`
 - Mosaic Money secrets/config playbook: `docs/agent-context/secrets-and-configuration-playbook.md`
+

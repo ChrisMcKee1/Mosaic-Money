@@ -1,31 +1,23 @@
-# Multi-Agent Orchestration Sequences
+# Runtime Agent Orchestration Sequences
 
 ## Purpose
-Capture the primary runtime trigger flows for event-driven and conversational multi-agent orchestration.
+Capture the primary runtime trigger flows for event-driven and conversational agent orchestration as currently implemented.
 
-## Sequence A: Ingestion Completion to Classification Decision
+## Sequence A: Ingestion Completion Command Handling
 ```mermaid
 sequenceDiagram
     participant Ingestion as Ingestion Pipeline
     participant SB as Azure Service Bus
     participant Worker as MosaicMoney.Worker
-    participant Orch as ConversationOrchestratorAgent
-    participant Spec as Specialist Agents
-    participant Guard as PolicyAndExplainabilityGuard
     participant DB as PostgreSQL
-    participant EG as Azure Event Grid
+    participant EH as Azure Event Hubs
 
-    Ingestion->>SB: Publish ClassifyTransactionCommand
+    Ingestion->>SB: Publish ingestion_completed command envelope
     SB->>Worker: Deliver command
     Worker->>DB: Create AgentRun (runId, correlationId)
-    Worker->>Orch: Start specialist dispatch
-    Orch->>Spec: Invoke relevant specialist(s)
-    Spec-->>Orch: Return proposal + confidence + rationale
-    Orch->>Guard: Enforce ambiguity and external-action policy
-    Guard->>DB: Persist AgentRunStages + AgentDecisionAudit
-    Guard-->>Worker: Decision (Categorized or NeedsReview)
-    Worker->>DB: Update transaction review state
-    Worker->>EG: Emit TransactionDecisionChanged event
+    Worker->>DB: Persist AgentRunStage outcome
+    Worker->>DB: Finalize idempotency key
+    Worker->>EH: Emit runtime telemetry event
 ```
 
 ## Sequence B: Conversational Agent with Approval Card
@@ -35,22 +27,22 @@ sequenceDiagram
     participant API as MosaicMoney.Api Agent Endpoint
     participant SB as Azure Service Bus
     participant Worker as MosaicMoney.Worker
-    participant Orch as ConversationOrchestratorAgent
-    participant Guard as PolicyAndExplainabilityGuard
+    participant Foundry as FoundryAgentRuntimeService
     participant DB as PostgreSQL
 
     User->>API: POST /api/v1/agent/conversations/{id}/messages
-    API->>DB: Persist conversation message + context
-    API->>SB: Publish AgentOrchestrationCommand
+    API->>SB: Publish runtime-agent-message-posted command envelope
     SB->>Worker: Deliver command
-    Worker->>Orch: Build plan and dispatch specialists
-    Orch->>Guard: Validate policy and approval requirements
-    Guard->>DB: Persist AgentRun + approval-required signal
-    Worker-->>API: Stream agent update payload
+    Worker->>Foundry: Invoke Foundry agent with policy disposition
+    Foundry-->>Worker: Response summary + outcome code
+    Worker->>DB: Persist AgentRun/AgentRunStages + fail-closed status
+    User->>API: GET /api/v1/agent/conversations/{id}/stream
+    API->>DB: Read run-state stream records
     API-->>User: Render agent response + approval card
     User->>API: POST approve/reject action
-    API->>SB: Publish AgentApprovalCommand
+    API->>SB: Publish agent_approval_submitted command envelope
     SB->>Worker: Deliver approval command
+    Worker->>Foundry: Invoke Foundry agent for approval disposition
     Worker->>DB: Apply approved transition with audit trail
 ```
 

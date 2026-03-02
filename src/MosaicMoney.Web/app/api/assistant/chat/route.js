@@ -76,7 +76,7 @@ async function waitForRun(conversationId, correlationId) {
   let latestMatch = null;
 
   while (Date.now() - startedAt < RUN_POLL_TIMEOUT_MS) {
-    const stream = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/stream`);
+    const stream = await fetchApi(`/api/v1/agent/conversations/${conversationId}/stream`);
     const runs = Array.isArray(stream?.runs) ? stream.runs : [];
 
     const matchedRun = runs.find((run) => run?.correlationId === correlationId) ?? null;
@@ -154,7 +154,7 @@ export async function POST(request) {
       return Response.json({ error: "A user message is required." }, { status: 400 });
     }
 
-    const accepted = await fetchApi(`/api/v1/assistant/conversations/${conversationId}/messages`, {
+    const accepted = await fetchApi(`/api/v1/agent/conversations/${conversationId}/messages`, {
       method: "POST",
       body: JSON.stringify({
         message: userMessage,

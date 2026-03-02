@@ -11,6 +11,8 @@ using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
 using MosaicMoney.Api.Domain.Ledger.Plaid;
 using MosaicMoney.Api.Domain.Ledger.Taxonomy;
+using MosaicMoney.Api.Domain.Ledger.Transactions;
+using MosaicMoney.Api.Mcp;
 using Npgsql;
 using Pgvector.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -26,6 +28,7 @@ builder.AddNpgsqlDbContext<MosaicMoneyDbContext>(
     configureDbContextOptions: options => options.UseNpgsql(o => o.UseVector()));
 builder.Services.AddOpenApi();
 builder.Services.AddDataProtection();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddClerkJwtAuthentication(builder.Configuration);
 builder.Services.Configure<TaxonomyOperatorOptions>(builder.Configuration.GetSection(TaxonomyOperatorOptions.SectionName));
 builder.Services.AddSingleton(TimeProvider.System);
@@ -97,10 +100,17 @@ builder.Services.AddScoped<ITransactionEmbeddingGenerator>(serviceProvider =>
 });
 builder.Services.AddScoped<ITransactionEmbeddingQueueService, TransactionEmbeddingQueueService>();
 builder.Services.AddScoped<ITransactionEmbeddingQueueProcessor, TransactionEmbeddingQueueProcessor>();
+builder.Services.AddScoped<ITransactionAccessQueryService, TransactionAccessQueryService>();
+builder.Services.AddScoped<IMcpAuthenticatedContextAccessor, McpAuthenticatedContextAccessor>();
 builder.Services.AddHostedService<TransactionEmbeddingQueueBackgroundService>();
 builder.Services.AddHostedService<PlaidTransactionsSyncBackgroundService>();
 builder.Services.AddMcpServer()
-    .WithHttpTransport()
+    .WithHttpTransport(options =>
+    {
+        options.Stateless = false;
+        options.IdleTimeout = TimeSpan.FromMinutes(30);
+    })
+    .AddAuthorizationFilters()
     .WithToolsFromAssembly();
 
 var allowedCorsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];

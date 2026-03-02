@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Classification;
+using MosaicMoney.Api.Domain.Ledger.Transactions;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -13,13 +15,27 @@ public static class ClassificationOutcomeEndpoints
         group.MapGet("/transactions/{transactionId:guid}/classification-outcomes", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            Guid transactionId) =>
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
+            Guid transactionId,
+            CancellationToken cancellationToken) =>
         {
-            var transactionExists = await dbContext.EnrichedTransactions
-                .AsNoTracking()
-                .AnyAsync(x => x.Id == transactionId);
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot access classification outcomes.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
 
-            if (!transactionExists)
+            var transaction = await transactionAccessQueryService.GetReadableTransactionAsync(
+                accessScope.HouseholdUserId,
+                transactionId,
+                cancellationToken);
+
+            if (transaction is null)
             {
                 return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
             }
@@ -29,7 +45,7 @@ public static class ClassificationOutcomeEndpoints
                 .Where(x => x.TransactionId == transactionId)
                 .Include(x => x.StageOutputs)
                 .OrderByDescending(x => x.CreatedAtUtc)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return Results.Ok(outcomes.Select(ApiEndpointHelpers.MapClassificationOutcome).ToList());
         });
@@ -37,16 +53,41 @@ public static class ClassificationOutcomeEndpoints
         group.MapPost("/transactions/{transactionId:guid}/classification-outcomes/deterministic", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            IDeterministicClassificationOrchestrator deterministicClassificationOrchestrator,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
+            [FromServices] IDeterministicClassificationOrchestrator deterministicClassificationOrchestrator,
             Guid transactionId,
             Guid? needsReviewByUserId,
             CancellationToken cancellationToken) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot trigger deterministic classification.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
+            var transaction = await transactionAccessQueryService.GetReadableTransactionAsync(
+                accessScope.HouseholdUserId,
+                transactionId,
+                cancellationToken);
+            if (transaction is null)
+            {
+                return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
+            }
+
             if (needsReviewByUserId.HasValue)
             {
                 var reviewerExists = await dbContext.HouseholdUsers
                     .AsNoTracking()
-                    .AnyAsync(x => x.Id == needsReviewByUserId.Value, cancellationToken);
+                    .AnyAsync(x =>
+                        x.Id == needsReviewByUserId.Value
+                        && x.HouseholdId == accessScope.HouseholdId
+                        && x.MembershipStatus == HouseholdMembershipStatus.Active,
+                        cancellationToken);
 
                 if (!reviewerExists)
                 {
@@ -79,16 +120,41 @@ public static class ClassificationOutcomeEndpoints
         group.MapPost("/transactions/{transactionId:guid}/classification-outcomes/foundry", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            IFoundryClassificationOrchestrator foundryClassificationOrchestrator,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
+            [FromServices] IFoundryClassificationOrchestrator foundryClassificationOrchestrator,
             Guid transactionId,
             Guid? needsReviewByUserId,
             CancellationToken cancellationToken) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot trigger Foundry classification.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
+            var transaction = await transactionAccessQueryService.GetReadableTransactionAsync(
+                accessScope.HouseholdUserId,
+                transactionId,
+                cancellationToken);
+            if (transaction is null)
+            {
+                return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
+            }
+
             if (needsReviewByUserId.HasValue)
             {
                 var reviewerExists = await dbContext.HouseholdUsers
                     .AsNoTracking()
-                    .AnyAsync(x => x.Id == needsReviewByUserId.Value, cancellationToken);
+                    .AnyAsync(x =>
+                        x.Id == needsReviewByUserId.Value
+                        && x.HouseholdId == accessScope.HouseholdId
+                        && x.MembershipStatus == HouseholdMembershipStatus.Active,
+                        cancellationToken);
 
                 if (!reviewerExists)
                 {
@@ -122,8 +188,20 @@ public static class ClassificationOutcomeEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             Guid transactionId,
-            CreateClassificationOutcomeRequest request) =>
+            CreateClassificationOutcomeRequest request,
+            CancellationToken cancellationToken) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot create classification outcomes.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
 
             if (request.StageOutputs.Count == 0)
@@ -199,10 +277,16 @@ public static class ClassificationOutcomeEndpoints
                 }
             }
 
-            var transactionExists = await dbContext.EnrichedTransactions
+            var transaction = await dbContext.EnrichedTransactions
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == transactionId);
-            if (!transactionExists)
+                .Where(x => x.Id == transactionId)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Account.HouseholdId,
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (transaction is null || transaction.HouseholdId != accessScope.HouseholdId)
             {
                 return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
             }
@@ -221,9 +305,17 @@ public static class ClassificationOutcomeEndpoints
             {
                 var existingSubcategoryIds = await dbContext.Subcategories
                     .AsNoTracking()
+                    .Include(x => x.Category)
                     .Where(x => proposedSubcategoryIds.Contains(x.Id))
+                    .Where(x =>
+                        x.Category.OwnerType == CategoryOwnerType.Platform
+                        || (x.Category.OwnerType == CategoryOwnerType.HouseholdShared
+                            && x.Category.HouseholdId == accessScope.HouseholdId)
+                        || (x.Category.OwnerType == CategoryOwnerType.User
+                            && x.Category.HouseholdId == accessScope.HouseholdId
+                            && x.Category.OwnerUserId == accessScope.HouseholdUserId))
                     .Select(x => x.Id)
-                    .ToListAsync();
+                    .ToListAsync(cancellationToken);
 
                 var missingIds = proposedSubcategoryIds.Except(existingSubcategoryIds).ToList();
                 if (missingIds.Count > 0)
@@ -272,7 +364,7 @@ public static class ClassificationOutcomeEndpoints
             }
 
             dbContext.TransactionClassificationOutcomes.Add(outcome);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(cancellationToken);
 
             var persistedOutcome = await dbContext.TransactionClassificationOutcomes
                 .AsNoTracking()

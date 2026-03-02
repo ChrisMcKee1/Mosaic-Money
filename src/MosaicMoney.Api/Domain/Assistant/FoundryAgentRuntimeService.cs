@@ -889,7 +889,7 @@ public sealed class FoundryAgentRuntimeService(
                     request.Content = new StringContent(serializedBody, Encoding.UTF8, "application/json");
                 }
 
-                using var client = httpClientFactory.CreateClient(nameof(FoundryAgentRuntimeService));
+                var client = httpClientFactory.CreateClient(nameof(FoundryAgentRuntimeService));
                 using var response = await client.SendAsync(request, cancellationToken);
                 var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 

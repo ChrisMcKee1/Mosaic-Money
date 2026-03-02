@@ -2,11 +2,19 @@
 
 This folder contains project-local Agent Skills for Mosaic Money.
 
+Last audited: 2026-03-01
+
 ## Installation model
 - Project scope: skills are available from `.github/skills/`.
 - Structure rule: each skill lives in its own folder and contains `SKILL.md`.
 - Invocation model: skills can be auto-loaded by relevance or manually invoked via `/` commands.
 - Cross-directory note: additional shared skills may also exist under user/extension paths; see `docs/agent-context/skills-catalog.md` for full inventory and when-to-load guidance.
+
+## External Skill Locations To Audit
+- User-level Copilot skills: `C:\Users\chrismckee\.copilot\skills\`
+- User-level agent pack skills: `C:\Users\chrismckee\.agents\skills\`
+- Extension-provided skills under `.vscode-insiders\extensions\...`
+- Keep `docs/agent-context/skills-catalog.md` synchronized whenever these inventories change.
 
 ## Why these skills exist
 - They are curated from patterns in:

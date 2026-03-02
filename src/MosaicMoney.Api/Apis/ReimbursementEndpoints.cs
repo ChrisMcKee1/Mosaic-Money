@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
+using MosaicMoney.Api.Domain.Ledger.Transactions;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -13,8 +15,20 @@ public static class ReimbursementEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             string? status,
-            int take = 100) =>
+            int take = 100,
+            CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot access reimbursements.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = new List<ApiValidationError>();
             if (take is < 1 or > 500)
             {
@@ -39,7 +53,16 @@ public static class ReimbursementEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
-            var query = dbContext.ReimbursementProposals.AsNoTracking().AsQueryable();
+            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
+            var readableTransactionIds = dbContext.EnrichedTransactions
+                .AsNoTracking()
+                .Where(x => readableAccountIds.Contains(x.AccountId))
+                .Select(x => x.Id);
+
+            var query = dbContext.ReimbursementProposals
+                .AsNoTracking()
+                .Where(x => readableTransactionIds.Contains(x.IncomingTransactionId))
+                .AsQueryable();
             if (statusFilter.HasValue)
             {
                 query = query.Where(x => x.Status == statusFilter.Value);
@@ -48,7 +71,7 @@ public static class ReimbursementEndpoints
             var proposals = await query
                 .OrderByDescending(x => x.CreatedAtUtc)
                 .Take(take)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return Results.Ok(proposals.Select(ApiEndpointHelpers.MapReimbursement).ToList());
         });
@@ -56,8 +79,21 @@ public static class ReimbursementEndpoints
         group.MapPost("/reimbursements", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            CreateReimbursementProposalRequest request) =>
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
+            CreateReimbursementProposalRequest request,
+            CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot create reimbursement proposals.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
 
             if (request.ProposedAmount <= 0)
@@ -100,21 +136,84 @@ public static class ReimbursementEndpoints
             var incomingTransactionAmount = await dbContext.EnrichedTransactions
                 .AsNoTracking()
                 .Where(x => x.Id == request.IncomingTransactionId)
-                .Select(x => (decimal?)x.Amount)
-                .FirstOrDefaultAsync();
-            if (!incomingTransactionAmount.HasValue)
+                .Select(x => new
+                {
+                    x.Amount,
+                    x.AccountId,
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (incomingTransactionAmount is null)
             {
                 return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.IncomingTransactionId), "IncomingTransactionId does not exist.")]);
             }
 
-            if (request.RelatedTransactionId.HasValue && !await dbContext.EnrichedTransactions.AnyAsync(x => x.Id == request.RelatedTransactionId.Value))
+            if (!await transactionAccessQueryService.CanReadAccountAsync(
+                    accessScope.HouseholdUserId,
+                    incomingTransactionAmount.AccountId,
+                    cancellationToken))
             {
-                return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.RelatedTransactionId), "RelatedTransactionId does not exist.")]);
+                return ApiValidation.ToForbiddenResult(
+                    httpContext,
+                    "transaction_access_denied",
+                    "The authenticated household member does not have access to the incoming transaction.");
             }
 
-            if (request.RelatedTransactionSplitId.HasValue && !await dbContext.TransactionSplits.AnyAsync(x => x.Id == request.RelatedTransactionSplitId.Value))
+            if (request.RelatedTransactionId.HasValue)
             {
-                return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.RelatedTransactionSplitId), "RelatedTransactionSplitId does not exist.")]);
+                var relatedTransaction = await dbContext.EnrichedTransactions
+                    .AsNoTracking()
+                    .Where(x => x.Id == request.RelatedTransactionId.Value)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.AccountId,
+                    })
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (relatedTransaction is null)
+                {
+                    return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.RelatedTransactionId), "RelatedTransactionId does not exist.")]);
+                }
+
+                if (!await transactionAccessQueryService.CanReadAccountAsync(
+                        accessScope.HouseholdUserId,
+                        relatedTransaction.AccountId,
+                        cancellationToken))
+                {
+                    return ApiValidation.ToForbiddenResult(
+                        httpContext,
+                        "transaction_access_denied",
+                        "The authenticated household member does not have access to the related transaction.");
+                }
+            }
+
+            if (request.RelatedTransactionSplitId.HasValue)
+            {
+                var relatedSplit = await dbContext.TransactionSplits
+                    .AsNoTracking()
+                    .Where(x => x.Id == request.RelatedTransactionSplitId.Value)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.ParentTransaction.AccountId,
+                    })
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (relatedSplit is null)
+                {
+                    return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.RelatedTransactionSplitId), "RelatedTransactionSplitId does not exist.")]);
+                }
+
+                if (!await transactionAccessQueryService.CanReadAccountAsync(
+                        accessScope.HouseholdUserId,
+                        relatedSplit.AccountId,
+                        cancellationToken))
+                {
+                    return ApiValidation.ToForbiddenResult(
+                        httpContext,
+                        "transaction_access_denied",
+                        "The authenticated household member does not have access to the related transaction split.");
+                }
             }
 
             ReimbursementProposal? supersededProposal = null;
@@ -151,7 +250,7 @@ public static class ReimbursementEndpoints
                     .AsNoTracking()
                     .Where(x => x.IncomingTransactionId == request.IncomingTransactionId && x.LifecycleGroupId == lifecycleGroupId)
                     .Select(x => (int?)x.LifecycleOrdinal)
-                    .MaxAsync();
+                    .MaxAsync(cancellationToken);
 
                 lifecycleOrdinal = (maxOrdinalInGroup ?? 0) + 1;
             }
@@ -161,7 +260,8 @@ public static class ReimbursementEndpoints
                 .AnyAsync(x =>
                     x.IncomingTransactionId == request.IncomingTransactionId &&
                     x.LifecycleGroupId == lifecycleGroupId &&
-                    x.LifecycleOrdinal == lifecycleOrdinal);
+                    x.LifecycleOrdinal == lifecycleOrdinal,
+                    cancellationToken);
             if (lifecycleOrdinalExists)
             {
                 return ApiValidation.ToConflictResult(
@@ -173,11 +273,11 @@ public static class ReimbursementEndpoints
             var existingProposals = await dbContext.ReimbursementProposals
                 .AsNoTracking()
                 .Where(x => x.IncomingTransactionId == request.IncomingTransactionId)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var conflictRouting = ReimbursementConflictRoutingPolicy.Evaluate(new ReimbursementConflictRoutingInput(
                 request.IncomingTransactionId,
-                incomingTransactionAmount.Value,
+                incomingTransactionAmount.Amount,
                 request.RelatedTransactionId,
                 request.RelatedTransactionSplitId,
                 request.ProposedAmount,
@@ -222,7 +322,7 @@ public static class ReimbursementEndpoints
             };
 
             dbContext.ReimbursementProposals.Add(proposal);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(cancellationToken);
 
             return Results.Created($"/api/v1/reimbursements/{proposal.Id}", ApiEndpointHelpers.MapReimbursement(proposal));
         });
@@ -231,12 +331,28 @@ public static class ReimbursementEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             Guid id,
-            ReimbursementDecisionRequest request) =>
+            ReimbursementDecisionRequest request,
+            CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot decision reimbursements.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
             if (request.DecisionedByUserId == Guid.Empty)
             {
                 errors.Add(new ApiValidationError(nameof(request.DecisionedByUserId), "DecisionedByUserId is required."));
+            }
+            else if (request.DecisionedByUserId != accessScope.HouseholdUserId)
+            {
+                errors.Add(new ApiValidationError(nameof(request.DecisionedByUserId), "DecisionedByUserId must match the authenticated household member."));
             }
 
             if (!ReimbursementDecisionPolicy.TryParseAction(request.Action, out var action))
@@ -249,13 +365,20 @@ public static class ReimbursementEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
-            if (!await dbContext.HouseholdUsers.AnyAsync(x => x.Id == request.DecisionedByUserId))
-            {
-                return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.DecisionedByUserId), "DecisionedByUserId does not exist.")]);
-            }
-
+            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
             var proposal = await dbContext.ReimbursementProposals.FirstOrDefaultAsync(x => x.Id == id);
             if (proposal is null)
+            {
+                return ApiValidation.ToNotFoundResult(httpContext, "reimbursement_not_found", "The reimbursement proposal was not found.");
+            }
+
+            var incomingAccountId = await dbContext.EnrichedTransactions
+                .AsNoTracking()
+                .Where(x => x.Id == proposal.IncomingTransactionId)
+                .Select(x => (Guid?)x.AccountId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (!incomingAccountId.HasValue || !await readableAccountIds.AnyAsync(x => x == incomingAccountId.Value, cancellationToken))
             {
                 return ApiValidation.ToNotFoundResult(httpContext, "reimbursement_not_found", "The reimbursement proposal was not found.");
             }
@@ -268,15 +391,27 @@ public static class ReimbursementEndpoints
             ReimbursementDecisionPolicy.ApplyDecision(
                 proposal,
                 action,
-                request.DecisionedByUserId,
+                accessScope.HouseholdUserId,
                 DateTime.UtcNow,
                 request.UserNote,
                 request.AgentNote);
 
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(cancellationToken);
             return Results.Ok(ApiEndpointHelpers.MapReimbursement(proposal));
         });
 
         return group;
+    }
+
+    private static IQueryable<Guid> BuildReadableAccountIdsQuery(MosaicMoneyDbContext dbContext, Guid householdUserId)
+    {
+        return dbContext.AccountMemberAccessEntries
+            .AsNoTracking()
+            .Where(x =>
+                x.HouseholdUserId == householdUserId
+                && x.Visibility == AccountAccessVisibility.Visible
+                && x.AccessRole != AccountAccessRole.None
+                && x.HouseholdUser.MembershipStatus == HouseholdMembershipStatus.Active)
+            .Select(x => x.AccountId);
     }
 }

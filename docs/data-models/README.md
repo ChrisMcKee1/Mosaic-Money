@@ -3,8 +3,8 @@
 This folder contains canonical data model references for Mosaic Money.
 
 ## Files
-- `ledger-core-model.md`: single-entry ledger entities and relationships.
-- `identity-access-model.md`: household membership, ownership, and account access policy models.
+- `ledger-core-model.md`: single-entry ledger, classification, ingestion lineage, and runtime provenance entities.
+- `identity-access-model.md`: household membership, identity mapping, and account access control models.
 
 ## Rules
 - Keep ledger truth immutable and projection logic separate.

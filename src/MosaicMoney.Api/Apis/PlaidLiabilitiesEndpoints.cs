@@ -65,6 +65,17 @@ public static class PlaidLiabilitiesEndpoints
             int pageSize = 50,
             CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId,
+                "The authenticated household member is not active and cannot access liability accounts for this household.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ValidateLiabilityQuery(page, pageSize, snapshotLimit);
             if (errors.Count > 0)
             {
@@ -76,10 +87,7 @@ public static class PlaidLiabilitiesEndpoints
                 .Include(x => x.Snapshots)
                 .AsQueryable();
 
-            if (householdId.HasValue)
-            {
-                query = query.Where(x => x.HouseholdId == householdId.Value);
-            }
+            query = query.Where(x => x.HouseholdId == accessScope.HouseholdId);
 
             if (!includeInactive)
             {
@@ -104,6 +112,17 @@ public static class PlaidLiabilitiesEndpoints
             int pageSize = 50,
             CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot access liability snapshots.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ValidateLiabilitySnapshotQuery(page, pageSize);
             if (errors.Count > 0)
             {
@@ -112,7 +131,7 @@ public static class PlaidLiabilitiesEndpoints
 
             var accountExists = await dbContext.LiabilityAccounts
                 .AsNoTracking()
-                .AnyAsync(x => x.Id == liabilityAccountId, cancellationToken);
+                .AnyAsync(x => x.Id == liabilityAccountId && x.HouseholdId == accessScope.HouseholdId, cancellationToken);
 
             if (!accountExists)
             {

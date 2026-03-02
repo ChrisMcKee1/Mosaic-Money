@@ -1,11 +1,16 @@
 # Aspire Local Run Reliability (MM-ASP-05)
 
+
+## Agent Loading
+- Load when: starting, recovering, or diagnosing the local Aspire stack and resource health.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This runbook defines deterministic startup, diagnostics, and recovery paths for local Mosaic Money development on Aspire daily channel.
 
 ## Scope
 
 - AppHost: `src/apphost.cs` (file-based AppHost)
-- Resources: `postgres`, `mosaicmoneydb`, `api`, `worker`, `web`
+- Resources: `mosaic-postgres` (or external DB mode via `ConnectionStrings:mosaicmoneydb`), `mosaicmoneydb`, `api`, `worker`, `web`
 - CLI channel: Aspire daily (`aspire agent ...` commands)
 
 ## Daily preflight
@@ -380,3 +385,4 @@ References:
 - https://learn.microsoft.com/azure/cosmos-db/how-to-develop-emulator
 - https://learn.microsoft.com/azure/service-bus-messaging/test-locally-with-service-bus-emulator
 - https://learn.microsoft.com/azure/event-hubs/test-locally-with-event-hub-emulator
+

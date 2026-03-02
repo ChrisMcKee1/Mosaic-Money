@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
+using MosaicMoney.Api.Domain.Ledger.Transactions;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -13,11 +15,23 @@ public static class ReviewActionEndpoints
         group.MapPost("/review-actions", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            ITransactionEmbeddingQueueService embeddingQueueService,
-            ILoggerFactory loggerFactory,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
+            [FromServices] ITransactionEmbeddingQueueService embeddingQueueService,
+            [FromServices] ILoggerFactory loggerFactory,
             ReviewActionRequest request,
             CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot apply review actions.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var logger = loggerFactory.CreateLogger("MosaicMoney.Api.ReviewActions");
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
             var actionValue = request.Action?.Trim() ?? string.Empty;
@@ -53,21 +67,56 @@ public static class ReviewActionEndpoints
 
             var transaction = await dbContext.EnrichedTransactions
                 .Include(x => x.Splits)
-                .FirstOrDefaultAsync(x => x.Id == request.TransactionId);
+                .FirstOrDefaultAsync(x => x.Id == request.TransactionId, cancellationToken);
 
             if (transaction is null)
             {
                 return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The transaction for the requested review action was not found.");
             }
 
-            if (request.SubcategoryId.HasValue && !await dbContext.Subcategories.AnyAsync(x => x.Id == request.SubcategoryId.Value))
+            if (!await transactionAccessQueryService.CanReadAccountAsync(
+                    accessScope.HouseholdUserId,
+                    transaction.AccountId,
+                    cancellationToken))
             {
-                return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.SubcategoryId), "SubcategoryId does not exist.")]);
+                return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The transaction for the requested review action was not found.");
             }
 
-            if (request.NeedsReviewByUserId.HasValue && !await dbContext.HouseholdUsers.AnyAsync(x => x.Id == request.NeedsReviewByUserId.Value))
+            if (request.SubcategoryId.HasValue)
             {
-                return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.NeedsReviewByUserId), "NeedsReviewByUserId does not exist.")]);
+                var subcategoryExists = await dbContext.Subcategories
+                    .AsNoTracking()
+                    .Include(x => x.Category)
+                    .AnyAsync(x =>
+                        x.Id == request.SubcategoryId.Value
+                        && (x.Category.OwnerType == CategoryOwnerType.Platform
+                            || (x.Category.OwnerType == CategoryOwnerType.HouseholdShared
+                                && x.Category.HouseholdId == accessScope.HouseholdId)
+                            || (x.Category.OwnerType == CategoryOwnerType.User
+                                && x.Category.HouseholdId == accessScope.HouseholdId
+                                && x.Category.OwnerUserId == accessScope.HouseholdUserId)),
+                        cancellationToken);
+
+                if (!subcategoryExists)
+                {
+                    return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.SubcategoryId), "SubcategoryId does not exist or is not accessible in the current household scope.")]);
+                }
+            }
+
+            if (request.NeedsReviewByUserId.HasValue)
+            {
+                var reviewerExists = await dbContext.HouseholdUsers
+                    .AsNoTracking()
+                    .AnyAsync(x =>
+                        x.Id == request.NeedsReviewByUserId.Value
+                        && x.HouseholdId == accessScope.HouseholdId
+                        && x.MembershipStatus == HouseholdMembershipStatus.Active,
+                        cancellationToken);
+
+                if (!reviewerExists)
+                {
+                    return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.NeedsReviewByUserId), "NeedsReviewByUserId must reference an active member in the authenticated household.")]);
+                }
             }
 
             if (!TransactionReviewStateMachine.TryTransition(transaction.ReviewStatus, parsedAction, out var targetStatus))

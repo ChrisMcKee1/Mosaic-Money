@@ -1,5 +1,10 @@
 # Aspire JavaScript Frontend Policy
 
+
+## Agent Loading
+- Load when: changing Next.js/Vite/Node frontend wiring or AppHost JavaScript resource composition.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This policy applies to web frontends (Next.js, Vite, and Node-based JS apps) orchestrated by Aspire.
 
 ## Required hosting integration
@@ -51,3 +56,4 @@ This policy applies to web frontends (Next.js, Vite, and Node-based JS apps) orc
 - ApexCharts React docs:
   - `https://apexcharts.com/docs/react-charts/`
 - Mosaic Money secrets/config playbook: `docs/agent-context/secrets-and-configuration-playbook.md`
+

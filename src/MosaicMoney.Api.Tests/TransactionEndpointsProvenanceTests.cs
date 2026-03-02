@@ -20,6 +20,7 @@ using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
+using MosaicMoney.Api.Domain.Ledger.Transactions;
 using Xunit;
 
 namespace MosaicMoney.Api.Tests;
@@ -164,6 +165,7 @@ public sealed class TransactionEndpointsProvenanceTests
         builder.Services.AddDbContext<MosaicMoneyDbContext>(options =>
             options.UseInMemoryDatabase(testDatabaseName));
         builder.Services.AddScoped<TransactionProjectionMetadataQueryService>();
+        builder.Services.AddScoped<ITransactionAccessQueryService, TransactionAccessQueryService>();
         builder.Services.AddSingleton<ITransactionEmbeddingQueueService, NoOpTransactionEmbeddingQueueService>();
 
         builder.Services.AddClerkJwtAuthentication(builder.Configuration);

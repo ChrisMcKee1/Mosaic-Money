@@ -1,5 +1,10 @@
 # Semantic Search Pattern (Mosaic Money)
 
+
+## Agent Loading
+- Load when: implementing transaction search, embedding lifecycle, or hybrid semantic retrieval behavior.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This document defines the canonical semantic-search implementation pattern for Mosaic Money transaction search APIs.
 
 Use this pattern for any search or typeahead surface in web/mobile that queries backend transaction data.
@@ -120,3 +125,4 @@ If domain synonyms are needed later, they must be data-driven (persisted and man
   - https://learn.microsoft.com/azure/postgresql/extensions/how-to-optimize-performance-pgvector
 - Aspire docs: PostgreSQL EF Core integrations
   - https://aspire.dev/integrations/databases/efcore/postgres/postgresql-get-started/
+

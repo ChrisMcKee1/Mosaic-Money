@@ -133,8 +133,8 @@ public sealed class FoundryAgentRuntimeServiceTests
         Assert.Equal("agent_run_completed", result.OutcomeCode);
         Assert.NotNull(result.ResponseSummary);
         Assert.Contains("Foundry says hello", result.ResponseSummary);
-        Assert.Contains("/agents", handler.RequestedPaths);
-        Assert.Contains("/openai/v1/responses", handler.RequestedPaths);
+        Assert.Contains(handler.RequestedPaths, path => path.EndsWith("/agents", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(handler.RequestedPaths, path => path.EndsWith("/openai/v1/responses", StringComparison.OrdinalIgnoreCase));
     }
 
     private sealed class StubHttpClientFactory(HttpClient httpClient) : IHttpClientFactory

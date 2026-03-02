@@ -4,6 +4,7 @@
 - `MosaicMoney.Web` (Next.js 16)
 - `MosaicMoney.Mobile` (Expo SDK 55)
 - `MosaicMoney.Api` (.NET 10 Minimal API)
+- `MosaicMoney.Api` MCP HTTP endpoint (`/api/mcp`) with authenticated taxonomy and transaction tools
 - `MosaicMoney.Worker` (.NET 10 background ingestion)
 - PostgreSQL (`mosaicmoneydb`) with extension path for `pgvector` and `azure_ai`
 - Aspire AppHost orchestrating local and deployment topology
@@ -13,12 +14,17 @@ flowchart TB
     subgraph Client
         Web[Web Next.js 16]
         Mobile[Mobile Expo 55]
+        McpClients[MCP Clients]
+    end
+
+    subgraph Identity
+        IdP[Configured Auth Provider\nClerk by default]
     end
 
     subgraph AppHost[Aspire AppHost]
         Api[API]
         Worker[Worker]
-        Mcp[MCP Diagnostics]
+        McpTransport[MCP HTTP Transport\n/api/mcp]
     end
 
     subgraph Data
@@ -27,11 +33,12 @@ flowchart TB
 
     Web <--> Api
     Mobile <--> Api
+    McpClients <--> McpTransport
+    McpTransport --> Api
+    IdP --> Api
     Api <--> Pg
     Worker <--> Pg
     Worker --> Plaid[Plaid]
-    Mcp -.logs/traces.-> Api
-    Mcp -.logs/traces.-> Worker
 ```
 
 ## Connectivity Contract

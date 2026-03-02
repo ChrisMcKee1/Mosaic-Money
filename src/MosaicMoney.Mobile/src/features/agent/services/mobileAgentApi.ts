@@ -36,7 +36,7 @@ export async function postAgentMessage(
   signal?: AbortSignal,
 ): Promise<AgentCommandAcceptedDto> {
   return requestJson<AgentCommandAcceptedDto, AgentConversationMessageRequest>(
-    `/api/v1/assistant/conversations/${encodeURIComponent(conversationId)}/messages`,
+    `/api/v1/agent/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: "POST",
       body: request,
@@ -52,7 +52,7 @@ export async function submitAgentApproval(
   signal?: AbortSignal,
 ): Promise<AgentCommandAcceptedDto> {
   return requestJson<AgentCommandAcceptedDto, AgentApprovalRequest>(
-    `/api/v1/assistant/conversations/${encodeURIComponent(conversationId)}/approvals/${encodeURIComponent(approvalId)}`,
+    `/api/v1/agent/conversations/${encodeURIComponent(conversationId)}/approvals/${encodeURIComponent(approvalId)}`,
     {
       method: "POST",
       body: request,
@@ -76,7 +76,7 @@ export async function getAgentConversationStream(
   const suffix = query.size > 0 ? `?${query.toString()}` : "";
 
   return requestJson<AgentConversationStreamDto>(
-    `/api/v1/assistant/conversations/${encodeURIComponent(conversationId)}/stream${suffix}`,
+    `/api/v1/agent/conversations/${encodeURIComponent(conversationId)}/stream${suffix}`,
     {
       signal: options?.signal,
     },

@@ -1,5 +1,10 @@
 # Clerk Tenant and Provider Runbook (M8 MM-ASP-11)
 
+
+## Agent Loading
+- Load when: configuring Clerk tenant/provider keys, issuer, SSO, passkey readiness, and runtime env contracts.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 ## Purpose
 This runbook defines the Clerk tenant/provider setup and runtime configuration contract for Mosaic Money across API, web, and mobile surfaces.
 
@@ -127,3 +132,4 @@ dotnet user-secrets list --file src/apphost.cs
 3. `src/MosaicMoney.Web/.env.example` and `src/MosaicMoney.Mobile/.env.example` include Clerk placeholders only.
 4. `src/MosaicMoney.Api/appsettings.json` includes Clerk placeholders only.
 5. No Clerk credentials are committed.
+

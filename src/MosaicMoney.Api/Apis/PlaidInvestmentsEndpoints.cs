@@ -9,16 +9,25 @@ public static class PlaidInvestmentsEndpoints
     public static RouteGroupBuilder MapPlaidInvestmentsEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/investments/accounts", async (
+            HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             Guid? householdId,
-            string? environment) =>
+            string? environment,
+            CancellationToken cancellationToken) =>
         {
-            var query = dbContext.InvestmentAccounts.AsNoTracking().AsQueryable();
-
-            if (householdId.HasValue)
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId,
+                "The authenticated household member is not active and cannot access investment accounts for this household.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
             {
-                query = query.Where(x => x.HouseholdId == householdId.Value);
+                return accessScope.ErrorResult;
             }
+
+            var query = dbContext.InvestmentAccounts.AsNoTracking().AsQueryable();
+            query = query.Where(x => x.HouseholdId == accessScope.HouseholdId);
 
             if (!string.IsNullOrWhiteSpace(environment))
             {
@@ -27,7 +36,7 @@ public static class PlaidInvestmentsEndpoints
 
             var accounts = await query
                 .OrderBy(x => x.Name)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return Results.Ok(accounts.Select(ApiEndpointHelpers.MapInvestmentAccount).ToList());
         });
@@ -35,9 +44,23 @@ public static class PlaidInvestmentsEndpoints
         group.MapGet("/investments/accounts/{accountId:guid}/holdings", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            Guid accountId) =>
+            Guid accountId,
+            CancellationToken cancellationToken) =>
         {
-            var accountExists = await dbContext.InvestmentAccounts.AnyAsync(x => x.Id == accountId);
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot access investment holdings.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
+            var accountExists = await dbContext.InvestmentAccounts
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == accountId && x.HouseholdId == accessScope.HouseholdId, cancellationToken);
             if (!accountExists)
             {
                 return ApiValidation.ToNotFoundResult(httpContext, "account_not_found", "The requested investment account was not found.");
@@ -47,7 +70,7 @@ public static class PlaidInvestmentsEndpoints
                 .AsNoTracking()
                 .Where(x => x.InvestmentAccountId == accountId)
                 .OrderByDescending(x => x.CapturedAtUtc)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             // Group by security ID to get the latest snapshot per holding
             var latestHoldings = holdings

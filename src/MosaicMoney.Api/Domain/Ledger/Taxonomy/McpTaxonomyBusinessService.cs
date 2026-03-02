@@ -33,23 +33,20 @@ public interface IMcpTaxonomyBusinessService
 {
     Task<IReadOnlyList<McpScopedSubcategoryDto>> ListScopedSubcategoriesAsync(
         string scope,
-        Guid? householdId,
-        Guid? ownerUserId,
+        Guid householdUserId,
         bool includeArchived,
         CancellationToken cancellationToken = default);
 
     Task<McpCategoryMutationResult> CreateCategoryAsync(
         string scope,
         string name,
-        Guid householdId,
-        Guid? ownerUserId,
-        Guid approvedByHouseholdUserId,
+        Guid householdUserId,
         CancellationToken cancellationToken = default);
 
     Task<McpClassificationMutationResult> ApplyClassificationAsync(
         Guid transactionId,
         Guid subcategoryId,
-        Guid approvedByHouseholdUserId,
+        Guid householdUserId,
         string? rationale,
         CancellationToken cancellationToken = default);
 }
@@ -61,19 +58,19 @@ public sealed class McpTaxonomyBusinessService(
 {
     public async Task<IReadOnlyList<McpScopedSubcategoryDto>> ListScopedSubcategoriesAsync(
         string scope,
-        Guid? householdId,
-        Guid? ownerUserId,
+        Guid householdUserId,
         bool includeArchived,
         CancellationToken cancellationToken = default)
     {
         var resolvedScope = ResolveScope(scope);
+        var member = await GetActiveMemberAsync(householdUserId, cancellationToken);
 
         var query = dbContext.Subcategories
             .AsNoTracking()
             .Include(x => x.Category)
             .Where(x => includeArchived || (!x.IsArchived && !x.Category.IsArchived));
 
-        query = ApplyScope(query, resolvedScope, householdId, ownerUserId);
+        query = ApplyScope(query, resolvedScope, member.HouseholdId, householdUserId);
 
         return await query
             .OrderBy(x => x.Category.DisplayOrder)
@@ -93,9 +90,7 @@ public sealed class McpTaxonomyBusinessService(
     public async Task<McpCategoryMutationResult> CreateCategoryAsync(
         string scope,
         string name,
-        Guid householdId,
-        Guid? ownerUserId,
-        Guid approvedByHouseholdUserId,
+        Guid householdUserId,
         CancellationToken cancellationToken = default)
     {
         var resolvedScope = ResolveScope(scope);
@@ -104,12 +99,9 @@ public sealed class McpTaxonomyBusinessService(
             throw new InvalidOperationException("Platform scope categories cannot be created through MCP mutation tools.");
         }
 
-        if (resolvedScope == CategoryOwnerType.User && !ownerUserId.HasValue)
-        {
-            throw new InvalidOperationException("OwnerUserId is required for User scope category creation.");
-        }
-
-        await ValidateApproverInHouseholdAsync(approvedByHouseholdUserId, householdId, cancellationToken);
+        var member = await GetActiveMemberAsync(householdUserId, cancellationToken);
+        var householdId = member.HouseholdId;
+        Guid? ownerUserId = resolvedScope == CategoryOwnerType.User ? householdUserId : null;
 
         var duplicateExists = await dbContext.Categories
             .AsNoTracking()
@@ -159,7 +151,7 @@ public sealed class McpTaxonomyBusinessService(
             scopeOwnerType: category.OwnerType,
             householdId: category.HouseholdId,
             ownerUserId: category.OwnerUserId,
-            performedByHouseholdUserId: approvedByHouseholdUserId,
+            performedByHouseholdUserId: householdUserId,
             metadata: new { source = "mcp_tool", scope = category.OwnerType.ToString() });
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -176,7 +168,7 @@ public sealed class McpTaxonomyBusinessService(
     public async Task<McpClassificationMutationResult> ApplyClassificationAsync(
         Guid transactionId,
         Guid subcategoryId,
-        Guid approvedByHouseholdUserId,
+        Guid householdUserId,
         string? rationale,
         CancellationToken cancellationToken = default)
     {
@@ -185,7 +177,11 @@ public sealed class McpTaxonomyBusinessService(
             .FirstOrDefaultAsync(x => x.Id == transactionId, cancellationToken)
             ?? throw new InvalidOperationException("Transaction not found.");
 
-        await ValidateApproverInHouseholdAsync(approvedByHouseholdUserId, transaction.Account.HouseholdId, cancellationToken);
+        var member = await GetActiveMemberAsync(householdUserId, cancellationToken);
+        if (member.HouseholdId != transaction.Account.HouseholdId)
+        {
+            throw new InvalidOperationException("The authenticated household member cannot modify transactions outside their household.");
+        }
 
         var subcategory = await dbContext.Subcategories
             .AsNoTracking()
@@ -198,7 +194,7 @@ public sealed class McpTaxonomyBusinessService(
                 && subcategory.Category.HouseholdId == transaction.Account.HouseholdId)
             || (subcategory.Category.OwnerType == CategoryOwnerType.User
                 && subcategory.Category.HouseholdId == transaction.Account.HouseholdId
-                && subcategory.Category.OwnerUserId == approvedByHouseholdUserId);
+                && subcategory.Category.OwnerUserId == householdUserId);
 
         if (!scopeAccessible)
         {
@@ -291,22 +287,21 @@ public sealed class McpTaxonomyBusinessService(
         };
     }
 
-    private async Task ValidateApproverInHouseholdAsync(
+    private async Task<HouseholdUser> GetActiveMemberAsync(
         Guid householdUserId,
-        Guid householdId,
         CancellationToken cancellationToken)
     {
-        var exists = await dbContext.HouseholdUsers
-            .AsNoTracking()
-            .AnyAsync(x =>
+        var member = await dbContext.HouseholdUsers
+            .FirstOrDefaultAsync(x =>
                 x.Id == householdUserId
-                && x.HouseholdId == householdId
                 && x.MembershipStatus == HouseholdMembershipStatus.Active,
                 cancellationToken);
 
-        if (!exists)
+        if (member is null)
         {
-            throw new InvalidOperationException("ApprovedByHouseholdUserId is not an active member of the target household.");
+            throw new InvalidOperationException("The authenticated household member context is not active.");
         }
+
+        return member;
     }
 }

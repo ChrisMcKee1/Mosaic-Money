@@ -1,5 +1,10 @@
 # UI/UX Audit Correlation and Mobile Alignment (2026-02-24)
 
+
+## Agent Loading
+- Load when: reviewing historical web/mobile UX findings and validating follow-up regressions.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 ## Scope
 This report captures:
 - Planner-led UI/UX audit of the web M6 implementation.
@@ -148,3 +153,4 @@ Following redesign-quality concerns around dashboarding/reporting controls, plan
 - Build reusable chart config primitives per surface instead of per-screen ad hoc options.
 - Keep color/typography strictly token-driven and remove one-off chart-local styling.
 - Add interaction and snapshot coverage for key chart widgets in web/mobile validation suites.
+

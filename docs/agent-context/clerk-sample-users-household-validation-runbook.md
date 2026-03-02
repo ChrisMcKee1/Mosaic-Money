@@ -1,5 +1,10 @@
 # Clerk Sample Users Household Validation Runbook (M8)
 
+
+## Agent Loading
+- Load when: running two-persona Clerk sample-user and household validation workflows.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 ## Purpose
 This runbook defines a repeatable local workflow for creating two sample Clerk users (for example, spouse/partner personas), mapping them to a single Mosaic Money household, and validating the setup across database and UI flows.
 
@@ -323,3 +328,4 @@ Capture these artifacts before moving related tasks from `In Review` to `Done`:
 1. Never commit Clerk keys, JWTs, or `.env.local` files.
 2. Keep sample users in Clerk test/development tenants only.
 3. When validation is complete, either disable sample users in Clerk or rotate test credentials.
+

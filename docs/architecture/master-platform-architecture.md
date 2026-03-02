@@ -1,13 +1,13 @@
 # Master Platform Architecture
 
-Last updated: 2026-02-27
+Last updated: 2026-03-02
 
 ## Purpose
 This document provides the platform-level architecture diagrams that span every major Mosaic Money surface and runtime boundary:
 
 - Web and mobile frontends
 - API and worker services
-- Multi-agent runtime
+- Worker-orchestrated agent runtime (Foundry-backed)
 - Eventing services
 - PostgreSQL persistence
 - External integrations and identity
@@ -26,27 +26,21 @@ flowchart LR
     end
 
     subgraph Edge[Application Edge]
-        Api[MosaicMoney.Api\nMinimal APIs + AuthZ + Contracts]
+        Api[MosaicMoney.Api\nMinimal APIs + MCP + AuthZ + Scope Resolution]
     end
 
     subgraph Runtime[Async and Agent Runtime]
         Worker[MosaicMoney.Worker\nCommand Handlers + Scheduling]
 
-        subgraph Agents[Multi-Agent Domain]
-            Orch[ConversationOrchestratorAgent]
-            Cat[CategorizationSpecialistAgent]
-            Transfer[TransferDetectionSpecialistAgent]
-            Income[IncomeNormalizationSpecialistAgent]
-            Debt[DebtQualitySpecialistAgent]
-            Invest[InvestmentClassificationSpecialistAgent]
-            Anomaly[AnomalyDetectionSpecialistAgent]
-            Guard[PolicyAndExplainabilityGuard]
+        subgraph Agents[Foundry Runtime Domain]
+            FoundryRuntime[FoundryAgentRuntimeService\nBootstrap + Invoke + Fail-Closed Routing]
+            FoundryAgent[Foundry Project Agent\nMosaic]
         end
     end
 
     subgraph Eventing[Eventing Backbone]
         SB[Azure Service Bus\nDurable Command Lanes]
-        EG[Azure Event Grid\nFan-out Domain Events]
+        EG[Azure Event Grid\nFan-out Domain Events (planned lane)]
         EH[Azure Event Hubs\nTelemetry + Replay]
     end
 
@@ -67,28 +61,15 @@ flowchart LR
 
     Api --> SB
     SB --> Worker
-    Worker --> Orch
-
-    Orch --> Cat
-    Orch --> Transfer
-    Orch --> Income
-    Orch --> Debt
-    Orch --> Invest
-    Orch --> Anomaly
-
-    Cat --> Guard
-    Transfer --> Guard
-    Income --> Guard
-    Debt --> Guard
-    Invest --> Guard
-    Anomaly --> Guard
+    Worker --> FoundryRuntime
+    FoundryRuntime --> FoundryAgent
 
     Api --> Pg
     Worker --> Pg
-    Guard --> Pg
+    FoundryRuntime --> Pg
     Pg <--> Vec
 
-    Worker --> EG
+    Worker -.planned publish path.-> EG
     Worker --> EH
     Api --> EH
 
@@ -192,9 +173,11 @@ flowchart LR
     subgraph ApiHost[MosaicMoney.Api ASP.NET Core Host]
         RestLayer[Minimal API Endpoints]
         McpLayer[MCP Tool Endpoints\nJSON-RPC 2.0]
+        ScopeLayer[Household Scope Resolvers\nHouseholdMemberContextResolver + AuthenticatedHouseholdScopeResolver + McpAuthenticatedContextAccessor]
     end
 
     subgraph SharedCore[Shared Core Services]
+        TxAccess[ITransactionAccessQueryService]
         UseCase[Use Case Services]
         Policy[Policy and Validation]
     end
@@ -207,6 +190,10 @@ flowchart LR
     RestClient --> RestLayer
     McpClient --> McpLayer
 
+    RestLayer --> ScopeLayer
+    McpLayer --> ScopeLayer
+    ScopeLayer --> TxAccess
+    TxAccess --> UseCase
     RestLayer --> UseCase
     McpLayer --> UseCase
     UseCase --> Policy
@@ -219,6 +206,6 @@ See `docs/architecture/unified-api-mcp-entrypoints.md` for implementation constr
 
 ## Coverage Notes
 - This file is the master topology view and intentionally overlaps with deeper implementation docs.
-- Use `multi-agent-system-topology.md` and `multi-agent-orchestration-sequences.md` for execution-level detail.
+- Use `multi-agent-system-topology.md` and `multi-agent-orchestration-sequences.md` for runtime execution detail (current as-built and planned expansion notes).
 - Use `unified-api-mcp-entrypoints.md` for the REST+MCP shared-core architecture standard.
 - Keep this document synchronized when adding or removing a service, queue, stream, agent, or major integration boundary.

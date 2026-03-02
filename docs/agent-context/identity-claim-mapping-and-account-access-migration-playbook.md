@@ -1,5 +1,10 @@
 # MM-ASP-08 and MM-ASP-09 Playbook
 
+
+## Agent Loading
+- Load when: changing identity claim mapping, household-member resolution, or account-access migration behavior.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 ## Purpose
 This playbook is the implementation runbook for:
 - `MM-ASP-08`: Identity claim mapping configuration documented and reproducible across AppHost/API/Web/Mobile for local and CI.
@@ -187,3 +192,4 @@ dotnet ef database update 20260224211700_AddInvestmentsAndRecurringEnrichment --
 3. Backfill metrics and review queue counts are captured.
 4. API member-context fail-closed checks are captured.
 5. Rollback command path tested in a non-production environment with evidence.
+

@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
+using MosaicMoney.Api.Domain.Ledger.Transactions;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -13,9 +15,10 @@ public static class PlaidIngestionEndpoints
         group.MapPost("/ingestion/plaid-delta", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            PlaidDeltaIngestionService ingestionService,
-            ITransactionEmbeddingQueueService embeddingQueueService,
-            ILoggerFactory loggerFactory,
+            [FromServices] PlaidDeltaIngestionService ingestionService,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
+            [FromServices] ITransactionEmbeddingQueueService embeddingQueueService,
+            [FromServices] ILoggerFactory loggerFactory,
             IngestPlaidDeltaRequest request,
             CancellationToken cancellationToken) =>
         {
@@ -59,12 +62,34 @@ public static class PlaidIngestionEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot ingest transactions.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var accountExists = await dbContext.Accounts
                 .AsNoTracking()
                 .AnyAsync(x => x.Id == request.AccountId, cancellationToken);
             if (!accountExists)
             {
                 return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.AccountId), "AccountId does not exist.")]);
+            }
+
+            if (!await transactionAccessQueryService.CanReadAccountAsync(
+                    accessScope.HouseholdUserId,
+                    request.AccountId,
+                    cancellationToken))
+            {
+                return ApiValidation.ToForbiddenResult(
+                    httpContext,
+                    "account_access_denied",
+                    "The authenticated household member does not have access to the requested account.");
             }
 
             var ingestionRequest = new PlaidDeltaIngestionRequest(

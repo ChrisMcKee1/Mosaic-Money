@@ -1,6 +1,13 @@
 # Mosaic Money Skill Catalog
 
+
+## Agent Loading
+- Load when: selecting relevant skills for a task or auditing the available skill inventory.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This catalog tracks all currently available skills across repository, user, and extension locations, and maps them to Mosaic Money agents for just-in-time loading.
+
+Last audited: 2026-03-01
 
 Canonical project-local location: `.github/skills/`. If skills are installed into `.agents/skills/` by the Skills CLI, copy/migrate them into `.github/skills/` and reference the repo-local path in agent files.
 
@@ -52,6 +59,7 @@ Canonical project-local location: `.github/skills/`. If skills are installed int
 - `azure-ai`: Azure AI Search/Speech/OpenAI/Doc Intelligence patterns.
 - `azure-aigateway`: APIM as AI Gateway for model governance and control.
 - `azure-compliance`: compliance/security posture audit and azqr-style reviews.
+- `azure-compute`: VM/VMSS sizing and trade-off guidance.
 - `azure-cost-optimization`: identify spend reduction opportunities and cost waste.
 - `azure-deploy`: execution phase for deploying prepared Azure workloads.
 - `azure-diagnostics`: production troubleshooting for Azure workloads/logs.
@@ -135,3 +143,4 @@ Canonical project-local location: `.github/skills/`. If skills are installed int
 - Repo-local skill directories are under `.github/skills/<skill-name>/SKILL.md`.
 - Agent files explicitly instruct when to load skills before implementation.
 - Skill docs separate baseline vs on-demand loading so context is pulled only when needed.
+

@@ -1,5 +1,10 @@
 # Mosaic Money Custom Instructions Catalog
 
+
+## Agent Loading
+- Load when: adding, removing, or restructuring custom instruction files and policy layering.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This catalog records instruction-file decisions after reviewing VS Code customization docs and the Awesome Copilot instructions repository.
 
 ## File types reviewed
@@ -37,3 +42,4 @@ This catalog records instruction-file decisions after reviewing VS Code customiz
 - `.github/instructions/mosaic-money-typescript.instructions.md`
 - `.github/instructions/mosaic-money-security.instructions.md`
 - `.github/instructions/mosaic-money-doc-sync.instructions.md`
+

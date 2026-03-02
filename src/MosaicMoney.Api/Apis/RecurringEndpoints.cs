@@ -10,16 +10,25 @@ public static class RecurringEndpoints
     public static RouteGroupBuilder MapRecurringEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/recurring", async (
+            HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             Guid? householdId,
-            bool? isActive) =>
+            bool? isActive,
+            CancellationToken cancellationToken) =>
         {
-            var query = dbContext.RecurringItems.AsNoTracking().AsQueryable();
-
-            if (householdId.HasValue)
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId,
+                "The authenticated household member is not active and cannot access recurring items for this household.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
             {
-                query = query.Where(x => x.HouseholdId == householdId.Value);
+                return accessScope.ErrorResult;
             }
+
+            var query = dbContext.RecurringItems.AsNoTracking().AsQueryable();
+            query = query.Where(x => x.HouseholdId == accessScope.HouseholdId);
 
             if (isActive.HasValue)
             {
@@ -29,7 +38,7 @@ public static class RecurringEndpoints
             var items = await query
                 .OrderBy(x => x.NextDueDate)
                 .ThenBy(x => x.MerchantName)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return Results.Ok(items.Select(ApiEndpointHelpers.MapRecurringItem).ToList());
         });
@@ -37,8 +46,20 @@ public static class RecurringEndpoints
         group.MapPost("/recurring", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            CreateRecurringItemRequest request) =>
+            CreateRecurringItemRequest request,
+            CancellationToken cancellationToken) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                request.HouseholdId,
+                "The authenticated household member is not active and cannot create recurring items for this household.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
 
             if (!ApiEndpointHelpers.TryParseEnum<RecurringFrequency>(request.Frequency, out var frequency))
@@ -76,16 +97,10 @@ public static class RecurringEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
-            var householdExists = await dbContext.Households.AnyAsync(x => x.Id == request.HouseholdId);
-            if (!householdExists)
-            {
-                return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.HouseholdId), "HouseholdId does not exist.")]);
-            }
-
             var recurringItem = new RecurringItem
             {
                 Id = Guid.NewGuid(),
-                HouseholdId = request.HouseholdId,
+                HouseholdId = accessScope.HouseholdId,
                 MerchantName = request.MerchantName.Trim(),
                 ExpectedAmount = decimal.Round(request.ExpectedAmount, 2),
                 IsVariable = request.IsVariable,
@@ -107,7 +122,7 @@ public static class RecurringEndpoints
             };
 
             dbContext.RecurringItems.Add(recurringItem);
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(cancellationToken);
 
             return Results.Created($"/api/v1/recurring/{recurringItem.Id}", ApiEndpointHelpers.MapRecurringItem(recurringItem));
         });
@@ -116,8 +131,20 @@ public static class RecurringEndpoints
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             Guid id,
-            UpdateRecurringItemRequest request) =>
+            UpdateRecurringItemRequest request,
+            CancellationToken cancellationToken) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot update recurring items.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var errors = ApiValidation.ValidateDataAnnotations(request).ToList();
 
             RecurringFrequency? frequency = null;
@@ -172,8 +199,13 @@ public static class RecurringEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
-            var recurringItem = await dbContext.RecurringItems.FirstOrDefaultAsync(x => x.Id == id);
+            var recurringItem = await dbContext.RecurringItems.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
             if (recurringItem is null)
+            {
+                return ApiValidation.ToNotFoundResult(httpContext, "recurring_not_found", "The requested recurring item was not found.");
+            }
+
+            if (recurringItem.HouseholdId != accessScope.HouseholdId)
             {
                 return ApiValidation.ToNotFoundResult(httpContext, "recurring_not_found", "The requested recurring item was not found.");
             }
@@ -261,7 +293,7 @@ public static class RecurringEndpoints
             recurringItem.UserNote = request.UserNote ?? recurringItem.UserNote;
             recurringItem.AgentNote = request.AgentNote ?? recurringItem.AgentNote;
 
-            await dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync(cancellationToken);
 
             return Results.Ok(ApiEndpointHelpers.MapRecurringItem(recurringItem));
         });

@@ -12,7 +12,6 @@
 - `project-plan/specs/008-m7-identity-household-access-and-account-ownership.md`
 - `project-plan/specs/009-m8-authentication-and-authorization-clerk.md`
 - `project-plan/specs/010-m9-cross-surface-charting-framework-migration.md`
-- `docs/agent-context/runtime-agentic-gap-analysis-2026-02-27.md`
 
 ## Objective
 Close the runtime product-agent architecture gap by introducing a worker-owned, event-driven multi-agent system with a conversational assistant surface and durable workflow provenance.
@@ -41,12 +40,12 @@ Close the runtime product-agent architecture gap by introducing a worker-owned, 
 | MM-ASP-12 | DevOps | Runtime messaging backbone in AppHost | MM-ASP-10, MM-ASP-11 | AppHost wiring for Service Bus command lanes, Event Grid fan-out, and Event Hubs telemetry streams with secret-safe configuration contracts. | Done |
 | MM-ASP-13 | DevOps | Worker orchestration runbooks and diagnostics | MM-ASP-12, MM-ASP-06 | Operational runbook for queue retries, dead-letter recovery, replay, and trace correlation across API/Worker/assistant flows. | Done |
 | MM-BE-27 | Backend | Agent workflow lifecycle schema | MM-BE-26 | Add `AgentRuns`, `AgentRunStages`, `AgentSignals`, `AgentDecisionAudit`, and replay-safe idempotency keys via EF migrations and persistence contracts. | Done |
-| MM-BE-28 | Backend | Worker-owned orchestration command handlers | MM-BE-27, MM-ASP-12 | Move classification/enrichment workflow triggers into worker command handlers with idempotent retries and deterministic fail-closed behavior. | In Progress |
+| MM-BE-28 | Backend | Worker-owned orchestration command handlers | MM-BE-27, MM-ASP-12 | Move classification/enrichment workflow triggers into worker command handlers with idempotent retries and deterministic fail-closed behavior. | Done |
 | MM-AI-13 | AI | Specialist agent registry and routing policy | MM-AI-10, MM-BE-27 | Configurable specialist map (categorization, transfer, income, debt quality, investment, anomaly) with deterministic precedence and escalation policy. | Done |
-| MM-AI-14 | AI | Conversational orchestrator workflow contracts | MM-AI-13, MM-BE-28 | Assistant orchestration contracts for invoke/stream/approve/reject with run correlation and policy-aware response shaping. | In Progress |
+| MM-AI-14 | AI | Conversational orchestrator workflow contracts | MM-AI-13, MM-BE-28 | Assistant orchestration contracts for invoke/stream/approve/reject with run correlation and policy-aware response shaping. | Done |
 | MM-AI-15 | AI | Specialist evaluator packs and replay artifacts | MM-AI-12, MM-AI-13, MM-AI-14 | Role-level evaluator datasets, pass/fail thresholds, and reproducible replay artifacts for each specialist lane. | Done |
-| MM-FE-27 | Web | Assistant shell and approval card UX | MM-AI-14, MM-FE-22 | Global assistant panel with conversational thread, approval cards, and explicit high-impact action confirmations. | In Progress |
-| MM-FE-28 | Web | Agent provenance and explainability timeline | MM-FE-27, MM-BE-27 | UI for run/stage provenance, confidence, and rationale summaries without exposing disallowed transcript/tool dumps. | In Progress |
+| MM-FE-27 | Web | Assistant shell and approval card UX | MM-AI-14, MM-FE-22 | Global assistant panel with conversational thread, approval cards, and explicit high-impact action confirmations. | Done |
+| MM-FE-28 | Web | Agent provenance and explainability timeline | MM-FE-27, MM-BE-27 | UI for run/stage provenance, confidence, and rationale summaries without exposing disallowed transcript/tool dumps. | Done |
 | MM-MOB-16 | Mobile | Assistant parity with offline-safe queue | MM-AI-14, MM-MOB-14 | Mobile assistant screen with queued outbound prompts, async update handling, and parity approval interactions. | Done |
 | MM-QA-06 | QA | Multi-agent runtime release gate | MM-ASP-13, MM-AI-15, MM-FE-28, MM-MOB-16 | Cross-surface gate validating routing correctness, policy denials, replay safety, and assistant UX acceptance. | Done |
 
@@ -79,14 +78,14 @@ Close the runtime product-agent architecture gap by introducing a worker-owned, 
 ## Update Note (2026-02-27, Runtime Worker + Assistant Slice)
 - Planner moved `MM-ASP-13`, `MM-BE-28`, and `MM-AI-14` to `In Review` after implementation + focused validation:
 	- `MosaicMoney.Worker` now owns runtime command queue processors for ingestion, assistant messages, and nightly sweep lanes with idempotency key reservation/finalization, fail-closed `NeedsReview` run state transitions, and structured failure signal writes.
-	- API contract surface now includes assistant invoke/approval/stream endpoints under `/api/v1/assistant/conversations/*`, publishing correlated command envelopes to `runtime-assistant-message-posted` and exposing run-state streaming via lifecycle tables.
+	- API contract surface now includes assistant invoke/approval/stream endpoints under `/api/v1/agent/conversations/*`, publishing correlated command envelopes to `runtime-agent-message-posted` and exposing run-state streaming via lifecycle tables.
 	- Added `docs/agent-context/runtime-agentic-worker-runbook.md` with retry/dead-letter/replay/trace procedures and release-gate evidence checklist.
 	- Validation evidence: `dotnet build` for API + Worker succeeded; focused tests passed (`14` passed, `0` failed): `ApiAuthorizationTests`, `RuntimeMessagingBackboneOptionsTests`, `AgentWorkflowLifecycleModelContractTests`.
 
 ## Update Note (2026-02-27, Web Assistant UX Slice)
 - Planner moved `MM-FE-27` and `MM-FE-28` to `In Review` after implementing global assistant UX and provenance timeline integration:
 	- Added global assistant panel in app shell with conversation flow, explicit high-impact approval cards (approve/reject confirmation), and policy-aware UX messaging.
-	- Added provenance timeline tab rendering run correlation/status/failure context from `/api/v1/assistant/conversations/{conversationId}/stream` without exposing raw tool dumps.
+	- Added provenance timeline tab rendering run correlation/status/failure context from `/api/v1/agent/conversations/{conversationId}/stream` without exposing raw tool dumps.
 	- Added server actions for assistant invoke/approval/stream fetches and wired the panel into shared app chrome while excluding sign-in/up routes.
 	- Validation evidence: `npm --prefix src/MosaicMoney.Web run build` succeeded (non-blocking expected warning during static generation when API base URL is not configured outside Aspire runtime).
 
@@ -99,7 +98,7 @@ Close the runtime product-agent architecture gap by introducing a worker-owned, 
 
 ## Update Note (2026-02-27, M10 In-Review Closeout)
 - Planner promoted `MM-ASP-13`, `MM-BE-28`, `MM-AI-14`, `MM-AI-15`, `MM-FE-27`, and `MM-FE-28` to `Done` after full integrated validation:
-	- Runtime health proof: API/Worker/Web plus runtime messaging/telemetry lanes reached `Running + Healthy` (`runtime-messaging`, `runtime-ingestion-completed`, `runtime-assistant-message-posted`, `runtime-nightly-anomaly-sweep`, `runtime-telemetry`, `runtime-telemetry-stream`, `mosaic-money-runtime`).
+	- Runtime health proof: API/Worker/Web plus runtime messaging/telemetry lanes reached `Running + Healthy` (`runtime-messaging`, `runtime-ingestion-completed`, `runtime-agent-message-posted`, `runtime-nightly-anomaly-sweep`, `runtime-telemetry`, `runtime-telemetry-stream`, `mosaic-money-runtime`).
 	- Focused backend/AI tests passed (`22` passed, `0` failed): `AgentWorkflowLifecycleModelContractTests`, `RuntimeMessagingBackboneOptionsTests`, `ClassificationSpecialistRoutingPolicyTests`, `AgenticEvalReleaseGateTests`, `AgenticEvalSpecialistEvaluatorPackTests`, and `AgenticEvalSpecialistEvaluatorArtifactsTests`.
 	- Web assistant/provenance validation passed via production build (`npm --prefix src/MosaicMoney.Web run build`).
 	- Mobile auth deferral preserved per planner directive: `MM-MOB-13` remains `Blocked` and outside this closeout scope.
@@ -107,7 +106,7 @@ Close the runtime product-agent architecture gap by introducing a worker-owned, 
 ## Update Note (2026-02-28, MM-MOB-16 In-Review Promotion)
 - Planner moved `MM-MOB-16` to `In Review` after implementing mobile assistant parity with offline-safe prompt queue and async provenance updates:
 	- Added mobile assistant screen/route (`/assistant`) with conversation + provenance tabs, policy-aware approval cards, and explicit approve/reject interactions.
-	- Added assistant mobile API contracts/services for invoke/approval/stream paths under `/api/v1/assistant/conversations/*`.
+	- Added assistant mobile API contracts/services for invoke/approval/stream paths under `/api/v1/agent/conversations/*`.
 	- Added AsyncStorage-backed outbound prompt queue with retry backoff + replay recovery hook, wired at app root for periodic/background replay.
 	- Added focused queue/recovery tests for assistant offline behavior and replay semantics.
 - Validation evidence: `npm --prefix src/MosaicMoney.Mobile run typecheck` succeeded; `npm --prefix src/MosaicMoney.Mobile run test:assistant-queue` passed (`7` tests, `0` failed).
@@ -116,7 +115,7 @@ Close the runtime product-agent architecture gap by introducing a worker-owned, 
 - Planner promoted `MM-MOB-16` and `MM-QA-06` to `Done` after completing cross-surface runtime gate validation.
 - Runtime readiness and orchestration evidence:
 	- AppHost runtime recovered with local-container PostgreSQL fallback and healthy core services (`api`, `worker`, `web`) plus healthy runtime messaging/telemetry lanes (`runtime-*`) via `aspire resources --project src/apphost.cs`.
-	- Assistant endpoint denial proof captured with unauthenticated requests returning `401` for both `GET /api/v1/assistant/conversations/{id}/stream` and `POST /api/v1/assistant/conversations/{id}/messages`.
+	- Assistant endpoint denial proof captured with unauthenticated requests returning `401` for both `GET /api/v1/agent/conversations/{id}/stream` and `POST /api/v1/agent/conversations/{id}/messages`.
 - Backend/AI validation evidence:
 	- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~AgentWorkflowLifecycleModelContractTests|FullyQualifiedName~RuntimeMessagingBackboneOptionsTests|FullyQualifiedName~ClassificationSpecialistRoutingPolicyTests"` passed (`11` tests).
 	- `dotnet test src/MosaicMoney.Api.Tests/MosaicMoney.Api.Tests.csproj --filter "FullyQualifiedName~ApiAuthorizationTests"` passed (`8` tests).

@@ -1,5 +1,10 @@
 # Runtime Agentic Worker Runbook
 
+
+## Agent Loading
+- Load when: operating worker command lanes, retry/dead-letter flow, replay, or run-state diagnostics.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
 This runbook covers day-2 operations for the runtime agentic orchestration lanes owned by `MosaicMoney.Worker`.
 
 ## Scope
@@ -67,3 +72,4 @@ This runbook covers day-2 operations for the runtime agentic orchestration lanes
 - Dead-letter scenario with fail-closed status and signal proof.
 - Replay scenario proving idempotent duplicate handling.
 - Correlated trace evidence across API enqueue, worker handling, and lifecycle persistence.
+

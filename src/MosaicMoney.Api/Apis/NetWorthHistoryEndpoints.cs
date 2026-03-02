@@ -9,10 +9,23 @@ public static class NetWorthHistoryEndpoints
     public static RouteGroupBuilder MapNetWorthHistoryEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/net-worth/history", async (
+            HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             Guid householdId,
-            int? months) =>
+            int? months,
+            CancellationToken cancellationToken) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId,
+                "The authenticated household member is not active and cannot access net worth history for this household.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var monthsToFetch = months ?? 12;
             var startDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(-monthsToFetch));
 
@@ -25,14 +38,14 @@ public static class NetWorthHistoryEndpoints
             var liabilitySnapshots = await dbContext.LiabilitySnapshots
                 .AsNoTracking()
                 .Include(x => x.LiabilityAccount)
-                .Where(x => x.LiabilityAccount.HouseholdId == householdId && x.CapturedAtUtc >= startDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
-                .ToListAsync();
+                .Where(x => x.LiabilityAccount.HouseholdId == accessScope.HouseholdId && x.CapturedAtUtc >= startDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
+                .ToListAsync(cancellationToken);
 
             var investmentSnapshots = await dbContext.InvestmentHoldingSnapshots
                 .AsNoTracking()
                 .Include(x => x.InvestmentAccount)
-                .Where(x => x.InvestmentAccount.HouseholdId == householdId && x.CapturedAtUtc >= startDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
-                .ToListAsync();
+                .Where(x => x.InvestmentAccount.HouseholdId == accessScope.HouseholdId && x.CapturedAtUtc >= startDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc))
+                .ToListAsync(cancellationToken);
 
             // Group by month
             var history = new List<NetWorthHistoryPointDto>();

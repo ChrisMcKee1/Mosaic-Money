@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using MosaicMoney.Api.Authentication;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
@@ -51,11 +54,47 @@ public static class HouseholdEndpoints
         });
 
         group.MapGet("/households", async (
+            HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
+            IOptions<ClerkAuthenticationOptions> clerkOptionsAccessor,
             CancellationToken cancellationToken) =>
         {
+            var authSubject = httpContext.User.FindFirstValue("sub")
+                ?? httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrWhiteSpace(authSubject))
+            {
+                return ApiValidation.ToUnauthorizedResult(
+                    httpContext,
+                    "auth_subject_required",
+                    "The authenticated subject claim is required.");
+            }
+
+            var authProvider = string.IsNullOrWhiteSpace(clerkOptionsAccessor.Value.AuthProvider)
+                ? "clerk"
+                : clerkOptionsAccessor.Value.AuthProvider.Trim();
+
+            var mappedUserIds = await dbContext.MosaicUsers
+                .AsNoTracking()
+                .Where(x =>
+                    x.IsActive
+                    && x.AuthProvider == authProvider
+                    && x.AuthSubject == authSubject)
+                .Select(x => x.Id)
+                .ToListAsync(cancellationToken);
+
+            if (mappedUserIds.Count == 0)
+            {
+                return Results.Ok(Array.Empty<HouseholdDto>());
+            }
+
             var households = await dbContext.Households
                 .AsNoTracking()
+                .Where(h => dbContext.HouseholdUsers.Any(m =>
+                    m.HouseholdId == h.Id
+                    && m.MembershipStatus == HouseholdMembershipStatus.Active
+                    && m.MosaicUserId.HasValue
+                    && mappedUserIds.Contains(m.MosaicUserId.Value)))
                 .OrderByDescending(h => h.CreatedAtUtc)
                 .Select(h => new HouseholdDto(h.Id, h.Name, h.CreatedAtUtc))
                 .ToListAsync(cancellationToken);
@@ -69,6 +108,17 @@ public static class HouseholdEndpoints
             Guid id,
             CancellationToken cancellationToken) =>
         {
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot access this household.",
+                cancellationToken);
+            if (memberScope.ErrorResult is not null)
+            {
+                return memberScope.ErrorResult;
+            }
+
             var household = await dbContext.Households
                 .AsNoTracking()
                 .Where(h => h.Id == id)
@@ -92,6 +142,17 @@ public static class HouseholdEndpoints
             Guid id,
             CancellationToken cancellationToken) =>
         {
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot access this household.",
+                cancellationToken);
+            if (memberScope.ErrorResult is not null)
+            {
+                return memberScope.ErrorResult;
+            }
+
             if (!await dbContext.Households.AsNoTracking().AnyAsync(x => x.Id == id, cancellationToken))
             {
                 return ApiValidation.ToNotFoundResult(
@@ -130,6 +191,17 @@ public static class HouseholdEndpoints
             Guid id,
             CancellationToken cancellationToken) =>
         {
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot access this household.",
+                cancellationToken);
+            if (memberScope.ErrorResult is not null)
+            {
+                return memberScope.ErrorResult;
+            }
+
             if (!await dbContext.Households.AsNoTracking().AnyAsync(x => x.Id == id, cancellationToken))
             {
                 return ApiValidation.ToNotFoundResult(
@@ -162,6 +234,17 @@ public static class HouseholdEndpoints
             CreateHouseholdInviteRequest request,
             CancellationToken cancellationToken) =>
         {
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot manage invites for this household.",
+                cancellationToken);
+            if (memberScope.ErrorResult is not null)
+            {
+                return memberScope.ErrorResult;
+            }
+
             var errors = ValidateCreateHouseholdInviteRequest(request);
             if (errors.Count > 0)
             {
@@ -311,6 +394,17 @@ public static class HouseholdEndpoints
             Guid memberId,
             CancellationToken cancellationToken) =>
         {
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot manage household members.",
+                cancellationToken);
+            if (memberScope.ErrorResult is not null)
+            {
+                return memberScope.ErrorResult;
+            }
+
             var member = await dbContext.HouseholdUsers
                 .FirstOrDefaultAsync(x => x.Id == memberId && x.HouseholdId == id, cancellationToken);
 
@@ -370,6 +464,17 @@ public static class HouseholdEndpoints
             Guid inviteId,
             CancellationToken cancellationToken) =>
         {
+            var memberScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                id,
+                "The household member is not active and cannot manage household invites.",
+                cancellationToken);
+            if (memberScope.ErrorResult is not null)
+            {
+                return memberScope.ErrorResult;
+            }
+
             var invite = await dbContext.HouseholdUsers
                 .FirstOrDefaultAsync(x => x.Id == inviteId && x.HouseholdId == id, cancellationToken);
 

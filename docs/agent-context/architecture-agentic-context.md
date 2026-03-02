@@ -1,50 +1,42 @@
 # Architecture Agentic Context
 
-This file is the planner-friendly architecture grounding summary.
+
+## Agent Loading
+- Load when: planning architecture boundaries, runtime invariants, or cross-domain routing decisions.
+- Apply with workspace policy: [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
+
+Planner-facing architecture constraints and routing map.
 Canonical source: [Full Architecture](../../project-plan/architecture.md)
 
-Detailed architecture docs:
+## Single Responsibility
+- This document defines architecture boundaries and invariants only.
+- Operational procedures and setup commands live in runbooks under `docs/agent-context/`.
+- Stack-specific implementation policies live in dedicated policy files.
+
+## Required Source Documents
 - [Architecture Docs Index](../architecture/README.md)
 - [Master Platform Architecture](../architecture/master-platform-architecture.md)
-- [Architecture Decision Log](../architecture/architecture-decisions.md)
 - [Unified API and MCP Entrypoints](../architecture/unified-api-mcp-entrypoints.md)
-- [System Topology](../architecture/system-topology.md)
-- [AI Orchestration Flow](../architecture/ai-orchestration-flow.md)
-- [Deployment Modes](../architecture/deployment-modes.md)
+- [Auth Scope and Access Control Flow](../architecture/auth-scope-and-access-control-flow.md)
 - [Data Models Index](../data-models/README.md)
 
-## Core Stack
-- Backend: C# 14 with .NET 10 Minimal APIs.
-- API host pattern: one ASP.NET Core service can expose both Minimal API and MCP endpoints, both wrapping shared core services.
-- Current API endpoint surfaces include MCP HTTP transport at `/api/mcp` with explicit tool wrappers over shared business services.
-- Orchestration: Aspire 13.3 preview AppHost with API, worker, and frontend composition.
-- Orchestration database mode: use `AddAzurePostgresFlexibleServer` as the canonical Postgres resource; local full-stack can run via `.RunAsContainer()` and DB-only Azure rollout uses `src/apphost.database/apphost.cs`.
-- Web: Next.js 16 with React 19 and Tailwind CSS.
-- Mobile: React Native via Expo SDK 55 for mobile apps, with iPhone-first MVP release focus and Windows dev host + physical phone testing workflow.
-- Dashboard/reporting visualization standard: web uses `react-apexcharts`; mobile uses `victory-native-xl`; avoid net-new `recharts` for new work.
-- Data: PostgreSQL 18 with `azure_ai` extension and `pgvector`.
-- Authentication: Clerk for web/mobile sign-in and session management, with API-side JWT validation and deny-by-default authorization policies.
-- Azure PostgreSQL baseline from current Aspire publish: PostgreSQL 16, Burstable `Standard_B1ms`, 32 GB storage, HA disabled; tune via `ConfigureInfrastructure(...)` for production.
-- Naming convention for PostgreSQL resources: server resource name `mosaic-postgres`, database/connection name `mosaicmoneydb`, and secret parameter keys prefixed with `mosaic-postgres-*`.
-- AI: Microsoft Agent Framework 1.0 RC plus `Microsoft.Extensions.AI`.
+## Architecture Invariants
+- API may host both Minimal APIs and MCP, but both must resolve server-side authenticated household-member scope before account/transaction reads or mutations.
+- Runtime orchestration is worker-owned (`MosaicMoney.Worker`) and uses durable provenance records (`AgentRuns`, `AgentRunStages`, `AgentSignals`, `AgentDecisionAudit`, `IdempotencyKeys`).
+- Conversational contracts use `/api/v1/agent/conversations/*` and worker command lane `runtime-agent-message-posted`.
+- Deterministic and in-database AI paths remain primary; ambiguous or high-impact outcomes must route to `NeedsReview`.
+- Ledger semantics remain single-entry with projection-only derived logic.
 
-## Architectural Rules
-- Keep Copilot as UI and coding assistant, not runtime orchestration.
-- Do not treat Minimal API route mappings as MCP tools; use explicit MCP tool wrappers that call shared business services.
-- Keep deterministic and in-database AI paths primary for cost and latency control.
-- Treat API as resource server: validate Clerk JWTs, map `sub` to Mosaic identity, and enforce protected endpoints via authorization policy.
-- Escalation order is deterministic -> semantic retrieval -> MAF fallback, with an explicit operator-invoked Foundry classification endpoint for reviewed reclassification flows.
-- For Azure rollout requiring only database provisioning, deploy `src/apphost.database/apphost.cs` with Aspire CLI because `aspire deploy` does not currently provide per-resource filtering.
-- DB-only rollout recommendation: run `aspire do provision-mosaic-postgres-kv` first, tag the vault (`mosaic=true`, `workload=mosaic-money`), then continue database provisioning.
-- Route low-confidence cases into `NeedsReview` instead of forced auto-resolution.
-- Preserve source-of-truth ledger integrity. Projection logic stays in presentation layers.
-- Aggregate/shape time-series buckets (day/week/month) before chart render boundaries to keep chart components presentation-only.
+## Routing Map (Who Owns What)
+- `mosaic-money-backend`: API contracts, entities, persistence, ingestion.
+- `mosaic-money-frontend`: web UX, server/client boundary, charting and assistant surfaces.
+- `mosaic-money-mobile`: Expo screens, offline-safe workflows, contract parity.
+- `mosaic-money-ai`: retrieval/escalation policy, evaluation, HITL guardrails.
+- `mosaic-money-devops`: AppHost composition, runtime messaging, diagnostics and deployment.
 
-Runtime implementation note (2026-02-28): staged classification policy remains primary, and the API now persists classification assignment provenance (`IsAiAssigned`, `AssignmentSource`, `AssignedByAgent`) plus `ClassificationInsights` records for explainability/audit. Full runtime multi-agent orchestration and conversational assistant surfaces are still in progress. See `docs/agent-context/runtime-agentic-gap-analysis-2026-02-27.md` for remaining schema, worker/eventing, and UI expansion roadmap.
+## Related Detailed Policies
+- [Aspire .NET Integration Policy](./aspire-dotnet-integration-policy.md)
+- [Aspire JavaScript Frontend Policy](./aspire-javascript-frontend-policy.md)
+- [Secrets and Configuration Playbook](./secrets-and-configuration-playbook.md)
+- [Aspire Local Run Reliability](./aspire-local-run-reliability.md)
 
-## Team Routing Map
-- `mosaic-money-backend`: API, entities, migrations, ingestion.
-- `mosaic-money-frontend`: web dashboards, projection UX, data visuals.
-- `mosaic-money-mobile`: Expo flows and shared package integration.
-- `mosaic-money-ai`: retrieval, classification confidence routing, HITL guardrails.
-- `mosaic-money-devops`: Aspire AppHost, `AddJavaScriptApp`, containers, and MCP diagnostics.

@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using MosaicMoney.Api.Contracts.V1;
 using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
+using MosaicMoney.Api.Domain.Ledger.Transactions;
 
 namespace MosaicMoney.Api.Apis;
 
@@ -13,6 +15,7 @@ public static class TransactionsEndpoints
         group.MapGet("/transactions", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
             Guid? accountId,
             DateOnly? fromDate,
             DateOnly? toDate,
@@ -39,9 +42,8 @@ public static class TransactionsEndpoints
                 return accessScope.ErrorResult;
             }
 
-            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
             if (accountId.HasValue
-                && !await readableAccountIds.AnyAsync(x => x == accountId.Value, cancellationToken))
+                && !await transactionAccessQueryService.CanReadAccountAsync(accessScope.HouseholdUserId, accountId.Value, cancellationToken))
             {
                 return ApiValidation.ToForbiddenResult(
                     httpContext,
@@ -49,60 +51,36 @@ public static class TransactionsEndpoints
                     "The authenticated household member does not have access to the requested account.");
             }
 
-            var query = dbContext.EnrichedTransactions
-                .AsNoTracking()
-                .Include(x => x.Splits)
-                .Where(x => readableAccountIds.Contains(x.AccountId))
-                .AsQueryable();
+            var transactions = await transactionAccessQueryService.ListReadableTransactionsAsync(
+                accessScope.HouseholdUserId,
+                new TransactionReadQuery(
+                    accountId,
+                    fromDate,
+                    toDate,
+                    reviewStatusFilter,
+                    needsReviewOnly == true,
+                    page,
+                    pageSize),
+                cancellationToken);
 
-            if (accountId.HasValue)
-            {
-                query = query.Where(x => x.AccountId == accountId.Value);
-            }
-
-            if (fromDate.HasValue)
-            {
-                query = query.Where(x => x.TransactionDate >= fromDate.Value);
-            }
-
-            if (toDate.HasValue)
-            {
-                query = query.Where(x => x.TransactionDate <= toDate.Value);
-            }
-
-            if (reviewStatusFilter.HasValue)
-            {
-                query = query.Where(x => x.ReviewStatus == reviewStatusFilter.Value);
-            }
-
-            if (needsReviewOnly == true)
-            {
-                query = query.Where(x => x.ReviewStatus == TransactionReviewStatus.NeedsReview);
-            }
-
-            var transactions = await query
-                .OrderByDescending(x => x.TransactionDate)
-                .ThenByDescending(x => x.CreatedAtUtc)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken);
-
-            var latestClassificationByTransactionId = await QueryLatestClassificationByTransactionIdAsync(
-                dbContext,
+            var latestClassificationByTransactionId = await transactionAccessQueryService.QueryLatestClassificationOutcomeByTransactionIdAsync(
                 transactions.Select(x => x.Id),
                 cancellationToken);
 
             return Results.Ok(transactions
                 .Select(transaction => ApiEndpointHelpers.MapTransaction(
                     transaction,
-                    latestClassificationByTransactionId.GetValueOrDefault(transaction.Id)))
+                    latestClassificationByTransactionId.TryGetValue(transaction.Id, out var latestOutcome)
+                        ? ApiEndpointHelpers.MapClassificationProvenance(latestOutcome)
+                        : null))
                 .ToList());
         });
 
         group.MapGet("/transactions/projection-metadata", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            TransactionProjectionMetadataQueryService queryService,
+            [FromServices] TransactionProjectionMetadataQueryService queryService,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
             Guid? accountId,
             DateOnly? fromDate,
             DateOnly? toDate,
@@ -129,9 +107,8 @@ public static class TransactionsEndpoints
                 return accessScope.ErrorResult;
             }
 
-            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
             if (accountId.HasValue
-                && !await readableAccountIds.AnyAsync(x => x == accountId.Value, cancellationToken))
+                && !await transactionAccessQueryService.CanReadAccountAsync(accessScope.HouseholdUserId, accountId.Value, cancellationToken))
             {
                 return ApiValidation.ToForbiddenResult(
                     httpContext,
@@ -156,6 +133,7 @@ public static class TransactionsEndpoints
         group.MapGet("/transactions/{id:guid}", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
             Guid id,
             CancellationToken cancellationToken = default) =>
         {
@@ -170,34 +148,33 @@ public static class TransactionsEndpoints
                 return accessScope.ErrorResult;
             }
 
-            var readableAccountIds = BuildReadableAccountIdsQuery(dbContext, accessScope.HouseholdUserId);
-
-            var transaction = await dbContext.EnrichedTransactions
-                .AsNoTracking()
-                .Include(x => x.Splits)
-                .Where(x => readableAccountIds.Contains(x.AccountId))
-                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            var transaction = await transactionAccessQueryService.GetReadableTransactionAsync(
+                accessScope.HouseholdUserId,
+                id,
+                cancellationToken);
 
             if (transaction is null)
             {
                 return ApiValidation.ToNotFoundResult(httpContext, "transaction_not_found", "The requested transaction was not found.");
             }
 
-            var latestClassificationByTransactionId = await QueryLatestClassificationByTransactionIdAsync(
-                dbContext,
+            var latestClassificationByTransactionId = await transactionAccessQueryService.QueryLatestClassificationOutcomeByTransactionIdAsync(
                 [transaction.Id],
                 cancellationToken);
 
             return Results.Ok(ApiEndpointHelpers.MapTransaction(
                 transaction,
-                latestClassificationByTransactionId.GetValueOrDefault(transaction.Id)));
+                latestClassificationByTransactionId.TryGetValue(transaction.Id, out var latestOutcome)
+                    ? ApiEndpointHelpers.MapClassificationProvenance(latestOutcome)
+                    : null));
         });
 
         group.MapPost("/transactions", async (
             HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
-            ITransactionEmbeddingQueueService embeddingQueueService,
-            ILoggerFactory loggerFactory,
+            [FromServices] ITransactionEmbeddingQueueService embeddingQueueService,
+            [FromServices] ITransactionAccessQueryService transactionAccessQueryService,
+            [FromServices] ILoggerFactory loggerFactory,
             CreateTransactionRequest request,
             CancellationToken cancellationToken = default) =>
         {
@@ -263,10 +240,32 @@ public static class TransactionsEndpoints
                 return ApiValidation.ToValidationResult(httpContext, errors);
             }
 
+            var accessScope = await HouseholdMemberContextResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The household member is not active and cannot create transactions.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             var accountExists = await dbContext.Accounts.AnyAsync(x => x.Id == request.AccountId);
             if (!accountExists)
             {
                 return ApiValidation.ToValidationResult(httpContext, [new ApiValidationError(nameof(request.AccountId), "AccountId does not exist.")]);
+            }
+
+            if (!await transactionAccessQueryService.CanReadAccountAsync(
+                    accessScope.HouseholdUserId,
+                    request.AccountId,
+                    cancellationToken))
+            {
+                return ApiValidation.ToForbiddenResult(
+                    httpContext,
+                    "account_access_denied",
+                    "The authenticated household member does not have access to the requested account.");
             }
 
             if (request.RecurringItemId.HasValue && !await dbContext.RecurringItems.AnyAsync(x => x.Id == request.RecurringItemId.Value))
@@ -392,46 +391,4 @@ public static class TransactionsEndpoints
 
         return errors;
     }
-
-    private static IQueryable<Guid> BuildReadableAccountIdsQuery(MosaicMoneyDbContext dbContext, Guid householdUserId)
-    {
-        return dbContext.AccountMemberAccessEntries
-            .AsNoTracking()
-            .Where(x =>
-                x.HouseholdUserId == householdUserId
-                && x.Visibility == AccountAccessVisibility.Visible
-                && x.AccessRole != AccountAccessRole.None
-                && x.HouseholdUser.MembershipStatus == HouseholdMembershipStatus.Active)
-            .Select(x => x.AccountId);
-    }
-
-    private static async Task<IReadOnlyDictionary<Guid, ApiEndpointHelpers.TransactionClassificationProvenance>> QueryLatestClassificationByTransactionIdAsync(
-        MosaicMoneyDbContext dbContext,
-        IEnumerable<Guid> transactionIds,
-        CancellationToken cancellationToken)
-    {
-        var transactionIdList = transactionIds
-            .Distinct()
-            .ToList();
-
-        if (transactionIdList.Count == 0)
-        {
-            return new Dictionary<Guid, ApiEndpointHelpers.TransactionClassificationProvenance>();
-        }
-
-        // Query classification outcomes once for the current transaction page and reduce in memory.
-        var orderedOutcomes = await dbContext.TransactionClassificationOutcomes
-            .AsNoTracking()
-            .Where(x => transactionIdList.Contains(x.TransactionId))
-            .OrderByDescending(x => x.CreatedAtUtc)
-            .ThenByDescending(x => x.Id)
-            .ToListAsync(cancellationToken);
-
-        return orderedOutcomes
-            .GroupBy(x => x.TransactionId)
-            .ToDictionary(
-                group => group.Key,
-                group => ApiEndpointHelpers.MapClassificationProvenance(group.First()));
-    }
-
 }

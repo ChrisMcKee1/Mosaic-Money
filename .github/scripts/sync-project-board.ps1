@@ -151,14 +151,14 @@ $issues = @(
     # --- M10: Runtime Agentic Orchestration and Conversational Assistant ---
     @{ num=126; nid="I_kwDORVI-G87ukepV"; status="Done" } # M10 Epic
     @{ num=127; nid="I_kwDORVI-G87ukfAZ"; status="Done" } # MM-ASP-12
-    @{ num=128; nid="I_kwDORVI-G87ukfAd"; status="In Progress" } # MM-BE-28
+    @{ num=128; nid="I_kwDORVI-G87ukfAd"; status="Done" } # MM-BE-28
     @{ num=132; nid="I_kwDORVI-G87ukfAm"; status="Done" } # MM-BE-27
-    @{ num=134; nid="I_kwDORVI-G87ukfAv"; status="In Progress" } # MM-FE-27
-    @{ num=137; nid="I_kwDORVI-G87ukfBN"; status="In Progress" } # MM-AI-14
+    @{ num=134; nid="I_kwDORVI-G87ukfAv"; status="Done" } # MM-FE-27
+    @{ num=137; nid="I_kwDORVI-G87ukfBN"; status="Done" } # MM-AI-14
     @{ num=138; nid="I_kwDORVI-G87ukfQu"; status="Done" } # MM-ASP-13
     @{ num=139; nid="I_kwDORVI-G87ukfUz"; status="Done" } # MM-AI-13
     @{ num=140; nid="I_kwDORVI-G87ukfan"; status="Done" } # MM-AI-15
-    @{ num=141; nid="I_kwDORVI-G87ukfil"; status="In Progress" } # MM-FE-28
+    @{ num=141; nid="I_kwDORVI-G87ukfil"; status="Done" } # MM-FE-28
     @{ num=142; nid="I_kwDORVI-G87ukfmT"; status="Done" } # MM-MOB-16
     @{ num=143; nid="I_kwDORVI-G87ukfqo"; status="Done" } # MM-QA-06
 

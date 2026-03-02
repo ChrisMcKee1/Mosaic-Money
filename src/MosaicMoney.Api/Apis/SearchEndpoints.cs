@@ -24,12 +24,24 @@ public static class SearchEndpoints
     public static RouteGroupBuilder MapSearchEndpoints(this RouteGroupBuilder group)
     {
         group.MapGet("/search/transactions", async (
+            HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ITransactionEmbeddingGenerator embeddingGenerator,
             string query,
             int limit = 10,
             CancellationToken cancellationToken = default) =>
         {
+            var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                httpContext,
+                dbContext,
+                householdId: null,
+                "The authenticated household member is not active and cannot search transactions.",
+                cancellationToken);
+            if (accessScope.ErrorResult is not null)
+            {
+                return accessScope.ErrorResult;
+            }
+
             if (string.IsNullOrWhiteSpace(query))
             {
                 return Results.Ok(Array.Empty<TransactionDto>());
@@ -46,12 +58,14 @@ public static class SearchEndpoints
 
             var semanticCandidates = await GetSemanticTransactionCandidatesAsync(
                 dbContext,
+                accessScope.HouseholdUserId,
                 queryEmbedding,
                 candidateLimit,
                 cancellationToken);
 
             var lexicalCandidates = await GetLexicalTransactionCandidatesAsync(
                 dbContext,
+                accessScope.HouseholdUserId,
                 queryTerms,
                 amountTerms,
                 candidateLimit,
@@ -63,6 +77,7 @@ public static class SearchEndpoints
         });
 
         group.MapGet("/search/categories", async (
+            HttpContext httpContext,
             MosaicMoneyDbContext dbContext,
             ITransactionEmbeddingGenerator embeddingGenerator,
             string query,
@@ -77,6 +92,49 @@ public static class SearchEndpoints
                 return Results.Ok(Array.Empty<object>());
             }
 
+            var resolvedOwnerType = ownerType ?? CategoryOwnerType.Platform;
+            var resolvedHouseholdId = householdId;
+            var resolvedOwnerUserId = ownerUserId;
+
+            if (resolvedOwnerType != CategoryOwnerType.Platform)
+            {
+                var accessScope = await AuthenticatedHouseholdScopeResolver.ResolveAsync(
+                    httpContext,
+                    dbContext,
+                    householdId,
+                    "The authenticated household member is not active and cannot search category scopes outside their household.",
+                    cancellationToken);
+                if (accessScope.ErrorResult is not null)
+                {
+                    return accessScope.ErrorResult;
+                }
+
+                resolvedHouseholdId = accessScope.HouseholdId;
+
+                if (resolvedOwnerType == CategoryOwnerType.User)
+                {
+                    if (ownerUserId.HasValue && ownerUserId.Value != accessScope.HouseholdUserId)
+                    {
+                        return ApiValidation.ToForbiddenResult(
+                            httpContext,
+                            "category_scope_access_denied",
+                            "The authenticated household member can only search personal category scope for their own user context.");
+                    }
+
+                    resolvedOwnerUserId = accessScope.HouseholdUserId;
+                }
+                else
+                {
+                    resolvedOwnerUserId = null;
+                }
+            }
+            else if (householdId.HasValue || ownerUserId.HasValue)
+            {
+                return ApiValidation.ToValidationResult(
+                    httpContext,
+                    [new ApiValidationError(nameof(householdId), "HouseholdId and OwnerUserId must be omitted when ownerType is Platform.")]);
+            }
+
             var embeddingArray = await embeddingGenerator.GenerateEmbeddingAsync(query, cancellationToken);
             var queryEmbedding = new Vector(embeddingArray);
 
@@ -84,9 +142,9 @@ public static class SearchEndpoints
 
             var scopedSubcategoryIdsQuery = ApplyCategoryOwnershipScope(
                     dbContext.Subcategories.AsNoTracking(),
-                    ownerType,
-                    householdId,
-                    ownerUserId)
+                    resolvedOwnerType,
+                    resolvedHouseholdId,
+                    resolvedOwnerUserId)
                 .Select(x => x.Id);
 
             // Find subcategories from similar transactions
@@ -106,9 +164,9 @@ public static class SearchEndpoints
                     dbContext.Subcategories
                         .AsNoTracking()
                         .Include(x => x.Category),
-                    ownerType,
-                    householdId,
-                    ownerUserId)
+                    resolvedOwnerType,
+                    resolvedHouseholdId,
+                    resolvedOwnerUserId)
                 .Where(x => EF.Functions.ILike(x.Name, $"%{query}%") || EF.Functions.ILike(x.Category.Name, $"%{query}%"))
                 .Take(boundedLimit)
                 .ToListAsync(cancellationToken);
@@ -119,9 +177,9 @@ public static class SearchEndpoints
                     dbContext.Subcategories
                         .AsNoTracking()
                         .Include(x => x.Category),
-                    ownerType,
-                    householdId,
-                    ownerUserId)
+                    resolvedOwnerType,
+                    resolvedHouseholdId,
+                    resolvedOwnerUserId)
                 .Where(x => combinedIds.Contains(x.Id))
                 .ToListAsync(cancellationToken);
 
@@ -290,6 +348,7 @@ public static class SearchEndpoints
 
     private static async Task<List<EnrichedTransaction>> GetSemanticTransactionCandidatesAsync(
         MosaicMoneyDbContext dbContext,
+        Guid householdUserId,
         Vector queryEmbedding,
         int candidateLimit,
         CancellationToken cancellationToken)
@@ -300,10 +359,12 @@ public static class SearchEndpoints
             return [];
         }
 
+        var readableAccountIdsQuery = BuildReadableAccountIdsQuery(dbContext, householdUserId);
+
         return await dbContext.EnrichedTransactions
             .AsNoTracking()
             .Include(x => x.Splits)
-            .Where(x => x.DescriptionEmbedding != null)
+            .Where(x => readableAccountIdsQuery.Contains(x.AccountId) && x.DescriptionEmbedding != null)
             .OrderBy(x => x.DescriptionEmbedding!.CosineDistance(queryEmbedding))
             .ThenByDescending(x => x.TransactionDate)
             .ThenBy(x => x.Id)
@@ -313,6 +374,7 @@ public static class SearchEndpoints
 
     private static async Task<List<EnrichedTransaction>> GetLexicalTransactionCandidatesAsync(
         MosaicMoneyDbContext dbContext,
+        Guid householdUserId,
         IReadOnlyList<string> queryTerms,
         IReadOnlyList<decimal> amountTerms,
         int candidateLimit,
@@ -323,12 +385,15 @@ public static class SearchEndpoints
             return [];
         }
 
+        var readableAccountIdsQuery = BuildReadableAccountIdsQuery(dbContext, householdUserId);
+
         var isNpgsqlProvider = dbContext.Database.ProviderName?.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) == true;
         if (!isNpgsqlProvider)
         {
             var allTransactions = await dbContext.EnrichedTransactions
                 .AsNoTracking()
                 .Include(x => x.Splits)
+            .Where(x => readableAccountIdsQuery.Contains(x.AccountId))
                 .ToListAsync(cancellationToken);
 
             return allTransactions
@@ -350,9 +415,10 @@ public static class SearchEndpoints
                 .AsNoTracking()
                 .Include(x => x.Splits)
                 .Where(x =>
-                    EF.Functions.ILike(x.Description, likePattern)
+                    readableAccountIdsQuery.Contains(x.AccountId)
+                    && (EF.Functions.ILike(x.Description, likePattern)
                     || (x.UserNote != null && EF.Functions.ILike(x.UserNote, likePattern))
-                    || (x.AgentNote != null && EF.Functions.ILike(x.AgentNote, likePattern)))
+                    || (x.AgentNote != null && EF.Functions.ILike(x.AgentNote, likePattern))))
                 .OrderByDescending(x => EF.Functions.ILike(x.Description, likePattern))
                 .ThenByDescending(x => x.TransactionDate)
                 .ThenBy(x => x.Id)
@@ -380,7 +446,7 @@ public static class SearchEndpoints
             var amountMatches = await dbContext.EnrichedTransactions
                 .AsNoTracking()
                 .Include(x => x.Splits)
-                .Where(x => amountTerms.Contains(x.Amount))
+                .Where(x => readableAccountIdsQuery.Contains(x.AccountId) && amountTerms.Contains(x.Amount))
                 .OrderByDescending(x => x.TransactionDate)
                 .ThenBy(x => x.Id)
                 .Take(remaining)
@@ -444,5 +510,17 @@ public static class SearchEndpoints
                 && x.Category.OwnerUserId == ownerUserId.Value),
             _ => activeQuery.Where(_ => false),
         };
+    }
+
+    private static IQueryable<Guid> BuildReadableAccountIdsQuery(MosaicMoneyDbContext dbContext, Guid householdUserId)
+    {
+        return dbContext.AccountMemberAccessEntries
+            .AsNoTracking()
+            .Where(x =>
+                x.HouseholdUserId == householdUserId
+                && x.Visibility == AccountAccessVisibility.Visible
+                && x.AccessRole != AccountAccessRole.None
+                && x.HouseholdUser.MembershipStatus == HouseholdMembershipStatus.Active)
+            .Select(x => x.AccountId);
     }
 }

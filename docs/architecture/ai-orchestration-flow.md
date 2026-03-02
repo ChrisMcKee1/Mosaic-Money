@@ -3,9 +3,10 @@
 ## Escalation Ladder
 1. Deterministic classifier/rules execute first.
 2. Semantic retrieval and confidence fusion execute next.
-3. MAF fallback executes only when confidence is below policy threshold.
+3. MAF fallback policy stage executes only when confidence is below policy threshold.
 4. Foundry-assisted classification is an explicit operator-invoked path, not an autonomous bypass.
 5. Ambiguous/high-impact outcomes route to `NeedsReview` with human approval required.
+6. Current runtime defaults to fail-closed when fallback execution is unavailable or disabled.
 
 ```mermaid
 flowchart TD
@@ -13,7 +14,7 @@ flowchart TD
     Deterministic -->|High confidence| Finalized[Categorized]
     Deterministic -->|Low confidence| Semantic[Semantic Retrieval + Fusion]
     Semantic -->|High confidence| Finalized
-    Semantic -->|Low confidence| MAF[MAF Fallback]
+    Semantic -->|Low confidence| MAF[MAF Fallback Policy Gate]
     MAF -->|Confident and allowed| Suggest[Proposed Classification]
     MAF -->|Ambiguous/high impact| Review[NeedsReview Queue]
     Review -->|Operator invokes Foundry endpoint| Foundry[Foundry Classification Endpoint]

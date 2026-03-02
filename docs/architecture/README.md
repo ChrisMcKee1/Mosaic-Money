@@ -7,10 +7,11 @@ This folder contains detailed Mosaic Money architecture artifacts that back `pro
 - `architecture-decisions.md`: active architecture decision log (ADRs) with status, rationale, and source links.
 - `unified-api-mcp-entrypoints.md`: unified Minimal API + MCP architecture pattern with shared core service reuse.
 - `system-topology.md`: runtime boundaries and service interactions.
-- `ai-orchestration-flow.md`: deterministic/semantic/MAF escalation and review loop.
+- `ai-orchestration-flow.md`: deterministic/semantic/MAF escalation and review loop, including Foundry-assisted review path.
 - `deployment-modes.md`: local and Azure deployment modes, wiring, and constraints.
-- `multi-agent-system-topology.md`: worker-owned runtime multi-agent topology and eventing boundaries.
-- `multi-agent-orchestration-sequences.md`: sequence diagrams for ingestion-triggered and conversational assistant orchestration.
+- `multi-agent-system-topology.md`: as-built worker + Foundry runtime topology with notes for planned specialist multi-agent expansion.
+- `multi-agent-orchestration-sequences.md`: as-built sequence diagrams for ingestion and conversational command orchestration.
+- `auth-scope-and-access-control-flow.md`: REST/MCP household-member scope resolution and account ACL enforcement flow diagrams.
 
 ## Guardrails
 - Preserve single-entry ledger semantics.
