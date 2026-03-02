@@ -214,7 +214,8 @@ public sealed class MosaicMoneyDbContext : DbContext
 
         modelBuilder.Entity<AgentReusablePrompt>()
             .Property(x => x.Scope)
-            .HasDefaultValue(AgentPromptScope.User);
+            .HasDefaultValue(AgentPromptScope.User)
+            .HasSentinel(AgentPromptScope.User);
 
         modelBuilder.Entity<AgentReusablePrompt>()
             .Property(x => x.IsFavorite)
