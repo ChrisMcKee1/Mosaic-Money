@@ -120,6 +120,12 @@ public enum CategoryOwnerType
     User = 2,
 }
 
+public enum AgentPromptScope
+{
+    Platform = 0,
+    User = 1,
+}
+
 public sealed class Household
 {
     public Guid Id { get; set; }
@@ -138,6 +144,8 @@ public sealed class Household
     public ICollection<RecurringItem> RecurringItems { get; set; } = new List<RecurringItem>();
 
     public ICollection<Category> Categories { get; set; } = new List<Category>();
+
+    public ICollection<AgentReusablePrompt> AgentReusablePrompts { get; set; } = new List<AgentReusablePrompt>();
 }
 
 public sealed class MosaicUser
@@ -196,6 +204,8 @@ public sealed class HouseholdUser
     public ICollection<AccountMemberAccess> AccountAccessGrants { get; set; } = new List<AccountMemberAccess>();
 
     public ICollection<Category> OwnedCategories { get; set; } = new List<Category>();
+
+    public ICollection<AgentReusablePrompt> SavedAgentPrompts { get; set; } = new List<AgentReusablePrompt>();
 }
 
 public sealed class Account
@@ -360,6 +370,48 @@ public sealed class TaxonomyLifecycleAuditEntry
     public string? MetadataJson { get; set; }
 
     public HouseholdUser PerformedByHouseholdUser { get; set; } = null!;
+}
+
+public sealed class AgentReusablePrompt
+{
+    public Guid Id { get; set; }
+
+    [MaxLength(120)]
+    public string Title { get; set; } = string.Empty;
+
+    [MaxLength(1000)]
+    public string PromptText { get; set; } = string.Empty;
+
+    [MaxLength(80)]
+    public string? StableKey { get; set; }
+
+    public AgentPromptScope Scope { get; set; } = AgentPromptScope.User;
+
+    public Guid? HouseholdId { get; set; }
+
+    public Guid? HouseholdUserId { get; set; }
+
+    public bool IsFavorite { get; set; }
+
+    [Range(0, 100000)]
+    public int DisplayOrder { get; set; }
+
+    [Range(0, int.MaxValue)]
+    public int UsageCount { get; set; }
+
+    public DateTime? LastUsedAtUtc { get; set; }
+
+    public bool IsArchived { get; set; }
+
+    public DateTime? ArchivedAtUtc { get; set; }
+
+    public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime LastModifiedAtUtc { get; set; } = DateTime.UtcNow;
+
+    public Household? Household { get; set; }
+
+    public HouseholdUser? HouseholdUser { get; set; }
 }
 
 public sealed class RecurringItem

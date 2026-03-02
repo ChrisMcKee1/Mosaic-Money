@@ -213,9 +213,12 @@ public sealed class TaxonomyBootstrapBackfillService(
         var categoriesUpdated = 0;
         var subcategoriesInserted = 0;
         var subcategoriesUpdated = 0;
+        var seedCategoryNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var seedCategory in SystemTaxonomySeedManifest.Categories.OrderBy(x => x.DisplayOrder))
         {
+            seedCategoryNames.Add(seedCategory.Name);
+
             if (!categoriesByName.TryGetValue(seedCategory.Name, out var category))
             {
                 category = new Category
@@ -291,6 +294,10 @@ public sealed class TaxonomyBootstrapBackfillService(
                 }
             }
 
+            var seedSubcategoryNames = new HashSet<string>(
+                seedCategory.Subcategories.Select(x => x.Name),
+                StringComparer.OrdinalIgnoreCase);
+
             var subcategoriesByName = category.Subcategories
                 .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
@@ -364,6 +371,53 @@ public sealed class TaxonomyBootstrapBackfillService(
                         subcategoriesUpdated++;
                     }
                 }
+            }
+
+            foreach (var existingSubcategory in category.Subcategories)
+            {
+                if (seedSubcategoryNames.Contains(existingSubcategory.Name))
+                {
+                    continue;
+                }
+
+                if (existingSubcategory.IsArchived)
+                {
+                    continue;
+                }
+
+                existingSubcategory.IsArchived = true;
+                existingSubcategory.ArchivedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+                existingSubcategory.LastModifiedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+                subcategoriesUpdated++;
+            }
+        }
+
+        foreach (var existingCategory in categories.Where(x => x.OwnerType == CategoryOwnerType.Platform))
+        {
+            if (seedCategoryNames.Contains(existingCategory.Name))
+            {
+                continue;
+            }
+
+            if (!existingCategory.IsArchived)
+            {
+                existingCategory.IsArchived = true;
+                existingCategory.ArchivedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+                existingCategory.LastModifiedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+                categoriesUpdated++;
+            }
+
+            foreach (var subcategory in existingCategory.Subcategories)
+            {
+                if (subcategory.IsArchived)
+                {
+                    continue;
+                }
+
+                subcategory.IsArchived = true;
+                subcategory.ArchivedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+                subcategory.LastModifiedAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+                subcategoriesUpdated++;
             }
         }
 

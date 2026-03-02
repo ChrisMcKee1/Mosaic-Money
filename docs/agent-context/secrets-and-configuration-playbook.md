@@ -374,6 +374,13 @@ API contract placeholders (`src/MosaicMoney.Api/appsettings.json`):
 35. `AiWorkflow:Agent:Foundry:KnowledgeBaseRequireApproval`
 36. `AiWorkflow:Agent:Foundry:KnowledgeSourceUrl`
 37. `AiWorkflow:Agent:Foundry:ApiVersion`
+38. `AiWorkflow:PromptGeneration:ModelRouter:Enabled`
+39. `AiWorkflow:PromptGeneration:ModelRouter:Endpoint`
+40. `AiWorkflow:PromptGeneration:ModelRouter:Deployment` (for example `model-router`)
+41. `AiWorkflow:PromptGeneration:ModelRouter:UseDefaultAzureCredential`
+42. `AiWorkflow:PromptGeneration:ModelRouter:AzureAiScope` (default `https://cognitiveservices.azure.com/.default`)
+43. `AiWorkflow:PromptGeneration:ModelRouter:ApiKey` (optional when `UseDefaultAzureCredential=true`)
+44. `AiWorkflow:PromptGeneration:ModelRouter:Temperature`
 
 Worker contract placeholders (`src/MosaicMoney.Worker/appsettings.json`):
 
@@ -427,6 +434,16 @@ dotnet user-secrets set "AiWorkflow:Agent:Foundry:McpDatabaseToolName" "mosaic-p
 dotnet user-secrets set "AiWorkflow:Agent:Foundry:McpDatabaseToolEndpoint" "https://<mcp-host>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
 dotnet user-secrets set "AiWorkflow:Agent:Foundry:KnowledgeSourceUrl" "https://<knowledge-source>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
 dotnet user-secrets set "AiWorkflow:Agent:Foundry:ApiVersion" "v1" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+
+# API-only prompt generation (model-router)
+dotnet user-secrets set "AiWorkflow:PromptGeneration:ModelRouter:Enabled" "true" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:PromptGeneration:ModelRouter:Endpoint" "https://<resource>.openai.azure.com/openai/v1/" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:PromptGeneration:ModelRouter:Deployment" "model-router" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:PromptGeneration:ModelRouter:UseDefaultAzureCredential" "true" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:PromptGeneration:ModelRouter:AzureAiScope" "https://cognitiveservices.azure.com/.default" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+# Optional for key-based auth:
+dotnet user-secrets set "AiWorkflow:PromptGeneration:ModelRouter:ApiKey" "<azure-openai-api-key>" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
+dotnet user-secrets set "AiWorkflow:PromptGeneration:ModelRouter:Temperature" "0.35" --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
 dotnet user-secrets list --project src/MosaicMoney.Api/MosaicMoney.Api.csproj
 ```
 

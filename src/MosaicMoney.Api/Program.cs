@@ -6,6 +6,7 @@ using MosaicMoney.Api.Data;
 using MosaicMoney.Api.Domain.Agent;
 using MosaicMoney.Api.Domain.Ledger;
 using MosaicMoney.Api.Domain.Ledger.AccessPolicy;
+using MosaicMoney.Api.Domain.Ledger.AgentPrompts;
 using MosaicMoney.Api.Domain.Ledger.Classification;
 using MosaicMoney.Api.Domain.Ledger.Embeddings;
 using MosaicMoney.Api.Domain.Ledger.Ingestion;
@@ -36,6 +37,10 @@ builder.Services.AddScoped<AccountAccessPolicyBackfillService>();
 builder.Services.Configure<TaxonomyBackfillOptions>(builder.Configuration.GetSection(TaxonomyBackfillOptions.SectionName));
 builder.Services.Configure<TaxonomyReadinessOptions>(builder.Configuration.GetSection(TaxonomyReadinessOptions.SectionName));
 builder.Services.AddScoped<TaxonomyBootstrapBackfillService>();
+builder.Services.AddScoped<AgentPromptBootstrapService>();
+builder.Services.Configure<AgentPromptGenerationOptions>(
+    builder.Configuration.GetSection(AgentPromptGenerationOptions.SectionName));
+builder.Services.AddScoped<IAgentPromptGenerationService, AgentPromptGenerationService>();
 builder.Services.AddScoped<ITaxonomyReadinessGate, TaxonomyReadinessGateService>();
 builder.Services.AddScoped<ICategoryLifecycleAuditTrail, CategoryLifecycleAuditTrail>();
 builder.Services.AddScoped<IMcpTaxonomyBusinessService, McpTaxonomyBusinessService>();
@@ -184,6 +189,9 @@ static async Task ApplyMigrationsAsync(WebApplication app)
 
     var taxonomyBackfillService = scope.ServiceProvider.GetRequiredService<TaxonomyBootstrapBackfillService>();
     await taxonomyBackfillService.ExecuteAsync();
+
+    var agentPromptBootstrapService = scope.ServiceProvider.GetRequiredService<AgentPromptBootstrapService>();
+    await agentPromptBootstrapService.ExecuteAsync();
 
     var appliedAfter = await dbContext.Database.GetAppliedMigrationsAsync();
     logger.LogInformation("Migration state after apply: {AppliedCount} applied.", appliedAfter.Count());

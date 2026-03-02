@@ -219,6 +219,54 @@ const fixture = {
       },
     ],
   },
+  agentPromptLibrary: {
+    baselinePrompts: [
+      {
+        id: "50000000-0000-0000-0000-000000000001",
+        title: "Weekly cash flow summary",
+        promptText: "Summarize my inflows and outflows for the last 7 days with any notable spikes.",
+        scope: "Platform",
+        isFavorite: false,
+        isEditable: false,
+        stableKey: "weekly-cash-flow-summary",
+        displayOrder: 0,
+        usageCount: 0,
+        lastUsedAtUtc: null,
+        createdAtUtc: "2026-02-20T00:00:00.000Z",
+        lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+      },
+      {
+        id: "50000000-0000-0000-0000-000000000002",
+        title: "Transactions needing review",
+        promptText: "Show transactions that likely need review and explain why each one is ambiguous.",
+        scope: "Platform",
+        isFavorite: false,
+        isEditable: false,
+        stableKey: "needs-review-transactions",
+        displayOrder: 1,
+        usageCount: 0,
+        lastUsedAtUtc: null,
+        createdAtUtc: "2026-02-20T00:00:00.000Z",
+        lastModifiedAtUtc: "2026-02-20T00:00:00.000Z",
+      },
+    ],
+    userPrompts: [
+      {
+        id: "60000000-0000-0000-0000-000000000001",
+        title: "Sunday budget check-in",
+        promptText: "Give me a Sunday budget check-in with top overspend categories and next best actions.",
+        scope: "User",
+        isFavorite: true,
+        isEditable: true,
+        stableKey: null,
+        displayOrder: 0,
+        usageCount: 3,
+        lastUsedAtUtc: "2026-02-27T00:00:00.000Z",
+        createdAtUtc: "2026-02-20T00:00:00.000Z",
+        lastModifiedAtUtc: "2026-02-27T00:00:00.000Z",
+      },
+    ],
+  },
 };
 
 function createState() {
@@ -284,6 +332,73 @@ function getConversationRuns(conversationId) {
   }
 
   return state.agentRunsByConversation[conversationId];
+}
+
+function buildPromptLibrarySnapshot(searchTerm = "") {
+  const normalized = searchTerm.trim().toLowerCase();
+  const hasSearch = normalized.length > 0;
+  const baselinePrompts = state.data.agentPromptLibrary.baselinePrompts.filter((prompt) => {
+    if (!hasSearch) {
+      return true;
+    }
+
+    return (
+      prompt.title.toLowerCase().includes(normalized)
+      || prompt.promptText.toLowerCase().includes(normalized)
+    );
+  });
+
+  const userPrompts = state.data.agentPromptLibrary.userPrompts.filter((prompt) => {
+    if (!hasSearch) {
+      return true;
+    }
+
+    return (
+      prompt.title.toLowerCase().includes(normalized)
+      || prompt.promptText.toLowerCase().includes(normalized)
+    );
+  });
+
+  const favorites = userPrompts
+    .filter((prompt) => prompt.isFavorite)
+    .slice(0, 3);
+
+  return {
+    favorites,
+    userPrompts,
+    baselinePrompts,
+  };
+}
+
+function toPromptTitle(text) {
+  const seed = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (!seed) {
+    return "Reusable Prompt";
+  }
+
+  const firstSix = seed.split(" ").slice(0, 6).join(" ");
+  return firstSix.length <= 120 ? firstSix : firstSix.slice(0, 120);
+}
+
+function polishInitialPrompt(text) {
+  return String(text ?? "").replace(/\s+/g, " ").trim();
+}
+
+function synthesizeReusablePrompt(initialPrompt, conversationMessages) {
+  const normalizedInitial = polishInitialPrompt(initialPrompt);
+  if (normalizedInitial) {
+    return normalizedInitial;
+  }
+
+  const latestUserMessage = [...conversationMessages]
+    .reverse()
+    .find((message) => String(message?.role ?? "").toLowerCase() === "user" && String(message?.text ?? "").trim().length > 0);
+
+  if (latestUserMessage) {
+    return polishInitialPrompt(latestUserMessage.text);
+  }
+
+  return "Summarize my financial situation and list practical next actions.";
 }
 
 const server = createServer(async (req, res) => {
@@ -589,6 +704,117 @@ const server = createServer(async (req, res) => {
       conversationId,
       runs: getConversationRuns(conversationId),
     });
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/api/v1/agent/prompts") {
+    const query = searchParams.get("query") ?? "";
+    json(res, 200, buildPromptLibrarySnapshot(query));
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/v1/agent/prompts/generate") {
+    const body = await readJson(req);
+    const mode = String(body?.mode ?? "InitialPrompt");
+    const includePromptText = body?.includePromptText !== false;
+    const initialPrompt = String(body?.initialPrompt ?? "").trim();
+    const conversationMessages = Array.isArray(body?.conversationMessages) ? body.conversationMessages : [];
+
+    const sourcePrompt = mode.toLowerCase() === "conversationreusable"
+      ? synthesizeReusablePrompt(initialPrompt, conversationMessages)
+      : polishInitialPrompt(initialPrompt);
+
+    json(res, 200, {
+      mode,
+      title: toPromptTitle(sourcePrompt),
+      promptText: includePromptText ? sourcePrompt : null,
+      model: "model-router",
+      sourceSummary: mode.toLowerCase() === "conversationreusable"
+        ? "Generated from conversation context."
+        : "Generated from initial prompt.",
+    });
+    return;
+  }
+
+  if (req.method === "POST" && pathname === "/api/v1/agent/prompts") {
+    const body = await readJson(req);
+    const title = String(body?.title ?? "").trim();
+    const promptText = String(body?.promptText ?? "").trim();
+    if (!title || !promptText) {
+      json(res, 400, { error: "title and promptText are required" });
+      return;
+    }
+
+    const prompt = {
+      id: randomUUID(),
+      title,
+      promptText,
+      scope: "User",
+      isFavorite: body?.isFavorite === true,
+      isEditable: true,
+      stableKey: null,
+      displayOrder: state.data.agentPromptLibrary.userPrompts.length,
+      usageCount: 0,
+      lastUsedAtUtc: null,
+      createdAtUtc: new Date().toISOString(),
+      lastModifiedAtUtc: new Date().toISOString(),
+    };
+
+    state.data.agentPromptLibrary.userPrompts.unshift(prompt);
+    json(res, 201, prompt);
+    return;
+  }
+
+  const promptUpdateMatch = pathname.match(/^\/api\/v1\/agent\/prompts\/([^/]+)$/);
+  if (req.method === "PATCH" && promptUpdateMatch) {
+    const promptId = promptUpdateMatch[1];
+    const body = await readJson(req);
+    const index = state.data.agentPromptLibrary.userPrompts.findIndex((prompt) => prompt.id === promptId);
+    if (index < 0) {
+      json(res, 404, { error: "prompt not found" });
+      return;
+    }
+
+    const current = state.data.agentPromptLibrary.userPrompts[index];
+    const next = {
+      ...current,
+      title: body?.title == null ? current.title : String(body.title).trim(),
+      promptText: body?.promptText == null ? current.promptText : String(body.promptText).trim(),
+      isFavorite: body?.isFavorite == null ? current.isFavorite : body.isFavorite === true,
+      lastModifiedAtUtc: new Date().toISOString(),
+    };
+
+    state.data.agentPromptLibrary.userPrompts[index] = next;
+    json(res, 200, next);
+    return;
+  }
+
+  if (req.method === "DELETE" && promptUpdateMatch) {
+    const promptId = promptUpdateMatch[1];
+    state.data.agentPromptLibrary.userPrompts = state.data.agentPromptLibrary.userPrompts
+      .filter((prompt) => prompt.id !== promptId);
+    empty(res, 204);
+    return;
+  }
+
+  const promptUseMatch = pathname.match(/^\/api\/v1\/agent\/prompts\/([^/]+)\/use$/);
+  if (req.method === "POST" && promptUseMatch) {
+    const promptId = promptUseMatch[1];
+    const index = state.data.agentPromptLibrary.userPrompts.findIndex((prompt) => prompt.id === promptId);
+    if (index < 0) {
+      json(res, 404, { error: "prompt not found" });
+      return;
+    }
+
+    const current = state.data.agentPromptLibrary.userPrompts[index];
+    const updated = {
+      ...current,
+      usageCount: Number(current.usageCount ?? 0) + 1,
+      lastUsedAtUtc: new Date().toISOString(),
+      lastModifiedAtUtc: new Date().toISOString(),
+    };
+    state.data.agentPromptLibrary.userPrompts[index] = updated;
+    json(res, 200, updated);
     return;
   }
 

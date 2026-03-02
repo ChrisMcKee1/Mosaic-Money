@@ -28,6 +28,8 @@ public sealed class MosaicMoneyDbContext : DbContext
 
     public DbSet<Subcategory> Subcategories => Set<Subcategory>();
 
+    public DbSet<AgentReusablePrompt> AgentReusablePrompts => Set<AgentReusablePrompt>();
+
     public DbSet<TaxonomyLifecycleAuditEntry> TaxonomyLifecycleAuditEntries => Set<TaxonomyLifecycleAuditEntry>();
 
     public DbSet<RecurringItem> RecurringItems => Set<RecurringItem>();
@@ -169,6 +171,79 @@ public sealed class MosaicMoneyDbContext : DbContext
 
         modelBuilder.Entity<Subcategory>()
             .HasIndex(x => new { x.CategoryId, x.IsArchived, x.DisplayOrder, x.Name });
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .ToTable(t =>
+            {
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_TitleRequired",
+                    "LENGTH(TRIM(\"Title\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_PromptTextRequired",
+                    "LENGTH(TRIM(\"PromptText\")) > 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_ScopeRange",
+                    "\"Scope\" IN (0, 1)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_ScopeOwnershipConsistency",
+                    "(\"Scope\" = 0 AND \"HouseholdId\" IS NULL AND \"HouseholdUserId\" IS NULL AND \"IsFavorite\" = FALSE) OR (\"Scope\" = 1 AND \"HouseholdId\" IS NOT NULL AND \"HouseholdUserId\" IS NOT NULL)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_StableKeyForPlatform",
+                    "(\"Scope\" = 0 AND \"StableKey\" IS NOT NULL AND LENGTH(TRIM(\"StableKey\")) > 0) OR (\"Scope\" = 1)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_FavoriteOnlyForUserScope",
+                    "(\"Scope\" = 1) OR (\"IsFavorite\" = FALSE)");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_DisplayOrderRange",
+                    "\"DisplayOrder\" >= 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_UsageCountRange",
+                    "\"UsageCount\" >= 0");
+
+                t.HasCheckConstraint(
+                    "CK_AgentReusablePrompt_ArchiveAuditConsistency",
+                    "(\"IsArchived\" = FALSE AND \"ArchivedAtUtc\" IS NULL) OR (\"IsArchived\" = TRUE AND \"ArchivedAtUtc\" IS NOT NULL)");
+            });
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .Property(x => x.Scope)
+            .HasDefaultValue(AgentPromptScope.User);
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .Property(x => x.IsFavorite)
+            .HasDefaultValue(false);
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .Property(x => x.IsArchived)
+            .HasDefaultValue(false);
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .Property(x => x.UsageCount)
+            .HasDefaultValue(0);
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .HasIndex(x => x.StableKey)
+            .IsUnique()
+            .HasFilter("\"Scope\" = 0 AND \"StableKey\" IS NOT NULL");
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .HasIndex(x => new { x.HouseholdId, x.HouseholdUserId, x.Title })
+            .IsUnique()
+            .HasFilter("\"Scope\" = 1 AND \"IsArchived\" = FALSE");
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .HasIndex(x => new { x.Scope, x.IsArchived, x.DisplayOrder, x.Title });
+
+        modelBuilder.Entity<AgentReusablePrompt>()
+            .HasIndex(x => new { x.HouseholdId, x.HouseholdUserId, x.IsFavorite, x.LastUsedAtUtc, x.LastModifiedAtUtc })
+            .HasFilter("\"Scope\" = 1 AND \"IsArchived\" = FALSE");
 
         modelBuilder.Entity<TaxonomyLifecycleAuditEntry>()
             .ToTable(t =>
@@ -1119,6 +1194,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Household>()
+            .HasMany(x => x.AgentReusablePrompts)
+            .WithOne(x => x.Household)
+            .HasForeignKey(x => x.HouseholdId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Household>()
             .HasMany<AgentRun>()
             .WithOne(x => x.Household)
             .HasForeignKey(x => x.HouseholdId)
@@ -1135,6 +1216,12 @@ public sealed class MosaicMoneyDbContext : DbContext
             .WithOne(x => x.OwnerUser)
             .HasForeignKey(x => x.OwnerUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<HouseholdUser>()
+            .HasMany(x => x.SavedAgentPrompts)
+            .WithOne(x => x.HouseholdUser)
+            .HasForeignKey(x => x.HouseholdUserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<TaxonomyLifecycleAuditEntry>()
             .HasOne(x => x.PerformedByHouseholdUser)

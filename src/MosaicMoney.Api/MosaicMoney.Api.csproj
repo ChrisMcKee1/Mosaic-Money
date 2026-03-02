@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
     <ProjectReference Include="..\MosaicMoney.ServiceDefaults\MosaicMoney.ServiceDefaults.csproj" />
@@ -25,6 +25,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>32a1a00e-c861-483a-baba-fc62b01e9212</UserSecretsId>
   </PropertyGroup>
 
 </Project>

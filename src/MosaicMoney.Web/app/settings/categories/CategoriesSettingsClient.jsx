@@ -36,18 +36,99 @@ const SCOPE_CONFIG = [
 
 const MUTATION_BLOCKED_MESSAGE = "Another change is in progress. Please wait for it to finish.";
 
-function sortByDisplayOrder(items) {
-  return [...items].sort((left, right) => {
-    if (left.displayOrder !== right.displayOrder) {
-      return left.displayOrder - right.displayOrder;
-    }
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
 
-    return left.name.localeCompare(right.name);
-  });
+function sortByDisplayOrder(items) {
+  return toArray(items)
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftOrder = Number.isFinite(left?.displayOrder) ? left.displayOrder : 0;
+      const rightOrder = Number.isFinite(right?.displayOrder) ? right.displayOrder : 0;
+
+      if (leftOrder !== rightOrder) {
+        return leftOrder - rightOrder;
+      }
+
+      const leftName = typeof left?.name === "string" ? left.name : "";
+      const rightName = typeof right?.name === "string" ? right.name : "";
+      return leftName.localeCompare(rightName);
+    });
+}
+
+function normalizeSubcategory(subcategory, index) {
+  return {
+    id: subcategory?.id ?? `subcategory-${index}`,
+    categoryId: subcategory?.categoryId ?? null,
+    name: typeof subcategory?.name === "string" ? subcategory.name : "Untitled subcategory",
+    displayOrder: Number.isFinite(subcategory?.displayOrder) ? subcategory.displayOrder : index,
+    isBusinessExpense: subcategory?.isBusinessExpense === true,
+    isArchived: subcategory?.isArchived === true,
+    createdAtUtc: subcategory?.createdAtUtc ?? null,
+    lastModifiedAtUtc: subcategory?.lastModifiedAtUtc ?? null,
+    archivedAtUtc: subcategory?.archivedAtUtc ?? null,
+  };
+}
+
+function normalizeCategory(category, index) {
+  const subcategories = sortByDisplayOrder(
+    toArray(category?.subcategories).map((subcategory, subcategoryIndex) =>
+      normalizeSubcategory(subcategory, subcategoryIndex),
+    ),
+  );
+
+  return {
+    id: category?.id ?? `category-${index}`,
+    name: typeof category?.name === "string" ? category.name : "Untitled category",
+    displayOrder: Number.isFinite(category?.displayOrder) ? category.displayOrder : index,
+    isSystem: category?.isSystem === true,
+    ownerType: typeof category?.ownerType === "string" ? category.ownerType : null,
+    householdId: category?.householdId ?? null,
+    ownerUserId: category?.ownerUserId ?? null,
+    isArchived: category?.isArchived === true,
+    createdAtUtc: category?.createdAtUtc ?? null,
+    lastModifiedAtUtc: category?.lastModifiedAtUtc ?? null,
+    archivedAtUtc: category?.archivedAtUtc ?? null,
+    subcategories,
+  };
+}
+
+function normalizeScopeEntry(scopeEntry) {
+  return {
+    categories: sortByDisplayOrder(
+      toArray(scopeEntry?.categories).map((category, index) => normalizeCategory(category, index)),
+    ),
+    loadError: typeof scopeEntry?.loadError === "string" ? scopeEntry.loadError : null,
+  };
+}
+
+function normalizeInitialScopes(initialScopes) {
+  return {
+    User: normalizeScopeEntry(initialScopes?.User),
+    HouseholdShared: normalizeScopeEntry(initialScopes?.HouseholdShared),
+    Platform: normalizeScopeEntry(initialScopes?.Platform),
+  };
+}
+
+function getEmptyScopeEntry() {
+  return { categories: [], loadError: null };
+}
+
+function getEmptyScopeMessage(scope) {
+  if (scope === "User") {
+    return "No personal categories yet. Create one whenever you need a custom option.";
+  }
+
+  if (scope === "HouseholdShared") {
+    return "No shared household categories yet. Add one to make it available to everyone.";
+  }
+
+  return "No active categories in this scope yet.";
 }
 
 export function CategoriesSettingsClient({ initialScopes }) {
-  const [scopeState, setScopeState] = useState(initialScopes);
+  const [scopeState, setScopeState] = useState(() => normalizeInitialScopes(initialScopes));
   const [activeScope, setActiveScope] = useState("User");
   const [isPending, startTransition] = useTransition();
   const [statusMessage, setStatusMessage] = useState(null);
@@ -67,23 +148,25 @@ export function CategoriesSettingsClient({ initialScopes }) {
   const [movingSubcategoryId, setMovingSubcategoryId] = useState(null);
   const [moveTargetCategoryId, setMoveTargetCategoryId] = useState("");
 
-  const currentScope = scopeState[activeScope] ?? { categories: [], loadError: null };
+  const currentScope = scopeState[activeScope] ?? getEmptyScopeEntry();
   const categories = useMemo(
-    () => sortByDisplayOrder(Array.isArray(currentScope.categories) ? currentScope.categories : []),
+    () => sortByDisplayOrder(currentScope.categories),
     [currentScope.categories],
   );
   const scopeConfig = SCOPE_CONFIG.find((config) => config.key === activeScope) ?? SCOPE_CONFIG[0];
 
   function mergeScopeCategories(scope, categoriesForScope) {
-    if (!categoriesForScope) {
+    if (!Array.isArray(categoriesForScope)) {
       return;
     }
+
+    const normalized = normalizeScopeEntry({ categories: categoriesForScope, loadError: null });
 
     setScopeState((previous) => ({
       ...previous,
       [scope]: {
-        categories: sortByDisplayOrder(categoriesForScope),
-        loadError: null,
+        categories: normalized.categories,
+        loadError: normalized.loadError,
       },
     }));
   }
@@ -350,7 +433,7 @@ export function CategoriesSettingsClient({ initialScopes }) {
 
       {categories.length === 0 && !currentScope.loadError ? (
         <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-hover)]/50 p-6 text-center">
-          <p className="text-sm text-[var(--color-text-muted)]">No active categories in this scope yet.</p>
+          <p className="text-sm text-[var(--color-text-muted)]">{getEmptyScopeMessage(activeScope)}</p>
         </div>
       ) : (
         <div className="space-y-4">

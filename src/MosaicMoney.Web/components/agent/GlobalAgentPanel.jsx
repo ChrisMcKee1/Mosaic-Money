@@ -5,20 +5,31 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import {
   Bot,
+  Bookmark,
   Clock3,
   MessageSquare,
+  Pencil,
+  Plus,
   PanelRightClose,
-  PanelRightOpen,
   Send,
+  Star,
+  StarOff,
   ShieldAlert,
   Sparkles,
+  Trash2,
   User,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import {
+  createAgentPrompt,
+  deleteAgentPrompt,
+  generateAgentPromptSuggestion,
   getAgentConversationStream,
+  getAgentPromptLibrary,
+  recordAgentPromptUse,
   submitAgentApproval,
+  updateAgentPrompt,
 } from "../../app/agent/actions";
 
 function cn(...inputs) {
@@ -26,6 +37,11 @@ function cn(...inputs) {
 }
 
 const POLL_INTERVAL_MS = 7000;
+const EMPTY_PROMPT_LIBRARY = {
+  favorites: [],
+  userPrompts: [],
+  baselinePrompts: [],
+};
 
 function createConversationId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -82,6 +98,10 @@ function extractMessageText(message) {
     return message.content;
   }
 
+  if (typeof message?.text === "string") {
+    return message.text;
+  }
+
   return "";
 }
 
@@ -95,6 +115,17 @@ export function GlobalAgentPanel() {
 
   const [approvalCards, setApprovalCards] = useState([]);
   const [timelineRuns, setTimelineRuns] = useState([]);
+  const [promptLibrary, setPromptLibrary] = useState(EMPTY_PROMPT_LIBRARY);
+  const [promptSearch, setPromptSearch] = useState("");
+  const [isPromptLibraryLoading, setIsPromptLibraryLoading] = useState(false);
+  const [isPromptLibraryOpen, setIsPromptLibraryOpen] = useState(false);
+  const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
+  const [isPromptMutating, setIsPromptMutating] = useState(false);
+  const [isPromptGenerating, setIsPromptGenerating] = useState(false);
+  const [editingPromptId, setEditingPromptId] = useState(null);
+  const [promptTitleDraft, setPromptTitleDraft] = useState("");
+  const [promptBodyDraft, setPromptBodyDraft] = useState("");
+  const [promptFavoriteDraft, setPromptFavoriteDraft] = useState(false);
 
   const {
     messages,
@@ -183,25 +214,82 @@ export function GlobalAgentPanel() {
     return () => clearInterval(timer);
   }, [isOpen, conversationId]);
 
+  async function refreshPromptLibrary(nextQuery = promptSearch) {
+    setIsPromptLibraryLoading(true);
+    const result = await getAgentPromptLibrary({ query: nextQuery });
+    setIsPromptLibraryLoading(false);
+
+    if (!result.success) {
+      setError(result.error || "Could not load reusable prompts.");
+      return;
+    }
+
+    setPromptLibrary(result.data ?? EMPTY_PROMPT_LIBRARY);
+  }
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    void refreshPromptLibrary(promptSearch);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void refreshPromptLibrary(promptSearch);
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, promptSearch]);
+
   const pendingApprovals = useMemo(
     () => approvalCards.filter((card) => card.status === "pending"),
     [approvalCards],
   );
 
-  async function handleSendMessage(event) {
-    event.preventDefault();
+  const latestRunStatus = useMemo(() => {
+    const latestRun = timelineRuns[0];
+    return latestRun?.status ?? null;
+  }, [timelineRuns]);
 
-    const message = inputValue.trim();
-    if (!message || !conversationId || isSubmitting) {
+  const conversationMessagesForGeneration = useMemo(() => {
+    return messages
+      .map((message) => ({
+        role: message?.role ?? "user",
+        text: extractMessageText(message).trim(),
+      }))
+      .filter((message) => message.text.length > 0)
+      .slice(-20);
+  }, [messages]);
+
+  function resolveInitialPromptCandidate() {
+    if (promptBodyDraft.trim().length > 0) {
+      return promptBodyDraft.trim();
+    }
+
+    if (inputValue.trim().length > 0) {
+      return inputValue.trim();
+    }
+
+    const firstUserMessage = conversationMessagesForGeneration.find((message) => message.role === "user");
+    return firstUserMessage?.text ?? "";
+  }
+
+  async function queueMessage(messageText) {
+    if (!messageText || !conversationId || isSubmitting) {
       return;
     }
 
     setError("");
-    setInputValue("");
 
     try {
       await sendMessage(
-        { text: message },
+        { text: messageText },
         {
           body: {
             conversationId,
@@ -212,6 +300,238 @@ export function GlobalAgentPanel() {
     } catch {
       setError("The agent could not queue that message. Please retry.");
     }
+  }
+
+  function resetPromptEditor() {
+    setEditingPromptId(null);
+    setPromptTitleDraft("");
+    setPromptBodyDraft("");
+    setPromptFavoriteDraft(false);
+    setIsPromptEditorOpen(false);
+  }
+
+  function openCreatePromptEditor(prefillText = "") {
+    setEditingPromptId(null);
+    setPromptTitleDraft("");
+    setPromptBodyDraft(prefillText);
+    setPromptFavoriteDraft(false);
+    setIsPromptEditorOpen(true);
+  }
+
+  function openEditPromptEditor(prompt) {
+    setEditingPromptId(prompt.id);
+    setPromptTitleDraft(prompt.title ?? "");
+    setPromptBodyDraft(prompt.promptText ?? "");
+    setPromptFavoriteDraft(prompt.isFavorite === true);
+    setIsPromptEditorOpen(true);
+  }
+
+  async function requestPromptSuggestion({ mode, includePromptText, initialPrompt }) {
+    setError("");
+    setIsPromptGenerating(true);
+
+    const result = await generateAgentPromptSuggestion({
+      mode,
+      includePromptText,
+      initialPrompt,
+      conversationMessages: conversationMessagesForGeneration,
+    });
+
+    setIsPromptGenerating(false);
+
+    if (!result.success || !result.data) {
+      setError(result.error || "Could not generate reusable prompt suggestion.");
+      return null;
+    }
+
+    return result.data;
+  }
+
+  async function handleGenerateReusablePrompt() {
+    if (isPromptGenerating || isPromptMutating) {
+      return;
+    }
+
+    const initialPrompt = resolveInitialPromptCandidate();
+    const suggestion = await requestPromptSuggestion({
+      mode: "ConversationReusable",
+      includePromptText: true,
+      initialPrompt,
+    });
+
+    if (!suggestion) {
+      return;
+    }
+
+    setEditingPromptId(null);
+    setPromptTitleDraft(suggestion.title ?? "");
+    setPromptBodyDraft(suggestion.promptText ?? initialPrompt);
+    setPromptFavoriteDraft(false);
+    setIsPromptEditorOpen(true);
+    setIsPromptLibraryOpen(true);
+  }
+
+  async function handleGenerateFromInitialPrompt(includePromptText) {
+    if (isPromptGenerating || isPromptMutating) {
+      return;
+    }
+
+    const initialPrompt = resolveInitialPromptCandidate();
+    if (!initialPrompt) {
+      setError("Type a prompt first so AI can generate a title.");
+      return;
+    }
+
+    const suggestion = await requestPromptSuggestion({
+      mode: "InitialPrompt",
+      includePromptText,
+      initialPrompt,
+    });
+
+    if (!suggestion) {
+      return;
+    }
+
+    setPromptTitleDraft(suggestion.title ?? "");
+    if (includePromptText && typeof suggestion.promptText === "string" && suggestion.promptText.trim().length > 0) {
+      setPromptBodyDraft(suggestion.promptText);
+    }
+
+    setIsPromptEditorOpen(true);
+    setIsPromptLibraryOpen(true);
+  }
+
+  async function handlePromptSave(event) {
+    event.preventDefault();
+    if (isPromptMutating) {
+      return;
+    }
+
+    const title = promptTitleDraft.trim();
+    const promptText = promptBodyDraft.trim();
+    if (!title || !promptText) {
+      setError("Prompt title and content are required.");
+      return;
+    }
+
+    setError("");
+    setIsPromptMutating(true);
+    const result = editingPromptId
+      ? await updateAgentPrompt({
+          id: editingPromptId,
+          title,
+          promptText,
+          isFavorite: promptFavoriteDraft,
+        })
+      : await createAgentPrompt({
+          title,
+          promptText,
+          isFavorite: promptFavoriteDraft,
+        });
+    setIsPromptMutating(false);
+
+    if (!result.success) {
+      setError(result.error || "Could not save prompt.");
+      return;
+    }
+
+    resetPromptEditor();
+    await refreshPromptLibrary(promptSearch);
+  }
+
+  async function handlePromptDelete(prompt) {
+    if (!prompt?.id || prompt.scope !== "User" || isPromptMutating) {
+      return;
+    }
+
+    if (typeof window !== "undefined" && !window.confirm(`Delete saved prompt \"${prompt.title}\"?`)) {
+      return;
+    }
+
+    setError("");
+    setIsPromptMutating(true);
+    const result = await deleteAgentPrompt({ id: prompt.id });
+    setIsPromptMutating(false);
+
+    if (!result.success) {
+      setError(result.error || "Could not delete prompt.");
+      return;
+    }
+
+    if (editingPromptId === prompt.id) {
+      resetPromptEditor();
+    }
+
+    await refreshPromptLibrary(promptSearch);
+  }
+
+  async function handlePromptFavoriteToggle(prompt) {
+    if (!prompt?.id || prompt.scope !== "User" || isPromptMutating) {
+      return;
+    }
+
+    setError("");
+    setIsPromptMutating(true);
+    const result = await updateAgentPrompt({
+      id: prompt.id,
+      isFavorite: !prompt.isFavorite,
+    });
+    setIsPromptMutating(false);
+
+    if (!result.success) {
+      setError(result.error || "Could not update prompt favorite.");
+      return;
+    }
+
+    await refreshPromptLibrary(promptSearch);
+  }
+
+  async function handleSaveBaselinePrompt(prompt) {
+    if (!prompt?.title || !prompt?.promptText || isPromptMutating) {
+      return;
+    }
+
+    setError("");
+    setIsPromptMutating(true);
+    const result = await createAgentPrompt({
+      title: prompt.title,
+      promptText: prompt.promptText,
+      isFavorite: false,
+    });
+    setIsPromptMutating(false);
+
+    if (!result.success) {
+      setError(result.error || "Could not save baseline prompt.");
+      return;
+    }
+
+    await refreshPromptLibrary(promptSearch);
+  }
+
+  async function handlePromptExecute(prompt) {
+    if (!prompt?.promptText || isSubmitting) {
+      return;
+    }
+
+    setInputValue("");
+    await queueMessage(prompt.promptText);
+
+    if (prompt.scope === "User") {
+      await recordAgentPromptUse({ id: prompt.id, conversationId });
+      await refreshPromptLibrary(promptSearch);
+    }
+  }
+
+  async function handleSendMessage(event) {
+    event.preventDefault();
+
+    const message = inputValue.trim();
+    if (!message) {
+      return;
+    }
+
+    setInputValue("");
+    await queueMessage(message);
   }
 
   async function handleApprovalDecision(cardId, decision) {
@@ -280,7 +600,7 @@ export function GlobalAgentPanel() {
       <header className="border-b border-[var(--color-border)] px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Mosaic Agent</p>
+            <p className="text-xs uppercase tracking-wider text-[var(--color-text-muted)]">Mosaic Copilot</p>
             <h2 className="text-base font-semibold text-[var(--color-text-main)]">Policy-aware runtime agent</h2>
           </div>
           <button
@@ -291,6 +611,17 @@ export function GlobalAgentPanel() {
           >
             <PanelRightClose className="h-4 w-4" />
           </button>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-2.5 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-muted)]">Action Review</p>
+            <p data-testid="agent-overview-pending" className="mt-0.5 text-xs font-semibold text-[var(--color-text-main)]">{pendingApprovals.length} pending</p>
+          </div>
+          <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface-hover)] px-2.5 py-2">
+            <p className="text-[10px] uppercase tracking-wide text-[var(--color-text-muted)]">Latest Run</p>
+            <p className="mt-0.5 text-xs font-semibold text-[var(--color-text-main)]">{latestRunStatus ?? "No runs yet"}</p>
+          </div>
         </div>
 
         <div className="mt-3 flex gap-2">
@@ -305,7 +636,7 @@ export function GlobalAgentPanel() {
             onClick={() => setActiveTab("conversation")}
           >
             <MessageSquare className="mr-1 inline h-3.5 w-3.5" />
-            Conversation
+            Chat
           </button>
           <button
             type="button"
@@ -318,7 +649,7 @@ export function GlobalAgentPanel() {
             onClick={() => setActiveTab("timeline")}
           >
             <Clock3 className="mr-1 inline h-3.5 w-3.5" />
-            Provenance
+            Runs
           </button>
         </div>
       </header>
@@ -337,19 +668,17 @@ export function GlobalAgentPanel() {
 
       {activeTab === "conversation" ? (
         <>
-          <section className="border-b border-[var(--color-border)] px-4 py-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Approval queue</p>
-              <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] text-[var(--color-text-muted)]">
-                {pendingApprovals.length} pending
-              </span>
-            </div>
+          {approvalCards.length > 0 ? (
+            <section className="border-b border-[var(--color-border)] px-4 py-3">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Action Review</p>
+                <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] text-[var(--color-text-muted)]">
+                  <span data-testid="agent-action-review-pending">{pendingApprovals.length} pending</span>
+                </span>
+              </div>
 
-            <div className="mt-2 space-y-2 max-h-40 overflow-auto pr-1">
-              {approvalCards.length === 0 ? (
-                <p className="text-xs text-[var(--color-text-muted)]">No high-impact actions waiting for review.</p>
-              ) : (
-                approvalCards.map((card) => (
+              <div className="space-y-2 max-h-44 overflow-auto pr-1">
+                {approvalCards.map((card) => (
                   <article
                     key={card.id}
                     className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-3"
@@ -394,9 +723,225 @@ export function GlobalAgentPanel() {
                       ) : null}
                     </div>
                   </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          <section className="border-b border-[var(--color-border)] px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Reusable Prompts</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => openCreatePromptEditor(inputValue.trim())}
+                  className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]"
+                >
+                  <Plus className="h-3 w-3" />
+                  Save Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleGenerateReusablePrompt()}
+                  disabled={isPromptGenerating || isPromptMutating}
+                  className="inline-flex items-center gap-1 rounded-md border border-[var(--color-primary)]/40 bg-[var(--color-primary)]/10 px-2 py-1 text-[10px] text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  {isPromptGenerating ? "Generating" : "Generate Reusable"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPromptLibraryOpen((current) => !current)}
+                  className="inline-flex items-center gap-1 rounded-md border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]"
+                >
+                  <Bookmark className="h-3 w-3" />
+                  {isPromptLibraryOpen ? "Hide" : "Browse"}
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-2 flex flex-wrap gap-2">
+              {promptLibrary.favorites.length > 0 ? (
+                promptLibrary.favorites.slice(0, 3).map((prompt) => (
+                  <button
+                    key={prompt.id}
+                    type="button"
+                    onClick={() => void handlePromptExecute(prompt)}
+                    disabled={isSubmitting || !conversationId}
+                    className="rounded-full border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-3 py-1 text-[11px] text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                    title={prompt.promptText}
+                  >
+                    {prompt.title}
+                  </button>
                 ))
+              ) : (
+                <p className="text-[11px] text-[var(--color-text-muted)]">No favorites yet. Save and star prompts you reuse often.</p>
               )}
             </div>
+
+            {isPromptLibraryOpen ? (
+              <div className="mt-3 space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-hover)] p-3">
+                <label htmlFor="agent-prompt-search" className="sr-only">Search reusable prompts</label>
+                <input
+                  id="agent-prompt-search"
+                  value={promptSearch}
+                  onChange={(event) => setPromptSearch(event.target.value)}
+                  placeholder="Search reusable prompts"
+                  className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none"
+                />
+
+                {isPromptLibraryLoading ? (
+                  <p className="text-[11px] text-[var(--color-text-muted)]">Loading prompt library...</p>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Saved</p>
+                      <div className="space-y-2">
+                        {promptLibrary.userPrompts.length === 0 ? (
+                          <p className="text-[11px] text-[var(--color-text-muted)]">No saved prompts yet.</p>
+                        ) : (
+                          promptLibrary.userPrompts.map((prompt) => (
+                            <article key={prompt.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                              <p className="text-xs font-semibold text-[var(--color-text-main)]">{prompt.title}</p>
+                              <p className="mt-0.5 line-clamp-2 text-[11px] text-[var(--color-text-muted)]">{prompt.promptText}</p>
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => void handlePromptExecute(prompt)}
+                                  disabled={isSubmitting || !conversationId}
+                                  className="rounded-md bg-[var(--color-primary)] px-2 py-1 text-[10px] font-semibold text-[var(--color-button-ink)] hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Run
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handlePromptFavoriteToggle(prompt)}
+                                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]"
+                                >
+                                  {prompt.isFavorite ? <StarOff className="h-3 w-3" /> : <Star className="h-3 w-3" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditPromptEditor(prompt)}
+                                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handlePromptDelete(prompt)}
+                                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-negative)] hover:bg-[var(--color-negative-bg)]"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </article>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">Baseline</p>
+                      <div className="space-y-2">
+                        {promptLibrary.baselinePrompts.length === 0 ? (
+                          <p className="text-[11px] text-[var(--color-text-muted)]">No baseline prompts found.</p>
+                        ) : (
+                          promptLibrary.baselinePrompts.map((prompt) => (
+                            <article key={prompt.id} className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                              <p className="text-xs font-semibold text-[var(--color-text-main)]">{prompt.title}</p>
+                              <p className="mt-0.5 line-clamp-2 text-[11px] text-[var(--color-text-muted)]">{prompt.promptText}</p>
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => void handlePromptExecute(prompt)}
+                                  disabled={isSubmitting || !conversationId}
+                                  className="rounded-md bg-[var(--color-primary)] px-2 py-1 text-[10px] font-semibold text-[var(--color-button-ink)] hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                  Run
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleSaveBaselinePrompt(prompt)}
+                                  className="rounded-md border border-[var(--color-border)] px-2 py-1 text-[10px] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]"
+                                >
+                                  Save Copy
+                                </button>
+                              </div>
+                            </article>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {isPromptEditorOpen ? (
+                  <form onSubmit={handlePromptSave} className="space-y-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+                      {editingPromptId ? "Edit saved prompt" : "Save reusable prompt"}
+                    </p>
+                    <input
+                      value={promptTitleDraft}
+                      onChange={(event) => setPromptTitleDraft(event.target.value)}
+                      placeholder="Prompt title"
+                      maxLength={120}
+                      className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none"
+                    />
+                    <textarea
+                      value={promptBodyDraft}
+                      onChange={(event) => setPromptBodyDraft(event.target.value)}
+                      placeholder="Reusable prompt"
+                      maxLength={1000}
+                      rows={3}
+                      className="w-full resize-none rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-xs text-[var(--color-text-main)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:outline-none"
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleGenerateFromInitialPrompt(false)}
+                        disabled={isPromptGenerating || isPromptMutating}
+                        className="rounded-md border border-[var(--color-border)] px-2.5 py-1 text-[10px] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isPromptGenerating ? "Generating" : "AI Title"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleGenerateFromInitialPrompt(true)}
+                        disabled={isPromptGenerating || isPromptMutating}
+                        className="rounded-md border border-[var(--color-primary)]/35 bg-[var(--color-primary)]/10 px-2.5 py-1 text-[10px] text-[var(--color-primary)] hover:bg-[var(--color-primary)]/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isPromptGenerating ? "Generating" : "AI Polish + Title"}
+                      </button>
+                    </div>
+                    <label className="flex items-center gap-2 text-[11px] text-[var(--color-text-main)]">
+                      <input
+                        type="checkbox"
+                        checked={promptFavoriteDraft}
+                        onChange={(event) => setPromptFavoriteDraft(event.target.checked)}
+                      />
+                      Pin as favorite
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="submit"
+                        disabled={isPromptMutating}
+                        className="rounded-md bg-[var(--color-primary)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-button-ink)] hover:bg-[var(--color-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isPromptMutating ? "Saving" : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetPromptEditor}
+                        className="rounded-md border border-[var(--color-border)] px-2.5 py-1 text-[10px] text-[var(--color-text-main)] hover:bg-[var(--color-surface-hover)]"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
+              </div>
+            ) : null}
           </section>
 
           <section className="flex-1 overflow-auto px-4 py-3">
@@ -404,7 +949,7 @@ export function GlobalAgentPanel() {
               {messages.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-[var(--color-border)] p-4 text-xs text-[var(--color-text-muted)]">
                   <p className="font-semibold text-[var(--color-text-main)]">Start a guided conversation</p>
-                  <p className="mt-1">Ask for help with categorization, review routing, or transaction context. High-impact requests will require approval.</p>
+                  <p className="mt-1">Use your favorites or browse reusable prompts above, or type a fresh request below. High-impact requests still require approval.</p>
                 </div>
               ) : (
                 messages.map((message) => (
